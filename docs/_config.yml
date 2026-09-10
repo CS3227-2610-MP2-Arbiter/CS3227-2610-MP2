@@ -1,0 +1,11 @@
+title: Arbiter
+description: Offline data annotation and adjudication for teams.
+url: https://cs3227-2610-mp2-arbiter.github.io
+baseurl: /CS3227-2610-MP2
+markdown: kramdown
+theme: jekyll-theme-cayman
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
