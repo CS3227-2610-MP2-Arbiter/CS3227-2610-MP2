@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.gradleup.shadow' version '9.5.1'
+    id 'checkstyle'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    String jUnitVersion = '5.14.4'
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitVersion}"
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jUnitVersion}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.14.4'
+
+    String javaFxVersion = '25.0.4'
+
+    ['base', 'controls', 'fxml', 'graphics'].each { module ->
+        ['win', 'mac', 'linux'].each { platform ->
+            implementation "org.openjfx:javafx-${module}:${javaFxVersion}:${platform}"
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'full'
+    }
+}
+
+application {
+    mainClass = 'arbiter.Launcher'
+    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
+}
+
+jar {
+    // A lean JAR file (i.e., without the dependencies packaged inside) is not needed.
+    enabled = false
+    // Rename its output anyway; Gradle forbids it clashing with the shadowJar output file, even for a disabled task.
+    archiveClassifier = 'without-dependencies'
+}
+
+shadowJar {
+    archiveFileName = 'arbiter.jar'
+
+    manifest {
+        attributes 'Enable-Native-Access': 'ALL-UNNAMED'
+    }
+}
+
+run {
+    standardInput = System.in
+}
+
+checkstyle {
+    toolVersion = '11.0.0'
+}
