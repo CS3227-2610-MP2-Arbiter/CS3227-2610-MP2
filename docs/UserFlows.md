@@ -43,6 +43,11 @@ annotator sees nothing until an adjudicator assigns them a split. Nobody may sel
 adjudicator; that role is granted by an existing adjudicator (`C9`). Otherwise anyone could export
 the corpus.
 
+**Adjudicators issue and reset credentials.** There is no self-service password reset and no email
+delivery. An adjudicator creates every login id and password pair and resets a forgotten password by
+issuing a new one (`C9`, `C1`). Email verification and email password reset (`D1`, `D2`) are
+deferred: build them only if time remains after everything else ships.
+
 ---
 
 ## 1. Annotator flow (owner: zheng-jj)
@@ -52,7 +57,7 @@ log in -> home (my splits) -> pick a split -> blind queue -> annotate one item -
   |                                                              |
   |                                          label + rationale + [boxes] + flag
   |                                                              |
-  +--- earnings <--- vests on submit ---------------------------+
+  +--- earnings <--- released when admin marks dataset COMPLETE --+
 ```
 
 ### 1.1 Home and assigned splits (`B1`)
@@ -117,8 +122,9 @@ propagates into the export so training-set builders can drop those rows.
 - **Every answer autosaves** on change. Save is not a manual action; a power cut must not lose work.
   This is the whole reason for the write-through store in `A2`.
 - A per-item **Submit** advances the queue. Submitted items lock unless the adjudicator returns them.
-- **Submit split** appears once every item is annotated or flagged. It sets `SUBMITTED`, stops the
-  item counting as remaining, and vests the earnings.
+- **Submit split** appears once every item is annotated or flagged. It sets `SUBMITTED` and stops
+  the item counting as remaining. Submitting alone does not pay: an adjudicator must later mark the
+  whole dataset `COMPLETE` before any earnings for the project are released (rule 9).
 - Annotators persist the **canonical** annotation only; they never choose a file format. The
   adjudicator's exporter (`C15`) turns canonical records into COCO/YOLO/Pascal/CSV/JSON. Building
   formatting logic twice is the one mistake to avoid here.
@@ -129,9 +135,10 @@ propagates into the export so training-set builders can drop those rows.
   flagged count, count this session, average seconds per item.
 - **Total completed** (`B8`): a lifetime counter on the home screen broken down by project, plus a
   per-day bar for the last 14 days.
-- **Money made** (`B9`): earnings = sum of accepted items x per-item reward, vesting **on submit**.
-  Shown as total earned, pending (submitted, not yet resolved), and this period. Money is a
-  **derived** value, never a stored balance, recomputed from submitted annotations so it cannot drift.
+- **Money made** (`B9`): earnings = sum of payable items x per-item reward, released when the
+  adjudicator marks the whole dataset `COMPLETE`. Until then everything is pending; there is no
+  per-split payout. Money is a **derived** value, never a stored balance, recomputed from
+  annotations so it cannot drift.
 - **Export income statement** (`B10`): a CSV with one row per submitted annotation (date, project,
   split, item, reward, status) plus a summary by project and a total. Written to a user-chosen path
   with a sensible default filename.
@@ -168,13 +175,13 @@ storing a content hash so re-imports do not duplicate.
 
 ### 2.3 Define and evolve the taxonomy (`C4`)
 
-The adjudicator owns the labels: create, rename, reorder, retire, **merge** and **split**.
+The adjudicator owns the labels: create, rename, reorder and delete.
 
 - A label has a name, a short key, a colour, and optional description and guideline text.
-- **Merge** two labels into one and **split** one into several both show an impact preview
-  ("14 annotations will be remapped") and require confirmation. Existing annotations are remapped,
-  never orphaned.
-- Retire rather than delete when annotations reference a label, so history stays readable.
+- **Delete** a label and every annotation that used it is removed, not remapped or re-parented.
+  Each affected item reverts to **unannotated** and re-enters the annotators' queues so it can be
+  annotated again. Show the impact preview ("14 annotations will be removed and 14 items will
+  need re-annotating") and require confirmation.
 - Taxonomy edits are recorded so an export can explain what a label meant at the time.
 
 ### 2.4 Split the corpus and set rewards (`C6`)
@@ -191,10 +198,10 @@ The adjudicator owns the labels: create, rename, reorder, retire, **merge** and 
 - **Task type** (`C7`): `CLASSIFICATION` or `DETECTION`, plus the taxonomy input shape
   (`SINGLE` / `MULTI` / `SCALE`). Validate the combination at creation time: a `SCALE` taxonomy with
   a `DETECTION` project is rejected then, not at export time.
-- **Output format** (`C8`): `COCO`, `YOLO`, `Pascal VOC`, `CSV` or `JSON`, stored on the project and
-  used by `C15`. The exporter must refuse gracefully when the data cannot be represented, for
-  example detection boxes in a pure-CSV classification export, and say *why* rather than write a
-  broken file.
+- **Output format** (`C8`): `COCO`, `YOLO`, `Pascal VOC`, `CSV` or `JSON`, fixed on the project at
+  creation time and used by `C15`. Task type and output format are validated together, so an
+  impossible pairing is rejected at creation rather than at export time. The exporter still
+  refuses gracefully as a backstop, and says *why* rather than writing a broken file.
 
 ### 2.6 Manage accounts and assign (`C9`, `C10`)
 
@@ -216,6 +223,11 @@ The adjudicator owns the labels: create, rename, reorder, retire, **merge** and 
   strict majority; ties stay `UNRESOLVED` for manual review. For `SCALE`, accept when the spread is
   within a tolerance (default 1) and average it, otherwise unresolved. Record which rule fired so
   the export's provenance is explainable.
+
+  **A dispute is a missing strict majority.** With *k* annotations on an item, if no label holds a
+  strict majority the item is a dispute - including the flat tie where two labels share the highest
+  count (1-1 at *k* = 2, 2-2 at *k* = 4). Disputes stay `UNRESOLVED` for `C12` and are never
+  auto-resolved by picking a side.
 - **Manual resolution** (`C12`): a queue of unresolved items showing the competing annotations side
   by side **without revealing which annotator gave which**, with the item, rationale text and boxes.
   The adjudicator picks a winner or supplies their own label. Keeping the no-names rule is what lets
@@ -226,7 +238,21 @@ The adjudicator owns the labels: create, rename, reorder, retire, **merge** and 
   (adjudicator-only), timestamps, time spent, flag, resolution, and the rule or person that resolved
   it. This is the provenance record.
 
-### 2.8 Export (`C15`)
+### 2.8 Mark the dataset complete (`C9`)
+
+Once every item in the project is resolved, or the adjudicator is satisfied with what is there, they
+mark the **dataset** `COMPLETE`.
+
+- Completion is **per project, never per split or per annotator**. One action releases the rewards
+  for everyone who worked on that dataset.
+- Before it is marked complete every annotator's earnings show as pending, no matter how much they
+  have submitted.
+- Completing is reversible: reopening the project returns it to `IN_PROGRESS` and withdraws the
+  released earnings.
+- Warn if items are still unresolved or unannotated, but allow it - the adjudicator may accept the
+  gap.
+
+### 2.9 Export (`C15`)
 
 - Writes the correct on-disk structure for the format: COCO's single JSON with `images`/
   `annotations`/`categories`; YOLO's one `.txt` per image plus `classes.txt`; Pascal's one XML per
@@ -249,17 +275,27 @@ These cut across both surfaces and are where the two tracks can accidentally con
    resolved label, or a per-item agreement stat. Aggregate progress is fine; per-item is not.
 2. **Write-through persistence.** Every annotator action hits the store immediately, never an
    in-memory queue flushed at the end. `A2`.
-3. **Taxonomy changes propagate.** Merging or splitting a label remaps existing annotations and
-   records the change. `C4`.
-4. **Immutable project shape.** Task type and source type lock at creation.
-5. **Soft delete everywhere.** Accounts, labels and items are deactivated or retired, never purged,
-   so historical annotations stay interpretable.
-6. **Exclusion means excluded.** Flagged-and-excluded items leave both the export and the earnings
+3. **Deleting a label clears its annotations.** Removing a label deletes the annotations that used
+   it and returns those items to unannotated so annotators can redo them. There is no merge and
+   no split of labels. `C4`.
+5. **Soft delete everywhere, except labels.** Accounts and items are deactivated or retired, never
+   purged, so historical annotations stay interpretable. Labels are the exception: deleting one
+   genuinely removes its annotations (rule 3).
    calculation.
 7. **Reproducibility.** Seeded splits and a recorded resolution rule mean a dataset can be
    regenerated and explained months later.
 8. **Everything is local.** No network calls in core flows; the only exceptions are the stretch
    email features `D1` and `D2`.
+9. **Earnings are released when the dataset completes.** An annotator is paid only once an
+   adjudicator marks the whole project `COMPLETE` (`C9`). Submitting a split is necessary but not
+   sufficient, and there is no per-split payout. Earnings stay derived, never stored.
+10. **A dispute is a missing strict majority.** With *k* annotations, if no label holds a strict
+    majority the item is a dispute, including a flat tie between two labels. Disputes go to `C12`.
+11. **One shared SQLite file on a shared drive.** The team shares a single `arbiter.db` over a
+    shared drive; there is no package exchange and no merge path. Arbiter takes a workspace lock so
+    only one instance writes at a time (`S1`).
+12. **Adjudicators own credentials, and email is deferred.** Login ids and passwords are issued and
+    reset by an adjudicator (`C9`, `C1`). `D1` and `D2` are out of scope unless time remains.
 
 ---
 
@@ -286,6 +322,7 @@ These cut across both surfaces and are where the two tracks can accidentally con
 | Flagged items | adjudicator | `C13` |
 | Item detail / provenance | adjudicator | `C14` |
 | Export dialog | adjudicator | `C15` |
+| Mark dataset complete | adjudicator | `C9` |
 
 [Back to home](index.md)
 
@@ -321,7 +358,7 @@ Whimsyturtle, and `A*`/`S*`/`D*` are shared.
 | 23 | `C1` Offline password reset by one-time code | Whimsyturtle | `A3`, `C9` |
 | 24 | `C2` Create and configure a project | Whimsyturtle | `A1`, `A3` |
 | 25 | `C3` Import a corpus | Whimsyturtle | `C2`, `A5`, `A6`, `S1` |
-| 26 | `C4` Label taxonomy: create, merge and split labels | Whimsyturtle | `C2`, `A2` |
+| 26 | `C4` Label taxonomy: create, rename and delete labels | Whimsyturtle | `C2`, `A2` |
 | 27 | `C5` Automatic conflict resolution | Whimsyturtle | `C10`, `C4`, `C6`, `A7` |
 | 28 | `C6` Split the corpus and set rewards | Whimsyturtle | `C2`, `C3` |
 | 29 | `C7` Choose task type | Whimsyturtle | `C2` |
