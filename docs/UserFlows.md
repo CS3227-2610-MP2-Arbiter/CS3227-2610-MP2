@@ -350,6 +350,7 @@ These cut across both surfaces and are where the two tracks can accidentally con
 | Item detail / provenance | adjudicator | `C14` |
 | Export dialog | adjudicator | `C15` |
 | Mark dataset complete | adjudicator | `C17` |
+| Manage project files and annotations | adjudicator | `C3`, `C9` |
 
 [Back to home](index.md)
 
