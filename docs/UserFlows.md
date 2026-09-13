@@ -135,14 +135,15 @@ propagates into the export so training-set builders can drop those rows.
   flagged count, count this session, average seconds per item.
 - **Total completed** (`B8`): a lifetime counter on the home screen broken down by project, plus a
   per-day bar for the last 14 days.
-- **Money made** (`B9`): earnings = sum of payable items x per-item reward, released when the
-  adjudicator marks the whole dataset `COMPLETE`. Until then everything is pending; there is no
-  per-split payout. Money is a **derived** value, never a stored balance, recomputed from
-  annotations so it cannot drift.
-- **Export income statement** (`B10`): a CSV with one row per submitted annotation (date, project,
-  split, item, reward, status) plus a summary by project and a total. Written to a user-chosen path
+- **Money made** (`B9`): earnings = sum of payable items x per-item reward. Money is a **derived**
+  value, never a stored balance, recomputed from annotations so it cannot drift. Show **two**
+  figures, broken down by project: **released** (datasets an adjudicator has marked `COMPLETE`)
+  and **pending** (everything else). There is no "this period" figure: payout is a one-shot event
+  per dataset, so a period has nothing to slice. Pending is an estimate, not a promise - the
+  adjudicator may complete with items missing.
+- **Export income statement** (`B10`): a CSV with one row per annotation (date, project, split,
+  item, reward, status) plus a summary by project and a total. Written to a user-chosen path
   with a sensible default filename.
----
 
 ## 2. Adjudicator flow (owner: Whimsyturtle)
 
@@ -191,7 +192,8 @@ The adjudicator owns the labels: create, rename, reorder and delete.
 - Optional but cheap once splitting exists: reserve items duplicated across splits as **gold
   standards**, the cleanest way to measure annotator quality.
 - Per-item reward per split, defaulting from the project. Splits can be added, renamed, emptied and
-  deleted before assignment; after assignment they lock except for the reward.
+  deleted before assignment. **After assignment everything locks, including the reward**: changing
+  the rate after the work is done would silently change what someone already earned.
 
 ### 2.5 Task type and output format (`C7`, `C8`)
 
@@ -203,10 +205,24 @@ The adjudicator owns the labels: create, rename, reorder and delete.
   impossible pairing is rejected at creation rather than at export time. The exporter still
   refuses gracefully as a backstop, and says *why* rather than writing a broken file.
 
-### 2.6 Manage accounts and assign (`C9`, `C10`)
+### 2.6 Adjudicator authority over data (`C9`, `C3`, `C6`)
+
+An adjudicator has **super authority over all project data**: annotations, items and files.
+
+- Edit or **delete any annotation**, including submitted and resolved ones. This is how bad data
+  is removed, and it overrides the per-annotator locks in `B6`.
+- **Remove files entirely** from a project, and **add new files to an existing split**.
+- Adding items to a split queues them for every annotator currently assigned to that split.
+- Removing an item withdraws it from every queue and drops its annotations.
+- Every one of these is recorded, so `C14` and `C15` can still explain what happened to an item.
+
+### 2.7 Manage accounts and assign (`C9`, `C10`)
 
 - **Accounts** (`C9`): create annotators directly or approve self-registered ones, promote to
   adjudicator, deactivate. Deactivation is a soft delete so their annotations remain history.
+- **Deactivating mid-split**: the items that annotator had **in progress** are pulled out into a
+  **new split of their own**, ready to be reassigned to someone else. Work already submitted is
+  left alone; only the unfinished items move. The new split keeps the same per-item reward.
 - **Assign** (`C10`): pick a split, pick annotators, set **annotations per item** (*k*, default 2).
   Every item in the split is then queued independently for each of the *k* annotators. This is what
   makes blind agreement measurable and `C5` possible.
@@ -215,7 +231,7 @@ The adjudicator owns the labels: create, rename, reorder and delete.
 - Show each annotator's current load before confirming, so nobody gets 3 000 items by accident.
 - Unassign only while the annotator has submitted nothing.
 
-### 2.7 Monitor and resolve (`C11`-`C14`, `C5`)
+### 2.8 Monitor and resolve (`C11`-`C14`, `C5`)
 
 - **Dashboard** (`C11`): per-project progress: items, annotations, agreement rate, unresolved
   conflicts, per-annotator completion.
@@ -238,7 +254,7 @@ The adjudicator owns the labels: create, rename, reorder and delete.
   (adjudicator-only), timestamps, time spent, flag, resolution, and the rule or person that resolved
   it. This is the provenance record.
 
-### 2.8 Mark the dataset complete (`C17`)
+### 2.9 Mark the dataset complete (`C17`)
 
 Once every item in the project is resolved, or the adjudicator is satisfied with what is there, they
 mark the **dataset** `COMPLETE`.
@@ -250,7 +266,7 @@ mark the **dataset** `COMPLETE`.
 - **Completion is permanent.** There is no reopen and no undo, so require an explicit confirmation
   that names how many items are still unresolved or unannotated.
 
-### 2.9 Export (`C15`)
+### 2.10 Export (`C15`)
 
 - Writes the correct on-disk structure for the format: COCO's single JSON with `images`/
   `annotations`/`categories`; YOLO's one `.txt` per image plus `classes.txt`; Pascal's one XML per
@@ -262,6 +278,11 @@ mark the **dataset** `COMPLETE`.
 - Options: include unresolved, include flagged, train/val/test split of the resolved set.
 - Preview the output tree and item counts, then write to a chosen folder and report what was written
   and what was skipped.
+- A dataset can be exported **before it is complete**. The output must still be a **valid file of
+  its format**: a half-empty COCO JSON still parses, a YOLO export still has a `classes.txt`, and a
+  CSV still has its header. Never emit a partial or truncated file.
+- Items with no resolved label are absent from the annotations, or carry an explicit unresolved
+  marker if the format can express one. They are never represented as a wrong label.
 
 ---
 
@@ -295,6 +316,14 @@ These cut across both surfaces and are where the two tracks can accidentally con
 12. **Adjudicators own credentials, and email is deferred.** Login ids and passwords are issued and
     reset by an adjudicator (`C9`, `C1`). `D1` and `D2` are out of scope unless time remains.
 
+13. **The adjudicator has final authority over project data.** They may edit or delete any
+    annotation, remove files entirely, and add files to an existing split - recorded, so provenance
+    still explains every item. This overrides the annotator-side locks in `B6`.
+14. **Rewards are fixed once a split is assigned.** Nothing about an assigned split changes but its
+    status, because altering a rate after the work would change what someone already earned.
+15. **An incomplete export is still a valid export.** A dataset may be exported before it is
+    complete, and the result must parse as a proper file of its format. Unresolved items are absent
+    or explicitly marked, never given a wrong label.
 ---
 
 ## 4. Screen map
