@@ -76,8 +76,6 @@ Status: Awaiting human verification.
 - This also resolves the two items that `001` flagged as unverified: the claim that all 45 issues sit
   under the v1.0.0 milestone is correct, and the hardcoded `.../milestone/7` link in `docs/index.md`
   points at the right milestone.
-- Still unverified: `docs/UserFlows.md` ends by pointing at `issues/README.md` for build order,
-  labels and the definition of done, and that file still does not exist.
 - Unverified: whether the issue bodies and acceptance criteria match what the user actually agreed
   in the original conversation, since that history is unavailable.
 - No Gradle checks apply; this task produced GitHub issues and documentation only.

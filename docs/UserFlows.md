@@ -342,6 +342,6 @@ Whimsyturtle, and `A*`/`S*`/`D*` are shared.
 | 44 | `D6` Agentic SE reflections | zheng-jj | — |
 | 45 | `D7` Product site landing page | zheng-jj | `B11`, `C16`, `D5`, `D6` |
 
-See `issues/README.md` for build order, labels and the definition of done.
+All issues live on [GitHub](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/milestone/7); this document is the index, and GitHub is the only copy of the backlog.
 
 [Back to home](index.md)

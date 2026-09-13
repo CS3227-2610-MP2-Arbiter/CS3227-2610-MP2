@@ -8,7 +8,7 @@ Status: Awaiting human verification.
   user's own log folder under `logs/zheng-jj/`, write the log for the current task, and commit the
   AI-generated user flow together with any related documentation updates, following the process in
   `context/swe.md`.
-- The user stated that `skills` and `logs` should carry subdirectories for both teammates, `zheng-jj`
+- The user stated that `reflections` and `logs` should carry subdirectories for both teammates, `zheng-jj`
   and `Whimsyturtle`.
 
 ## Follow-ups, corrections, and reflection
@@ -49,6 +49,6 @@ Status: Awaiting human verification.
   change is documentation-only.
 - Unverified: the claim that all 45 issues exist under the GitHub **v1.0.0** milestone, and the
   hardcoded milestone link `.../milestone/7` in `docs/index.md`, since GitHub was not reachable from
-  this environment. `docs/UserFlows.md` also refers to `issues/README.md`, which does not exist yet.
+  this environment.
 - GitHub Pages rendering was not previewed locally.
 - A human has not yet verified this summary.
