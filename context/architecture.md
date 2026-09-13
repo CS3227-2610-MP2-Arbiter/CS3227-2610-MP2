@@ -19,10 +19,10 @@ not running, nothing is happening, which is a genuinely simplifying fact and wor
 are no eventual-consistency problems, no retries and no distributed state.
 
 **It is a school project.** The two roles exist to give the team a clean split of work, not because
-the product demands them. That matters for how much machinery we build. There is no plugin system, no
-dependency-injection framework and no ORM: a container would add indirection to an app with a dozen
-screens and one database file, and the grading criteria reward clear, well-tested code over
-enterprise scaffolding. Where a decision below looks like it is choosing the simpler option, that is
+There is no plugin system and no
+dependency-injection framework, because a container would add indirection to an app with a dozen
+screens and one database file. We do use an ORM: hand-mapping eleven tables is exactly the kind of
+boilerplate it removes. Where a decision below looks like it is choosing the simpler option, that is
 usually why.
 
 The separation that *is* worth the effort is the one that lets two people work at once, so that is
@@ -67,7 +67,7 @@ makes parallel work possible, and it is the rule most worth enforcing in review.
 | --- | --- | --- |
 | `arbiter.model` | Value objects and enums. No behaviour beyond validation. | Shared (`A0`) |
 | `arbiter.data` | Repository interfaces. Signatures only, no SQL. | Shared (`A0`) |
-| `arbiter.data.sqlite` | The implementations, the schema and migrations. | Whimsyturtle (`A2`) |
+| `arbiter.data.sqlite` | The ORM mappings, schema and migrations. | Whimsyturtle (`A2`) |
 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Shared (`A5`, `A6`) |
 | `arbiter.service` | All business rules: assignment, resolution, export, earnings. | Shared (`A0`) |
 | `arbiter.ui.shared` | Shell, navigation, routing, the UI kit, error handling. | zheng-jj (`A1`, `A4`) |
@@ -76,8 +76,9 @@ makes parallel work possible, and it is the rule most worth enforcing in review.
 
 ## Model
 
-Plain value objects in `arbiter.model`, agreed in `A0` before either track starts. They carry no
-persistence logic and no UI logic, so both tracks can construct them in tests without a database.
+Value objects in `arbiter.model`, agreed in `A0` before either track starts. They carry mapping
+annotations for the ORM but no queries and no UI logic, so both tracks can construct them in tests
+without a database.
 
 `User`, `Project`, `Label`, `Item`, `Split`, `Assignment`, `Annotation`, `BoundingBox`, `Resolution`,
 `Flag`.
@@ -104,10 +105,14 @@ Write-through: every annotator action commits immediately, because a power cut m
 so the two tracks can code against signatures before the SQL exists - that is the whole reason `A0`
 comes before `A2`.
 
-**No ORM.** Hibernate is designed for a different shape of problem and would add a mapping layer, a
-session lifecycle and a query language to an app with one database file and a dozen tables. Plain
-JDBC with row mapping keeps all SQL in the repository classes where it can be read and tested, and
-`A2` should prefer that or a thin query builder.
+**A lightweight ORM, not Hibernate.** `arbiter.data.sqlite` maps rows onto the model objects with
+ORMLite rather than by hand-written `ResultSet` unpacking, so the tables do not each need their own
+boilerplate. Hibernate was rejected: it wants a session lifecycle and manages lazy associations that
+make little sense in a desktop app holding one connection and passing detached objects to the UI.
+ORMLite gives the mapping without the lifecycle. The cost is that complex queries still drop to raw
+SQL - which stays inside the repository implementations, so repositories remain the only component
+that knows about persistence. That boundary, not the choice of mapper, is what keeps the two tracks
+from colliding.
 
 **Single writer.** The database sits on a shared drive (rule 11). SQLite is not safe against
 concurrent writers over a network share, so `arbiter.workspace` takes an advisory lock on the
@@ -170,7 +175,7 @@ Recorded so the trade-offs are visible rather than implicit.
 | Decision | Alternative rejected | Cost accepted |
 | --- | --- | --- |
 | One shared SQLite file with a workspace lock | Package exchange with merge | Only one person can write at a time |
-| No ORM; plain JDBC row mapping | Hibernate or jOOQ | Some hand-written SQL |
+| Lightweight ORM (ORMLite) over JDBC | Hibernate | Complex queries still need raw SQL |
 | Services in one shared package | Per-role service layers | Both tracks edit the same package |
 | Money derived, never stored | Balance or ledger column | Recomputed on every read |
 | Two UI packages, shared services | One merged UI tree | Risk of duplication in shared kit |

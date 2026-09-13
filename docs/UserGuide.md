@@ -26,10 +26,10 @@ Arbiter has two roles, and you see a different interface depending on which one 
 | Report a bad image | Annotator | [1.5 Flagging bad source material](UserFlows.md#15-flagging-bad-source-material-b5) |
 | See what I have earned | Annotator | [1.7 Progress and earnings](UserFlows.md#17-progress-earnings-income-statement-b7-b10) |
 | Import a corpus | Adjudicator | [2.2 Import the corpus](UserFlows.md#22-import-the-corpus-c3) |
-| Define or merge labels | Adjudicator | [2.3 Define and evolve the taxonomy](UserFlows.md#23-define-and-evolve-the-taxonomy-c4) |
-| Assign annotators | Adjudicator | [2.6 Manage accounts and assign](UserFlows.md#26-manage-accounts-and-assign-c9-c10) |
-| Resolve disagreements | Adjudicator | [2.7 Monitor and resolve](UserFlows.md#27-monitor-and-resolve-c11-c14-c5) |
-| Export the dataset | Adjudicator | [2.8 Export](UserFlows.md#28-export-c15) |
+| Define or delete labels | Adjudicator | [2.3 Define and evolve the taxonomy](UserFlows.md#23-define-and-evolve-the-taxonomy-c4) |
+| Assign annotators | Adjudicator | [2.7 Manage accounts and assign](UserFlows.md#27-manage-accounts-and-assign-c9-c10) |
+| Resolve disagreements | Adjudicator | [2.8 Monitor and resolve](UserFlows.md#28-monitor-and-resolve-c11-c14-c5) |
+| Export the dataset | Adjudicator | [2.10 Export](UserFlows.md#210-export-c15) |
 
 Full per-screen instructions are being written in `B11` (annotator) and `C16` (adjudicator).
 
