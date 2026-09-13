@@ -179,10 +179,10 @@ The adjudicator owns the labels: create, rename, reorder and delete.
 
 - A label has a name, a short key, a colour, and optional description and guideline text.
 - **Delete** a label and every annotation that used it is removed, not remapped or re-parented.
-  Each affected item reverts to **unannotated** and re-enters the annotators' queues so it can be
-  annotated again. Show the impact preview ("14 annotations will be removed and 14 items will
-  need re-annotating") and require confirmation.
-- Taxonomy edits are recorded so an export can explain what a label meant at the time.
+  Each affected item reverts to **unannotated** and goes back to **the same annotator who labelled
+  it**, not to anyone else and not to the general pool. They redo it from scratch. Show the impact
+  preview ("14 annotations will be removed and 14 items will need re-annotating") and require
+  confirmation.
 
 ### 2.4 Split the corpus and set rewards (`C6`)
 
@@ -238,7 +238,7 @@ The adjudicator owns the labels: create, rename, reorder and delete.
   (adjudicator-only), timestamps, time spent, flag, resolution, and the rule or person that resolved
   it. This is the provenance record.
 
-### 2.8 Mark the dataset complete (`C9`)
+### 2.8 Mark the dataset complete (`C17`)
 
 Once every item in the project is resolved, or the adjudicator is satisfied with what is there, they
 mark the **dataset** `COMPLETE`.
@@ -247,10 +247,8 @@ mark the **dataset** `COMPLETE`.
   for everyone who worked on that dataset.
 - Before it is marked complete every annotator's earnings show as pending, no matter how much they
   have submitted.
-- Completing is reversible: reopening the project returns it to `IN_PROGRESS` and withdraws the
-  released earnings.
-- Warn if items are still unresolved or unannotated, but allow it - the adjudicator may accept the
-  gap.
+- **Completion is permanent.** There is no reopen and no undo, so require an explicit confirmation
+  that names how many items are still unresolved or unannotated.
 
 ### 2.9 Export (`C15`)
 
@@ -276,8 +274,8 @@ These cut across both surfaces and are where the two tracks can accidentally con
 2. **Write-through persistence.** Every annotator action hits the store immediately, never an
    in-memory queue flushed at the end. `A2`.
 3. **Deleting a label clears its annotations.** Removing a label deletes the annotations that used
-   it and returns those items to unannotated so annotators can redo them. There is no merge and
-   no split of labels. `C4`.
+   it and returns those items to unannotated **for the same annotator to redo**. There is no merge
+   and no split of labels. `C4`.
 5. **Soft delete everywhere, except labels.** Accounts and items are deactivated or retired, never
    purged, so historical annotations stay interpretable. Labels are the exception: deleting one
    genuinely removes its annotations (rule 3).
@@ -286,10 +284,10 @@ These cut across both surfaces and are where the two tracks can accidentally con
    regenerated and explained months later.
 8. **Everything is local.** No network calls in core flows; the only exceptions are the stretch
    email features `D1` and `D2`.
-9. **Earnings are released when the dataset completes.** An annotator is paid only once an
-   adjudicator marks the whole project `COMPLETE` (`C9`). Submitting a split is necessary but not
-   sufficient, and there is no per-split payout. Earnings stay derived, never stored.
-10. **A dispute is a missing strict majority.** With *k* annotations, if no label holds a strict
+9. **Earnings are released when the dataset completes, and that is final.** An annotator is paid
+   only once an adjudicator marks the whole project `COMPLETE` (`C17`). Submitting a split is
+   necessary but not sufficient, and there is no per-split payout. Marking complete is permanent,
+   so it cannot be undone to withdraw pay. Earnings stay derived, never stored.
     majority the item is a dispute, including a flat tie between two labels. Disputes go to `C12`.
 11. **One shared SQLite file on a shared drive.** The team shares a single `arbiter.db` over a
     shared drive; there is no package exchange and no merge path. Arbiter takes a workspace lock so
@@ -322,7 +320,7 @@ These cut across both surfaces and are where the two tracks can accidentally con
 | Flagged items | adjudicator | `C13` |
 | Item detail / provenance | adjudicator | `C14` |
 | Export dialog | adjudicator | `C15` |
-| Mark dataset complete | adjudicator | `C9` |
+| Mark dataset complete | adjudicator | `C17` |
 
 [Back to home](index.md)
 
@@ -370,7 +368,8 @@ Whimsyturtle, and `A*`/`S*`/`D*` are shared.
 | 35 | `C13` Review flagged items | Whimsyturtle | `B5`, `C3` |
 | 36 | `C14` Per-item annotation breakdown | Whimsyturtle | `C12`, `C4`, `C13` |
 | 37 | `C15` Export the dataset with provenance | Whimsyturtle | `C5`, `C8`, `C12`, `C13`, `C14` |
-| 38 | `C16` Write the adjudicator user guide | Whimsyturtle | `C2`, `C3`, `C4`, `C6`, `C10`, `C12`, `C15` |
+| 38 | `C16` Write the adjudicator user guide | Whimsyturtle | `C2`, `C3`, `C4`, `C6`, `C10`, `C12`, `C15`, `C17` |
+| 46 | `C17` Mark the dataset complete and release earnings | Whimsyturtle | `C2`, `C9`, `B9` |
 | 39 | `D1` *Email verification | zheng-jj | `S3`, `A3` |
 | 40 | `D2` *Email password reset | zheng-jj | `S3`, `A3`, `C1` |
 | 41 | `D3` Demo corpus and smoke-test checklist | zheng-jj | `C15`, `B10` |
