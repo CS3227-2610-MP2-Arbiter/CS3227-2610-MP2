@@ -38,7 +38,7 @@ Status: Awaiting human verification.
   existing logs were used as the format reference.
 - The eight cross-document links added to `docs/UserGuide.md` were checked against the headings in
   `docs/UserFlows.md`; every anchor resolves.
-- Documentation was not otherwise rewritten: `docs/DeveloperGuide.md` and `docs/Reflections.md` still
+- Documentation was not otherwise rewritten: `docs/DeveloperGuide.md` and the reflections still
   contain `TODO` because their owning issues (`D5`, `D6`) are not done.
 
 ## Verification

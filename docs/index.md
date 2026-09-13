@@ -29,6 +29,7 @@ See [User Flows](UserFlows.md) for the full step-by-step walkthrough.
 - [User guide](UserGuide.md)
 - [User flows and issue index](UserFlows.md)
 - [Developer guide](DeveloperGuide.md)
-- [Agentic SE reflections](Reflections.md)
+- [Agentic SE reflections: zheng-jj](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/reflections/zheng-jj/reflections.md)
+- [Agentic SE reflections: Whimsyturtle](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/reflections/Whimsyturtle/reflections.md)
 - [Source code](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2)
 - [Issue backlog](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/milestone/7)
