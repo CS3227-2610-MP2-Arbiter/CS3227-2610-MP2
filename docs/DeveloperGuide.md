@@ -23,23 +23,37 @@ The full design lives in
 The short version:
 
 ```
-arbiter.ui.annotator      arbiter.ui.adjudicator     <-- two role packages, never import each other
-        |                          |
-        +------------+-------------+
-                     v
-              arbiter.service                       <-- all business rules
-                     v
-        arbiter.data   +   arbiter.model             <-- repository interfaces + value objects
-        arbiter.data.sqlite                          <-- ORM mappings; the only SQL in the app
-                     v
-              arbiter.workspace                      <-- paths, single-writer lock, migrations
+arbiter.ui.annotator      arbiter.ui.adjudicator      <-- role screens
+        |          \            /           |
+        |           v          v            |
+        |        arbiter.ui.shared          |   <-- shell, AnnotationEditor, BoxCanvas, ItemView
+        |               |                   |
+        +---------------+-------------------+
+                        v
+                arbiter.service                      <-- all business rules
+                        v
+          arbiter.data   +   arbiter.model           <-- repository interfaces + value objects
+          arbiter.data.sqlite                        <-- ORM mappings; the only SQL
+                        v
+                arbiter.workspace                    <-- paths, single-writer lock, migrations
 ```
 
-Dependencies point downward only. `ui.annotator` and `ui.adjudicator` never import one another; they
-share `service`, `model` and a small `ui.shared` kit. That rule is what lets the two of us work in
-parallel, and it is the rule most worth enforcing in review.
+Dependencies point downward only, and neither role package imports the other - they meet in
+`arbiter.ui.shared` and `arbiter.service`. That rule does not exist to keep the roles independent;
+they are not. It exists so the shared code has one home and neither track can grow a private copy.
 
-Four decisions are load-bearing:
+**The two roles are not independent.** They are producer and consumer on the same data. Manual
+resolution shows competing annotations side by side with their boxes, adjudicators supply their own
+labels, and box geometry is genuinely hard - so `AnnotationEditor`, `BoxCanvas` and `ItemView` live
+in `arbiter.ui.shared` and are used by both. A role difference is a mode flag, never a second
+implementation.
+
+Because blindness cannot then be enforced by keeping packages apart, it is enforced at the query
+boundary instead: annotator reads go through `AnnotationService`, which scopes them to the session
+user, and `A7` carries an explicit test that fails if any annotator path can reach another
+annotator's annotation.
+
+Five decisions are load-bearing:
 
 - **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand.
   Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not
@@ -51,6 +65,9 @@ Four decisions are load-bearing:
   annotations and per-item rewards, so they cannot drift.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format. Only
   `ExportService` knows about COCO, YOLO, Pascal VOC, CSV and JSON.
+- **Shared annotation components.** `AnnotationEditor` and `BoxCanvas` are written once and used by
+  both roles, with the difference as a mode flag. Two implementations would drift, most dangerously
+  in box coordinates.
 
 The behaviour this implements is specified step by step in
 [`docs/UserFlows.md`](UserFlows.md), including the fifteen cross-cutting rules in section 3.
@@ -98,6 +115,7 @@ harness, user-visible wording matching `docs/UserFlows.md`, and a PR reviewed by
 | Unit | `src/test/java` | Services and model logic, no database |
 | Repository | `src/test/java` | Temp SQLite file per test, seeded by `A7` fixtures |
 | Blindness | `src/test/java` | Fails if annotator code can reach another annotator's work |
+| Shared component | `src/test/java` | Box geometry and editor modes, tested once where the component lives |
 | Acceptance | Manual | A human walks the agreed scenarios |
 
 The blindness test exists because rule 1 (annotators never see each other's annotations) is the core
