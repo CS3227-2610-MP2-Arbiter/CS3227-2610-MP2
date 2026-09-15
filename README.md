@@ -9,7 +9,7 @@ Arbiter is an offline Java desktop app for teams that label data. It has two rol
 
 - [User Guide](docs/UserGuide.md)
 - [Developer Guide](docs/DeveloperGuide.md)
-- [Reflections](docs/Reflections.md)
+- [Reflections](docs/Reflections.md) - one per teammate: [zheng-jj](reflections/zheng-jj/reflection.md), [Whimsyturtle](reflections/Whimsyturtle/reflection.md)
 
 ## Building
 

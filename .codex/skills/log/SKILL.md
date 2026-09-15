@@ -25,6 +25,6 @@ description: Record Arbiter development requests, responses, corrections and ver
    ```
 
 3. Summarize the coherent task rather than each conversational turn. Keep the original request distinct from substantive later requests, misunderstandings, pushback, concessions, corrections and lessons. Record each fact once in the section where it is most useful. Summarize important agent decisions, actions and results from across the interaction. Include paths, commands, failures, recovery steps, skill versions and other evidence only when they materially help a human understand or verify the work. State when relevant conversation history is unavailable.
-4. Separate observed results from assumptions and pending work. Keep the summary concise, mark it as awaiting human verification unless a human explicitly verifies it, and record supplied verification details. Preserve substantive lessons for possible inclusion in `docs/Reflections.md`.
+4. Separate observed results from assumptions and pending work. Keep the summary concise, mark it as awaiting human verification unless a human explicitly verifies it, and record supplied verification details. Preserve substantive lessons for possible inclusion in `reflections/<github-user>/reflection.md`.
 
 **Done when:** The log concisely captures the task, its evolution, the agent's work and the available verification without duplication, and its status and path are reported.
