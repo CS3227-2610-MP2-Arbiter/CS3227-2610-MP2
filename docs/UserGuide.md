@@ -32,6 +32,6 @@ which one you have.
 | Resolve disagreements | Adjudicator | [2.8 Monitor and resolve](UserFlows.md#28-monitor-and-resolve-c11-c14-c5) |
 | Export the dataset | Adjudicator | [2.10 Export](UserFlows.md#210-export-c15) |
 
-Full per-screen instructions are being written in `B11` (annotator) and `C16` (adjudicator).
+Step-by-step instructions for each screen will be added as features are released.
 
 [Back to home](index.md)

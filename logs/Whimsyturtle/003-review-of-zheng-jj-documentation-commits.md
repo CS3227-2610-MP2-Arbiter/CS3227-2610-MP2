@@ -1,6 +1,6 @@
 # Review of zheng-jj documentation commits
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -14,6 +14,7 @@ Status: Awaiting human verification.
 - While reviewing, the user noticed drift between `README.md` and `docs/index.md`, which both defined Arbiter and its roles. They proposed keeping the definition only in `docs/index.md`, with README linking to the product site. The agent agreed: the Pages workflow builds only from `docs/`, so README cannot be the source, and the two versions differed only in wording, which made this a mechanical fix rather than a decision to agree with `zheng-jj` first.
 - The agent found the same problem elsewhere: `docs/UserGuide.md` restated the roles, and README's build commands repeated the Developer Guide's "Setting up" section. It also pointed out that step 3 of `maintain-docs`, "Keep shared facts consistent across affected pages", assumed facts would be copied between pages, so the agent would reintroduce the drift. The user accepted every suggestion and specified that README keep its current sentence, which they judged more accurate than `docs/index.md`'s, with `docs/index.md` changed to match.
 - The agent had described the introduction of `context/architecture.md` as a one-sentence summary, but it is two sentences and the second summarises both roles. It was left unchanged as agreed, because it is unpublished agent context, and the new rule was scoped so that it does not conflict.
+- The user asked what the closing line of `docs/UserGuide.md` meant. The agent explained that `B11` and `C16` are the user-guide issues `#22` and `#38`. The line claimed that the guides were "being written", but both issues are blocked by features not yet built, and the codes mean nothing to readers of the published site. The user chose to replace the line with a plain note for readers.
 
 ## Agent responses and outcomes
 
@@ -29,11 +30,12 @@ Status: Awaiting human verification.
   8. `zheng-jj`'s logs, which are optional
 - The agent created the local branch `docs/review-fixes` from `9d02ead` for the user's fixes.
 - On `docs/review-fixes`, the agent applied the agreed changes to `README.md`, `docs/index.md`, `docs/UserGuide.md` and `maintain-docs`. It also removed README's documentation list, which duplicated `docs/index.md`'s and already lacked User Flows, and carried README's general Windows note into `docs/DeveloperGuide.md`, which had covered Windows only for `run`.
+- The agent reworded that line of `docs/UserGuide.md` to "Step-by-step instructions for each screen will be added as features are released."
 
 ## Verification
 
-- Observed: the Git history, the net diff and the final contents of every changed file. Read-only `gh` calls confirmed that 46 issues exist and that the spikes are closed with their decision comments, and showed the ORMLite wording in `#6`.
+- Observed: the Git history, the net diff and the final contents of every changed file. Read-only `gh` calls confirmed that 46 issues exist and that the spikes are closed with their decision comments, and showed the ORMLite wording in `#6` and that `#22` and `#38` are open.
 - Not checked: the bodies of the other issues `zheng-jj` edited.
 - For the documentation fixes, the live product site returned HTTP 200 after a successful deployment of `9d02ead`. It has the `the-two-roles` and `setting-up` anchors, rewrites relative `.md#section` links with the section intact, and resolves `index.md` to the site root. The final `git diff` was reviewed.
 - The site was not built locally; the product-site workflow builds it on the pull request. Gradle checks were not run because only Markdown changed.
-- The user edited and approved the version of this log written before the documentation fixes.
+- The user edited the summary and approved it.
