@@ -126,7 +126,7 @@ propagates into the export so training-set builders can drop those rows.
   the item counting as remaining. Submitting alone does not pay: an adjudicator must later mark the
   whole dataset `COMPLETE` before any earnings for the project are released (rule 9).
 - Annotators persist the **canonical** annotation only; they never choose a file format. The
-  adjudicator's exporter (`C15`) turns canonical records into COCO/YOLO/Pascal/CSV/JSON. Building
+  adjudicator's exporter (`C15`) turns canonical records into CSV, JSON or COCO. Building
   formatting logic twice is the one mistake to avoid here.
 
 ### 1.7 Progress, earnings, income statement (`B7`-`B10`)
@@ -200,10 +200,11 @@ The adjudicator owns the labels: create, rename, reorder and delete.
 - **Task type** (`C7`): `CLASSIFICATION` or `DETECTION`, plus the taxonomy input shape
   (`SINGLE` / `MULTI` / `SCALE`). Validate the combination at creation time: a `SCALE` taxonomy with
   a `DETECTION` project is rejected then, not at export time.
-- **Output format** (`C8`): `COCO`, `YOLO`, `Pascal VOC`, `CSV` or `JSON`, fixed on the project at
-  creation time and used by `C15`. Task type and output format are validated together, so an
-  impossible pairing is rejected at creation rather than at export time. The exporter still
-  refuses gracefully as a backstop, and says *why* rather than writing a broken file.
+- **Output format** (`C8`): `CSV`, `JSON` or `COCO`, fixed on the project at creation time and used
+  by `C15`. `CSV` and `JSON` suit every project, but `COCO` is a detection format, so it is offered
+  only for a `DETECTION` project with `IMAGE` sources. Task type and output format are validated
+  together, so an impossible pairing is rejected at creation rather than at export time. The
+  exporter still refuses gracefully as a backstop, and says *why* rather than writing a broken file.
 
 ### 2.6 Adjudicator authority over data (`C9`, `C3`, `C6`)
 
@@ -269,8 +270,7 @@ mark the **dataset** `COMPLETE`.
 ### 2.10 Export (`C15`)
 
 - Writes the correct on-disk structure for the format: COCO's single JSON with `images`/
-  `annotations`/`categories`; YOLO's one `.txt` per image plus `classes.txt`; Pascal's one XML per
-  image; CSV/JSON as flat tables.
+  `annotations`/`categories`; CSV/JSON as flat tables.
 - **Provenance for every decision**: each row carries the resolved label, how it was resolved
   (`MAJORITY`, `ADJUDICATED`, `GOLD`, `AUTO_SCALE`), the timestamp, the adjudicator, and every
   contributing annotation with its rationale and flag. Ship this as a `provenance.csv`/JSON side
@@ -279,8 +279,8 @@ mark the **dataset** `COMPLETE`.
 - Preview the output tree and item counts, then write to a chosen folder and report what was written
   and what was skipped.
 - A dataset can be exported **before it is complete**. The output must still be a **valid file of
-  its format**: a half-empty COCO JSON still parses, a YOLO export still has a `classes.txt`, and a
-  CSV still has its header. Never emit a partial or truncated file.
+  its format**: a half-empty COCO JSON still parses and a CSV still has its header. Never emit a
+  partial or truncated file.
 - Items with no resolved label are absent from the annotations, or carry an explicit unresolved
   marker if the format can express one. They are never represented as a wrong label.
 

@@ -64,7 +64,7 @@ Five decisions are load-bearing:
 - **Money is derived, never stored.** No `balance` column, no ledger. Earnings are recomputed from
   annotations and per-item rewards, so they cannot drift.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format. Only
-  `ExportService` knows about COCO, YOLO, Pascal VOC, CSV and JSON.
+  `ExportService` knows about CSV, JSON and COCO.
 - **Shared annotation components.** `AnnotationEditor` and `BoxCanvas` are written once and used by
   both roles, with the difference as a mode flag. Two implementations would drift, most dangerously
   in box coordinates.
