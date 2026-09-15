@@ -297,9 +297,11 @@ These cut across both surfaces and are where the two tracks can accidentally con
 3. **Deleting a label clears its annotations.** Removing a label deletes the annotations that used
    it and returns those items to unannotated **for the same annotator to redo**. There is no merge
    and no split of labels. `C4`.
+4. **Immutable project shape.** Task type and source type lock at creation.
 5. **Soft delete everywhere, except labels.** Accounts and items are deactivated or retired, never
    purged, so historical annotations stay interpretable. Labels are the exception: deleting one
    genuinely removes its annotations (rule 3).
+6. **Exclusion means excluded.** Flagged-and-excluded items leave both the export and the earnings
    calculation.
 7. **Reproducibility.** Seeded splits and a recorded resolution rule mean a dataset can be
    regenerated and explained months later.
@@ -309,13 +311,13 @@ These cut across both surfaces and are where the two tracks can accidentally con
    only once an adjudicator marks the whole project `COMPLETE` (`C17`). Submitting a split is
    necessary but not sufficient, and there is no per-split payout. Marking complete is permanent,
    so it cannot be undone to withdraw pay. Earnings stay derived, never stored.
+10. **A dispute is a missing strict majority.** With *k* annotations, if no label holds a strict
     majority the item is a dispute, including a flat tie between two labels. Disputes go to `C12`.
 11. **One shared SQLite file on a shared drive.** The team shares a single `arbiter.db` over a
     shared drive; there is no package exchange and no merge path. Arbiter takes a workspace lock so
     only one instance writes at a time (`S1`).
 12. **Adjudicators own credentials, and email is deferred.** Login ids and passwords are issued and
     reset by an adjudicator (`C9`, `C1`). `D1` and `D2` are out of scope unless time remains.
-
 13. **The adjudicator has final authority over project data.** They may edit or delete any
     annotation, remove files entirely, and add files to an existing split - recorded, so provenance
     still explains every item. This overrides the annotator-side locks in `B6`.
@@ -324,6 +326,7 @@ These cut across both surfaces and are where the two tracks can accidentally con
 15. **An incomplete export is still a valid export.** A dataset may be exported before it is
     complete, and the result must parse as a proper file of its format. Unresolved items are absent
     or explicitly marked, never given a wrong label.
+
 ---
 
 ## 4. Screen map
