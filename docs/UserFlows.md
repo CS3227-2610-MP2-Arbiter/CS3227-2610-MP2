@@ -4,22 +4,27 @@ title: User Flows
 
 # Arbiter user flows
 
-This is the single source of truth for *who does what, in what order*. Each issue links back to the
-step it implements. Where the feature list is ambiguous, this document states the interpretation we
-agreed on, so the annotator track and the adjudicator track do not drift apart. Items marked
+This is the single source of truth for *who does what, in what order*. Each step names the GitHub
+issue that implements it by a short code such as `A5`; [section 5](#5-issues) maps each code to its
+issue number. Where the feature list is ambiguous, this document states the interpretation we
+agreed on, so the annotator track and the adjudicator track do not drift apart. Steps marked
 **stretch** are optional and have their own issue.
 
 ## Vocabulary
 
+Arbiter has [two roles](index.md#the-two-roles), annotator and adjudicator. Each term below uses
+only the terms above it.
+
 | Term | Meaning |
 | --- | --- |
-| **Corpus** | The imported collection of source items (images, `.txt`, `.md`). |
-| **Item** | One annotatable unit: one image or one text document. |
-| **Split** | A batch of items cut from the corpus and assigned to one or more annotators. |
-| **Assignment** | The link between one split and one annotator. |
+| **Project** | One labelling job, whose task type, source type and output format are fixed at creation. |
+| **Item** | One annotatable unit: one image, or one `.txt` or `.md` document. |
+| **Corpus** | The collection of items imported into a project. |
+| **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
+| **Split** | A batch of items cut from the corpus. |
+| **Assignment** | The link between one split and one annotator. One split can go to several annotators. |
 | **Annotation** | One annotator's answer for one item: a label, a rationale, optional boxes. |
 | **Resolved label** | The final answer for an item after adjudication. |
-| **Adjudicator** | The admin role: imports, splits, assigns, resolves, exports. |
 
 **The key rule:** every item in a split is annotated independently by *k* annotators, and annotators
 never see each other's work. That is what makes "resolve by highest count" meaningful and it is why
@@ -54,10 +59,10 @@ deferred: build them only if time remains after everything else ships.
 
 ```
 log in -> home (my splits) -> pick a split -> blind queue -> annotate one item -> next
-  |                                                              |
+  |                                                                     |
   |                                          label + rationale + [boxes] + flag
-  |                                                              |
-  +--- earnings <--- released when admin marks dataset COMPLETE --+
+  |                                                                     |
+  +--- earnings <--- released when adjudicator marks dataset COMPLETE --+
 ```
 
 ### 1.1 Home and assigned splits (`B1`)
@@ -351,8 +356,6 @@ These cut across both surfaces and are where the two tracks can accidentally con
 | Export dialog | adjudicator | `C15` |
 | Mark dataset complete | adjudicator | `C17` |
 | Manage project files and annotations | adjudicator | `C3`, `C9` |
-
-[Back to home](index.md)
 
 ## 5. Issues
 
