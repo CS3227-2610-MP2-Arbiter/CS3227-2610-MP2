@@ -4,8 +4,7 @@ title: Arbiter
 
 # Arbiter
 
-Arbiter is an offline Java desktop app for teams that label data — the workflow behind any moderation
-queue or machine-learning training set. Everything runs from local files, with no server.
+Arbiter is an offline Java desktop app for teams that label data.
 
 ## The two roles
 
