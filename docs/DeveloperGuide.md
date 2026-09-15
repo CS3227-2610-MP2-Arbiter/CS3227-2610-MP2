@@ -10,9 +10,11 @@ is designed, how the team works on it, and how to set up and verify a change.
 ## Setting up
 
 - **JDK 25.** The Gradle wrapper downloads everything else, including JavaFX.
-- **Run:** `./gradlew run` (Windows: `.\gradlew.bat run`)
+- **Run:** `./gradlew run`
 - **Test and check style:** `./gradlew check`
 - **Build the release jar:** `./gradlew shadowJar` produces `build/libs/arbiter.jar`
+
+On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
 The `review` skill runs `./gradlew check shadowJar` together, which is what CI does.
 

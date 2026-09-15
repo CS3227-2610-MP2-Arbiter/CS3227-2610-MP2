@@ -4,11 +4,12 @@ title: User Guide
 
 # User Guide
 
-Arbiter has two roles, and you see a different interface depending on which one you have.
+Arbiter has [two roles](index.md#the-two-roles), and you see a different interface depending on
+which one you have.
 
-- **Annotators** label items one at a time from a blind queue. See
+- **Annotators:** see
   [section 1 of the user flows](UserFlows.md#1-annotator-flow-owner-zheng-jj).
-- **Adjudicators** set up projects, assign work, resolve disagreements and export the dataset. See
+- **Adjudicators:** see
   [section 2 of the user flows](UserFlows.md#2-adjudicator-flow-owner-whimsyturtle).
 
 ## Getting started
