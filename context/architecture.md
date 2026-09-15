@@ -189,7 +189,7 @@ flows call out for the exporter.
   every load to the session user. This is where rule 1 is enforced.
 - `ResolutionService` - majority, ties and disputes; idempotent.
 - `EarningsService` - derived earnings, released versus pending.
-- `ExportService` - the only place that knows about COCO, YOLO, Pascal VOC, CSV and JSON.
+- `ExportService` - the only place that knows about CSV, JSON and COCO.
 
 `ExportService` deserves a note: annotators persist canonical annotations and never choose a format,
 so export formatting exists in exactly one place. Building it twice is the most expensive mistake
