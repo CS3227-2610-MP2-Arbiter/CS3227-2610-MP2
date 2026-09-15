@@ -131,7 +131,7 @@ propagates into the export so training-set builders can drop those rows.
   the item counting as remaining. Submitting alone does not pay: an adjudicator must later mark the
   whole dataset `COMPLETE` before any earnings for the project are released (rule 9).
 - Annotators persist the **canonical** annotation only; they never choose a file format. The
-  adjudicator's exporter (`C15`) turns canonical records into COCO/YOLO/Pascal/CSV/JSON. Building
+  adjudicator's exporter (`C15`) turns canonical records into CSV, JSON or COCO. Building
   formatting logic twice is the one mistake to avoid here.
 
 ### 1.7 Progress, earnings, income statement (`B7`-`B10`)
@@ -205,10 +205,11 @@ The adjudicator owns the labels: create, rename, reorder and delete.
 - **Task type** (`C7`): `CLASSIFICATION` or `DETECTION`, plus the taxonomy input shape
   (`SINGLE` / `MULTI` / `SCALE`). Validate the combination at creation time: a `SCALE` taxonomy with
   a `DETECTION` project is rejected then, not at export time.
-- **Output format** (`C8`): `COCO`, `YOLO`, `Pascal VOC`, `CSV` or `JSON`, fixed on the project at
-  creation time and used by `C15`. Task type and output format are validated together, so an
-  impossible pairing is rejected at creation rather than at export time. The exporter still
-  refuses gracefully as a backstop, and says *why* rather than writing a broken file.
+- **Output format** (`C8`): `CSV`, `JSON` or `COCO`, fixed on the project at creation time and used
+  by `C15`. `CSV` and `JSON` suit every project, but `COCO` is a detection format, so it is offered
+  only for a `DETECTION` project with `IMAGE` sources. Task type and output format are validated
+  together, so an impossible pairing is rejected at creation rather than at export time. The
+  exporter still refuses gracefully as a backstop, and says *why* rather than writing a broken file.
 
 ### 2.6 Adjudicator authority over data (`C9`, `C3`, `C6`)
 
@@ -274,8 +275,7 @@ mark the **dataset** `COMPLETE`.
 ### 2.10 Export (`C15`)
 
 - Writes the correct on-disk structure for the format: COCO's single JSON with `images`/
-  `annotations`/`categories`; YOLO's one `.txt` per image plus `classes.txt`; Pascal's one XML per
-  image; CSV/JSON as flat tables.
+  `annotations`/`categories`; CSV/JSON as flat tables.
 - **Provenance for every decision**: each row carries the resolved label, how it was resolved
   (`MAJORITY`, `ADJUDICATED`, `GOLD`, `AUTO_SCALE`), the timestamp, the adjudicator, and every
   contributing annotation with its rationale and flag. Ship this as a `provenance.csv`/JSON side
@@ -284,8 +284,8 @@ mark the **dataset** `COMPLETE`.
 - Preview the output tree and item counts, then write to a chosen folder and report what was written
   and what was skipped.
 - A dataset can be exported **before it is complete**. The output must still be a **valid file of
-  its format**: a half-empty COCO JSON still parses, a YOLO export still has a `classes.txt`, and a
-  CSV still has its header. Never emit a partial or truncated file.
+  its format**: a half-empty COCO JSON still parses and a CSV still has its header. Never emit a
+  partial or truncated file.
 - Items with no resolved label are absent from the annotations, or carry an explicit unresolved
   marker if the format can express one. They are never represented as a wrong label.
 
@@ -302,9 +302,11 @@ These cut across both surfaces and are where the two tracks can accidentally con
 3. **Deleting a label clears its annotations.** Removing a label deletes the annotations that used
    it and returns those items to unannotated **for the same annotator to redo**. There is no merge
    and no split of labels. `C4`.
+4. **Immutable project shape.** Task type and source type lock at creation.
 5. **Soft delete everywhere, except labels.** Accounts and items are deactivated or retired, never
    purged, so historical annotations stay interpretable. Labels are the exception: deleting one
    genuinely removes its annotations (rule 3).
+6. **Exclusion means excluded.** Flagged-and-excluded items leave both the export and the earnings
    calculation.
 7. **Reproducibility.** Seeded splits and a recorded resolution rule mean a dataset can be
    regenerated and explained months later.
@@ -314,13 +316,13 @@ These cut across both surfaces and are where the two tracks can accidentally con
    only once an adjudicator marks the whole project `COMPLETE` (`C17`). Submitting a split is
    necessary but not sufficient, and there is no per-split payout. Marking complete is permanent,
    so it cannot be undone to withdraw pay. Earnings stay derived, never stored.
+10. **A dispute is a missing strict majority.** With *k* annotations, if no label holds a strict
     majority the item is a dispute, including a flat tie between two labels. Disputes go to `C12`.
 11. **One shared SQLite file on a shared drive.** The team shares a single `arbiter.db` over a
     shared drive; there is no package exchange and no merge path. Arbiter takes a workspace lock so
     only one instance writes at a time (`S1`).
 12. **Adjudicators own credentials, and email is deferred.** Login ids and passwords are issued and
     reset by an adjudicator (`C9`, `C1`). `D1` and `D2` are out of scope unless time remains.
-
 13. **The adjudicator has final authority over project data.** They may edit or delete any
     annotation, remove files entirely, and add files to an existing split - recorded, so provenance
     still explains every item. This overrides the annotator-side locks in `B6`.
@@ -329,6 +331,7 @@ These cut across both surfaces and are where the two tracks can accidentally con
 15. **An incomplete export is still a valid export.** A dataset may be exported before it is
     complete, and the result must parse as a proper file of its format. Unresolved items are absent
     or explicitly marked, never given a wrong label.
+
 ---
 
 ## 4. Screen map

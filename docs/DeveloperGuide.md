@@ -110,7 +110,7 @@ package.
   concurrent writers there, so `arbiter.workspace` takes an advisory lock. The failure is explicit
   rather than silent corruption.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format. Only
-  `ExportService` knows about COCO, YOLO, Pascal VOC, CSV and JSON.
+  `ExportService` knows about CSV, JSON and COCO.
 
 ### Design decisions and their costs
 

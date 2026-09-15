@@ -88,5 +88,5 @@ able to construct them without a database.
 - `AnnotationService`: autosave, submit, flags, and the annotator-facing read path (rule 1).
 - `ResolutionService`: majority, ties and disputes; idempotent.
 - `EarningsService`: derived earnings, released versus pending.
-- `ExportService`: the only code that knows about COCO, YOLO, Pascal VOC, CSV and JSON. Annotators
-  persist canonical annotations and never choose a format.
+- `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical
+  annotations and never choose a format.

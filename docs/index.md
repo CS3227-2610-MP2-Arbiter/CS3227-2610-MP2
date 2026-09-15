@@ -18,8 +18,8 @@ Arbiter is an offline Java desktop app for teams that label data.
 
 An adjudicator imports a corpus and splits it into batches. Each split goes to several annotators, so
 every item collects several independent annotations. Where they agree, Arbiter resolves the item
-automatically; where they disagree, an adjudicator decides. The result exports as COCO, YOLO, Pascal
-VOC, CSV or JSON, with a provenance record explaining every decision.
+automatically; where they disagree, an adjudicator decides. The result exports as CSV, JSON or COCO,
+with a provenance record explaining every decision.
 
 See [User Flows](UserFlows.md) for the full step-by-step walkthrough.
 
