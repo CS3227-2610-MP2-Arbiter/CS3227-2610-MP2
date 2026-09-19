@@ -25,3 +25,73 @@ jobs:
 
       - name: Build, test, and check style with Gradle
         run: ./gradlew check shadowJar
+
+  # The build job above uses a JDK with JavaFX bundled in, so the JDK's own modules win over the
+  # jar's and its natives are never exercised. This job runs the release jar the way a marker would:
+  # a plain JDK on an Apple Silicon Mac, with nothing but the jar to supply JavaFX.
+  apple-silicon-jar:
+    name: Release jar on Apple Silicon
+    runs-on: macos-latest
+
+    steps:
+      - name: Setup repository
+        uses: actions/checkout@v6
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Setup JDK 25 without JavaFX
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Build the release jar
+        run: ./gradlew shadowJar
+
+      - name: Check the bundled JavaFX natives are arm64
+        run: |
+          set -euo pipefail
+          if [ "$(uname -m)" != "arm64" ]; then
+            echo "::error::Runner is $(uname -m), not arm64; this check would pass vacuously"
+            exit 1
+          fi
+          natives="$(mktemp -d)"
+          unzip -q -j build/libs/arbiter.jar '*.dylib' -d "$natives" || true
+          count=0
+          for lib in "$natives"/*.dylib; do
+            [ -e "$lib" ] || continue
+            archs="$(lipo -archs "$lib")"
+            echo "$(basename "$lib"): $archs"
+            case " $archs " in
+              *" arm64 "*) ;;
+              *) echo "::error::$(basename "$lib") is $archs, not arm64"; exit 1 ;;
+            esac
+            count=$((count + 1))
+          done
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No JavaFX natives found in the jar"
+            exit 1
+          fi
+          echo "$count macOS natives, all arm64"
+
+      - name: Smoke-launch the release jar
+        run: |
+          set -uo pipefail
+          java -jar build/libs/arbiter.jar > launch.log 2>&1 &
+          app=$!
+          sleep 25
+          if ! kill -0 "$app" 2>/dev/null; then
+            wait "$app" || true
+            echo "::error::The app exited instead of staying open"
+            cat launch.log
+            exit 1
+          fi
+          kill "$app"
+          if grep -qiE 'UnsatisfiedLinkError|incompatible architecture' launch.log; then
+            echo "::error::JavaFX failed to load its native libraries"
+            cat launch.log
+            exit 1
+          fi
+          echo "The app stayed open with no native library failures"
+          cat launch.log
