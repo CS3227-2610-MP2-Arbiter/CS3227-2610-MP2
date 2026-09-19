@@ -21,8 +21,9 @@ CI fails if that stops being true.
 2. **`.github/workflows/gradle.yml`** - add an `apple-silicon-jar` job on `macos-latest` using a
    plain Temurin JDK 25 (deliberately not `jdk+fx`) that builds `shadowJar`, asserts the bundled
    `.dylib` files are arm64, and smoke-launches the jar.
-3. **`docs/DeveloperGuide.md`** - state the supported platform and JDK combinations under
-   "Setting up", and mention the new job in the CI paragraph.
+3. **`docs/DeveloperGuide.md`** - mention the new job in the CI paragraph. A "Supported platforms"
+   section was written and then dropped at the human's request as unnecessary; the constraint is
+   recorded in the `build.gradle` comment and in issue #52.
 
 ## Design decision
 
@@ -45,7 +46,7 @@ Intel Macs on a plain JDK, which the prescribed JDK+FX distribution already cove
 | Window opens on Apple Silicon with a plain JDK 25 | New `apple-silicon-jar` CI job smoke-launches the jar |
 | macOS natives are arm64 | Same job asserts `lipo -archs` reports `arm64` for every bundled `.dylib` |
 | Windows and Linux x86_64 unaffected | Existing `build` matrix runs `./gradlew check shadowJar` |
-| Platform support boundary documented | Human review of the Developer Guide |
+| Intel Mac trade-off is recorded | `build.gradle` comment and issue #52 |
 
 No JUnit test is added. The change is build configuration, and a test that unzips
 `build/libs/arbiter.jar` would need `check` to depend on `shadowJar`, which inverts the task order CI

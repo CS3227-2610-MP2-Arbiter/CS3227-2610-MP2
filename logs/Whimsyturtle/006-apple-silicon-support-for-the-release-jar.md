@@ -11,13 +11,14 @@ Status: Awaiting human verification.
 - The agent proposed a universal jar that carries every architecture under `native/<os>-<arch>/` and points `java.library.path` at the matching set. The user chose the one-line classifier swap, macOS-arm64-only CI, and a new issue with a branch and PR.
 - The agent noted before implementing that the swap drops Intel Mac support on a plain JDK. The user had already accepted this in choosing the approach.
 - A green CI job proves nothing on its own, so the agent pushed a throwaway branch that reintroduced the `mac` classifier to confirm the check fails. The branch was deleted afterwards.
+- The user dropped the "Supported platforms" section the agent had added to the Developer Guide as unnecessary, and asked for shorter issue and pull request descriptions. Both were rewritten. The lesson is to keep supporting prose short by default rather than explaining the full reasoning in every artefact.
 
 ## Agent responses and outcomes
 
 - Root cause: `build.gradle` used the `mac` classifier, which is x86_64 only. Disassembling `NativeLibLoader` confirmed JavaFX resolves natives from the JDK's lib directory, then the classpath resource, then `java.library.path`, then `System.loadLibrary`. On a plain ARM JDK the classpath resource is the x86_64 dylib and fails.
 - `javafx-graphics-*-mac.jar` and `*-mac-aarch64.jar` store natives under identical paths, so a shaded jar can carry only one macOS architecture. Adding `mac-aarch64` alongside `mac` would leave one silently overwriting the other.
 - The existing CI matrix sets `java-package: jdk+fx`, so the JDK's own JavaFX modules win over the classpath and the jar's natives are never exercised. The matrix was structurally unable to detect the defect.
-- Changed the classifier to `mac-aarch64`, added an `apple-silicon-jar` CI job on a plain Temurin JDK 25, and recorded the supported platforms in the Developer Guide.
+- Changed the classifier to `mac-aarch64` and added an `apple-silicon-jar` CI job on a plain Temurin JDK 25. The Developer Guide notes the new job in its CI paragraph.
 - Issue [#52](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/52), branch `build/apple-silicon-native-support`, plan `plans/apple-silicon-native-support.md` (first file under `plans/`), PR [#53](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/pull/53).
 
 ## Verification
