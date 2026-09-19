@@ -1,6 +1,6 @@
 # Apple Silicon support for the release jar
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -25,4 +25,3 @@ Status: Awaiting human verification.
 - The bundled macOS natives are now arm64, and the Windows and Linux natives are unchanged.
 - CI passed, including the new job, which ran the jar on an Apple Silicon runner with no native library errors.
 - Restoring the old classifier on a throwaway branch made the new job fail, confirming that it catches the problem.
-- Not verified on physical hardware.
