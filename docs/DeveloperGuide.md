@@ -18,18 +18,6 @@ On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
 The `review` skill runs `./gradlew check shadowJar` together, which is what CI does.
 
-### Supported platforms
-
-`arbiter.jar` carries JavaFX and its native libraries for Windows x86\_64, Linux x86\_64 and macOS
-arm64, so it runs on those on any JDK 25. On an Intel Mac it needs the prescribed
-[Azul Zulu JDK+FX](https://www.azul.com/downloads/?package=jdk-fx) distribution, whose own JavaFX
-modules take precedence over the jar's.
-
-Only one macOS architecture can be shipped. Both macOS builds of JavaFX store their natives under
-the same paths in the jar, so the shaded jar can hold one or the other, and arm64 is the one markers
-and users are on. Intel Macs keep working through the prescribed distribution, which is what the
-course requires.
-
 ## Design
 
 Arbiter runs locally. There is no server, no network and no accounts department: one SQLite file

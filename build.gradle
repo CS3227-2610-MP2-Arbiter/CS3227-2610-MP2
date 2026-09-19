@@ -26,7 +26,7 @@ dependencies {
 
     // The macOS natives are arm64: 'mac' resolves the x86_64 build, which cannot load on Apple
     // Silicon. Only one macOS architecture can be shaded in, because both store their natives
-    // under the same paths in the jar. See docs/DeveloperGuide.md#setting-up.
+    // under the same paths in the jar.
     ['base', 'controls', 'fxml', 'graphics'].each { module ->
         ['win', 'mac-aarch64', 'linux'].each { platform ->
             implementation "org.openjfx:javafx-${module}:${javaFxVersion}:${platform}"
