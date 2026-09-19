@@ -4,18 +4,14 @@ title: User Guide
 
 # User Guide
 
-Arbiter has [two roles](index.md#the-two-roles), and you see a different interface depending on
-which one you have.
+Arbiter has [two roles](index.md#the-two-roles), and you see a different interface depending on which one you have.
 
-- **Annotators:** see
-  [section 1 of the user flows](UserFlows.md#1-annotator-flow-owner-zheng-jj).
-- **Adjudicators:** see
-  [section 2 of the user flows](UserFlows.md#2-adjudicator-flow-owner-whimsyturtle).
+- **Annotators:** see [section 1 of the user flows](UserFlows.md#1-annotator-flow-owner-zheng-jj).
+- **Adjudicators:** see [section 2 of the user flows](UserFlows.md#2-adjudicator-flow-owner-whimsyturtle).
 
 ## Getting started
 
-1. Launch Arbiter. On first run the workspace wizard asks you to choose a folder where your database,
-   imported media and exports will live.
+1. Launch Arbiter. On first run the workspace wizard asks you to choose a folder where your database, imported media and exports will live.
 2. Create the first account. **The first account created is the adjudicator.**
 3. Log in. Annotators see their assigned splits; adjudicators see their projects.
 
