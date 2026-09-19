@@ -160,10 +160,9 @@ on `main` otherwise and keep the shared packages (`model`, `data`, `service`) ag
 feature code starts, since that is where conflicts would come from.
 
 **CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and
-pull request, since the deliverable is a desktop jar that must launch on all three. That matrix uses a
-JDK with JavaFX bundled in, which hides whether the jar's own natives work, so a second job builds the
-jar on an Apple Silicon runner with a plain JDK, checks every bundled `.dylib` is arm64, and launches
-it. A separate workflow publishes the `docs/` folder to GitHub Pages.
+pull request, since the deliverable is a desktop jar that must launch on all three. A second job
+catches the release jar failing to start on Apple Silicon. A separate workflow publishes the `docs/`
+folder to GitHub Pages.
 
 **Definition of done.** Behaviour implemented and reachable from the UI, `./gradlew check` passing
 (JUnit and Checkstyle), new logic unit-tested, database-touching code tested against the temp-DB
