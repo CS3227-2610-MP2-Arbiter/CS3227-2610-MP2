@@ -6,8 +6,8 @@ title: User Guide
 
 Arbiter has [two roles](index.md#the-two-roles), and you see a different interface depending on which one you have.
 
-- **Annotators:** see [section 1 of the user flows](UserFlows.md#1-annotator-flow-owner-zheng-jj).
-- **Adjudicators:** see [section 2 of the user flows](UserFlows.md#2-adjudicator-flow-owner-whimsyturtle).
+- **Annotators:** work assigned splits in a [blind queue](UserFlows.md#1-the-annotator-flow).
+- **Adjudicators:** set projects up, resolve disagreements and [export datasets](UserFlows.md#2-the-adjudicator-flow).
 
 ## Getting started
 
@@ -17,17 +17,32 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 
 ## Quick reference
 
-| I want to... | Role | See |
+The behaviour behind each task is specified in [User Flows](UserFlows.md); the issue that implements it is linked below.
+
+| I want to... | Role | Issue |
 | --- | --- | --- |
-| Label items | Annotator | [1.2 The blind queue](UserFlows.md#12-the-blind-queue-b2) |
-| Report a bad image | Annotator | [1.5 Flagging bad source material](UserFlows.md#15-flagging-bad-source-material-b5) |
-| See what I have earned | Annotator | [1.7 Progress and earnings](UserFlows.md#17-progress-earnings-income-statement-b7-b10) |
-| Import a corpus | Adjudicator | [2.2 Import the corpus](UserFlows.md#22-import-the-corpus-c3) |
-| Define or delete labels | Adjudicator | [2.3 Define and evolve the taxonomy](UserFlows.md#23-define-and-evolve-the-taxonomy-c4) |
-| Assign annotators | Adjudicator | [2.7 Manage accounts and assign](UserFlows.md#27-manage-accounts-and-assign-c9-c10) |
-| Resolve disagreements | Adjudicator | [2.8 Monitor and resolve](UserFlows.md#28-monitor-and-resolve-c11-c14-c5) |
-| Export the dataset | Adjudicator | [2.10 Export](UserFlows.md#210-export-c15) |
+| Label items | Annotator | [#13], [#14], [#15] |
+| Report a bad image | Annotator | [#16] |
+| See what I have earned | Annotator | [#20], [#21] |
+| Import a corpus | Adjudicator | [#25] |
+| Define or delete labels | Adjudicator | [#26] |
+| Assign annotators | Adjudicator | [#32] |
+| Resolve disagreements | Adjudicator | [#27], [#34] |
+| Export the dataset | Adjudicator | [#37] |
 
 Step-by-step instructions for each screen will be added as features are released.
 
 [Back to home](index.md)
+
+[#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
+[#14]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/14
+[#15]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/15
+[#16]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/16
+[#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
+[#21]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/21
+[#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
+[#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
+[#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
+[#32]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/32
+[#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
+[#37]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/37
