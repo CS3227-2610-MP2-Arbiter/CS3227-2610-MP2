@@ -18,18 +18,6 @@ On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
 The `review` skill runs `./gradlew check shadowJar` together, which is what CI does.
 
-### Supported platforms
-
-`arbiter.jar` carries JavaFX and its native libraries for Windows x86\_64, Linux x86\_64 and macOS
-arm64, so it runs on those on any JDK 25. On an Intel Mac it needs the prescribed
-[Azul Zulu JDK+FX](https://www.azul.com/downloads/?package=jdk-fx) distribution, whose own JavaFX
-modules take precedence over the jar's.
-
-Only one macOS architecture can be shipped. Both macOS builds of JavaFX store their natives under
-the same paths in the jar, so the shaded jar can hold one or the other, and arm64 is the one markers
-and users are on. Intel Macs keep working through the prescribed distribution, which is what the
-course requires.
-
 ## Design
 
 Arbiter runs locally. There is no server, no network and no accounts department: one SQLite file
@@ -172,10 +160,9 @@ on `main` otherwise and keep the shared packages (`model`, `data`, `service`) ag
 feature code starts, since that is where conflicts would come from.
 
 **CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and
-pull request, since the deliverable is a desktop jar that must launch on all three. That matrix uses a
-JDK with JavaFX bundled in, which hides whether the jar's own natives work, so a second job builds the
-jar on an Apple Silicon runner with a plain JDK, checks every bundled `.dylib` is arm64, and launches
-it. A separate workflow publishes the `docs/` folder to GitHub Pages.
+pull request, since the deliverable is a desktop jar that must launch on all three. A second job
+catches the release jar failing to start on Apple Silicon. A separate workflow publishes the `docs/`
+folder to GitHub Pages.
 
 **Definition of done.** Behaviour implemented and reachable from the UI, `./gradlew check` passing
 (JUnit and Checkstyle), new logic unit-tested, database-touching code tested against the temp-DB

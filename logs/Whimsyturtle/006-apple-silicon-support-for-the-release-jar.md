@@ -1,30 +1,27 @@
 # Apple Silicon support for the release jar
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
-- The user asked for Apple Silicon support even though MP2 does not prescribe it, and for a CI check if possible. The motivation was an MP1 peer review reporting that the GUI did not open on an M3 Mac, and a grader noting that the release file and `build.gradle` had to be modified for grading.
+- The user asked for Apple Silicon support and a CI check for it, after an MP1 peer review reported that the GUI did not open on an M3 Mac.
 
 ## Follow-ups, corrections, and reflection
 
-- The agent proposed a universal jar that carries every architecture under `native/<os>-<arch>/` and points `java.library.path` at the matching set. The user chose the one-line classifier swap, macOS-arm64-only CI, and a new issue with a branch and PR.
-- The agent noted before implementing that the swap drops Intel Mac support on a plain JDK. The user had already accepted this in choosing the approach.
-- A green CI job proves nothing on its own, so the agent pushed a throwaway branch that reintroduced the `mac` classifier to confirm the check fails. The branch was deleted afterwards.
+- The agent proposed a universal jar carrying every architecture. The user chose the one-line classifier swap and a macOS-arm64-only CI job.
+- The user dropped the "Supported platforms" section the agent had added to the Developer Guide, and asked for shorter issue, pull request and log text. The lesson is to keep supporting prose short and high level by default.
+- A teammate merged PR #53 before the agent had finished, so the remaining edits went into PR #54.
 
 ## Agent responses and outcomes
 
-- Root cause: `build.gradle` used the `mac` classifier, which is x86_64 only. Disassembling `NativeLibLoader` confirmed JavaFX resolves natives from the JDK's lib directory, then the classpath resource, then `java.library.path`, then `System.loadLibrary`. On a plain ARM JDK the classpath resource is the x86_64 dylib and fails.
-- `javafx-graphics-*-mac.jar` and `*-mac-aarch64.jar` store natives under identical paths, so a shaded jar can carry only one macOS architecture. Adding `mac-aarch64` alongside `mac` would leave one silently overwriting the other.
-- The existing CI matrix sets `java-package: jdk+fx`, so the JDK's own JavaFX modules win over the classpath and the jar's natives are never exercised. The matrix was structurally unable to detect the defect.
-- Changed the classifier to `mac-aarch64`, added an `apple-silicon-jar` CI job on a plain Temurin JDK 25, and recorded the supported platforms in the Developer Guide.
-- Issue [#52](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/52), branch `build/apple-silicon-native-support`, plan `plans/apple-silicon-native-support.md` (first file under `plans/`), PR [#53](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/pull/53).
+- `build.gradle` used the `mac` JavaFX classifier, which is x86_64 only, so the jar could not load its native libraries on Apple Silicon. Changed it to `mac-aarch64`.
+- Only one macOS architecture can be shipped, because both store their natives under the same paths in the jar.
+- CI used a JDK with JavaFX bundled in, which hid the problem. Added a job that runs the jar on Apple Silicon with a plain JDK.
+- Issue [#52](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/52), pull requests [#53](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/pull/53) and [#54](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/pull/54).
 
 ## Verification
 
-- `./gradlew check shadowJar` on Windows with Temurin 25.0.4.1: BUILD SUCCESSFUL. `test` and `checkstyleTest` reported `NO-SOURCE`; the repository has no tests yet, which is pre-existing.
-- Mach-O `cputype` of the bundled `libglass.dylib` moved from `0x01000007` (x86_64) to `0x0100000C` (arm64). All eight bundled `.dylib` files are arm64; the 54 Windows `.dll` and 10 Linux `.so` natives are unchanged.
-- CI run 35448155925 passed on all four jobs. The new job ran on `macos-26-arm64` with a plain arm64 Temurin JDK, `lipo -archs` reported `arm64` for every dylib, and the jar stayed open for 25 seconds with no native library errors.
-- Regression check: run 35448277756 with the `mac` classifier restored failed with `libdecora_sse.dylib is x86_64, not arm64`, while all three `jdk+fx` matrix jobs passed. This confirms both that the new job catches the defect and that the old matrix could not.
-- No JUnit test was added. The change is build configuration, and a test reading `build/libs/arbiter.jar` would need `check` to depend on `shadowJar`.
-- Not verified: behaviour on a physical Apple Silicon Mac, and Intel Mac behaviour under the prescribed Zulu JDK+FX.
+- `./gradlew check shadowJar` passed on Windows. The repository has no tests yet, so `test` reported `NO-SOURCE`.
+- The bundled macOS natives are now arm64, and the Windows and Linux natives are unchanged.
+- CI passed, including the new job, which ran the jar on an Apple Silicon runner with no native library errors.
+- Restoring the old classifier on a throwaway branch made the new job fail, confirming that it catches the problem.
