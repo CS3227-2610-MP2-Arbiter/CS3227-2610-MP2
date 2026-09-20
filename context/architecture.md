@@ -74,6 +74,7 @@ Two rules keep the model honest:
 
 - **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value, and their setters clear the other, so the two can never both be set.
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only.
+- **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
 
 ## Services
 
