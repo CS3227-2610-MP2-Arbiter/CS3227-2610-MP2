@@ -16,6 +16,10 @@ public interface LabelRepository {
     /** Returns a project's labels in sequence order. */
     List<Label> listByProject(long projectId);
 
-    /** Removes a label and the annotations that used it. */
+    /**
+     * Removes a label and every annotation that used it, in one transaction, returning those
+     * items to unannotated. Labels are the one exception to the soft-delete rule (rule 5): a
+     * deleted label is genuinely gone rather than retired.
+     */
     void deleteById(long id);
 }

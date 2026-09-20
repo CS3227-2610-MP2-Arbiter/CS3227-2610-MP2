@@ -66,7 +66,7 @@ They are grouped into subpackages by area, mirroring the repository interfaces i
 | Subpackage | Classes | Enums |
 | --- | --- | --- |
 | `arbiter.model.user` | `User` | `Role`, `AccountStatus` |
-| `arbiter.model.project` | `Project`, `TaxonomySettings`, `Label`, `Item`, `Split`, `Assignment` | `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus` |
+| `arbiter.model.project` | `Project`, `TaxonomySettings`, `Label`, `Item`, `Split`, `SplitItem`, `Assignment` | `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus`, `SplitStrategy` |
 | `arbiter.model.annotation` | `Annotation`, `BoundingBox`, `Flag` | `FlagReason` |
 | `arbiter.model.resolution` | `Resolution` | `ResolutionMethod` |
 
@@ -75,8 +75,11 @@ Two rules keep the model honest:
 - **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value, and their setters clear the other, so the two can never both be set.
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity.
 - **An annotator's scale answer is an `Integer`.** They pick a whole number; only the value agreed at resolution may be an average, which is why `Resolution.scaleValue` is a `Double` and `Annotation.scaleValue` is not.
+- **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items, so the adjudicator can add an item to an assigned split or withdraw one (rule 13) without rewriting either side.
+- ***k* and the seed live on `Split`, not `Assignment`.** Both describe the work rather than one annotator's link to it: every annotator on the split sees the same items, and rule 7 needs the seed kept so a split can be reproduced.
+- **`Label` has no soft-delete flag.** Rule 5 makes labels the one exception: deleting a label removes it and its annotations outright, so a retired state would contradict the rule.
 - **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
-- **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Assignment.annotationsPerItem` stays null until an assignment is created.
+- **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Split.annotationsPerItem` stays null until a split is cut and assigned.
 
 ## Services
 

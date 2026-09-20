@@ -20,9 +20,6 @@ public class Label {
     /** Position in the label set, so order is stable. */
     private Integer sequence;
 
-    /** False once the label has been deleted. */
-    private boolean active;
-
     /** Creates an empty Label. */
     public Label() {
     }
@@ -75,11 +72,4 @@ public class Label {
         this.sequence = sequence;
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
 }

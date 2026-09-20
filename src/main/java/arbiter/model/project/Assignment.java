@@ -5,8 +5,8 @@ import java.time.Instant;
 /**
  * The link between one split and one annotator.
  *
- * <p>A model class holds data only. Defaults and the rules about when a value may change - such
- * as a split locking once assigned - live in {@code arbiter.service}.
+ * <p>A model class holds data only. Defaults and the rules about when a value may change live in
+ * {@code arbiter.service}.
  */
 public class Assignment {
     /** Database identifier. */
@@ -17,13 +17,6 @@ public class Assignment {
 
     /** Annotator working it. */
     private Long annotatorId;
-
-    /**
-     * How many annotators see each item. The default of 2 is applied by {@code AssignmentService}
-     * when an assignment is created, not here: this is a data holder, so it stores whatever k the
-     * adjudicator chose rather than deciding it. Null means no value has been set yet.
-     */
-    private Integer annotationsPerItem;
 
     /** Where the assignment has got to. */
     private AssignmentStatus status;
@@ -57,14 +50,6 @@ public class Assignment {
 
     public void setAnnotatorId(Long annotatorId) {
         this.annotatorId = annotatorId;
-    }
-
-    public Integer getAnnotationsPerItem() {
-        return annotationsPerItem;
-    }
-
-    public void setAnnotationsPerItem(Integer annotationsPerItem) {
-        this.annotationsPerItem = annotationsPerItem;
     }
 
     public AssignmentStatus getStatus() {

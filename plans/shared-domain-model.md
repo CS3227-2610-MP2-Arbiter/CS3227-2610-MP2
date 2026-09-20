@@ -22,7 +22,7 @@ Commit the model classes, enums and repository interfaces that both feature trac
 
 The three the issue asks for, plus four that came up while drafting.
 
-1. ***k* is per assignment, defaulting to 2.** `Assignment.annotationsPerItem`. Per assignment rather than per project, because rule 14 already locks a split once assigned and `C10` sets *k* at assignment time.
+1. ***k* defaults to 2, and lives on `Split`.** Revised after review: it was first put on `Assignment`, but *k* describes the work rather than one annotator's link to it, and every annotator on a split sees the same items. The reviewer was right to move it.
 2. **`BoundingBox` gets its own table**, not an inline blob on `Annotation`. `C14` needs per-box provenance, `C15` writes per-box records, and the `B4` box list needs a stable order, so boxes carry an explicit `sequence`.
 3. **A `SCALE` answer is stored as an `int` value.** `Annotation.scaleValue`, with `scaleMin` and `scaleMax` on the project. Arithmetic mean is then just an average over integers.
 4. **`Flag` gets its own table** rather than three nullable columns on `Annotation`. `C13` lists flagged items filterable by reason, and `C14` shows flag history, which are both natural queries against a flag table.
@@ -57,6 +57,14 @@ Whimsyturtle requested changes on the first revision. The decisions below are hi
 - **Repository naming.** Methods returning a collection are `list*`; `findAll()` became `listAll()`, and the same rule applied to every other collection-returning method.
 - **`countByRole` was a real bug.** It counted disabled accounts, so the last-adjudicator guard did not hold: two adjudicators could disable each other out of the workspace. It is now `countActiveByRole`, and the comment says why.
 - **`Item.path`** documents that the missing-source-file case belongs to media resolution.
+
+### Second review round
+
+- **`Split` gained `SplitItem`, `SplitStrategy` and `seed`.** The reviewer spotted that a split had no way to record which items it held. Membership is now its own record so items can be moved or withdrawn without rewriting the split, and the seed is stored because rule 7 requires a seeded split to be reproducible.
+- **`Label.active` was removed.** It made a new label look deleted, and it also contradicted rule 5, which makes labels the one thing that is genuinely deleted rather than retired.
+- ***k* moved from `Assignment` to `Split`**, as above.
+- **`TaxonomySettings` gained `id` and `projectId`**, without which ORMLite could not persist it at all.
+- **`countSubmittedByAnnotator`'s comment was wrong**, in the same way as `countByRole`: earnings are not derived from that count.
 
 ## Verification
 

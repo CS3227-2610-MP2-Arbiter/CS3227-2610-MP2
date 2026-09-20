@@ -2,7 +2,12 @@ package arbiter.model.project;
 
 import java.time.Instant;
 
-/** A batch of items cut from the corpus, which is what gets assigned. */
+/**
+ * A batch of items cut from the corpus, which is what gets assigned.
+ *
+ * <p>A split names a set of items rather than copying them: {@code SplitItem} joins this to the
+ * items, so an item can be moved or removed without rewriting the split.
+ */
 public class Split {
     /** Database identifier. */
     private Long id;
@@ -12,6 +17,22 @@ public class Split {
 
     /** Split name. */
     private String name;
+
+    /**
+     * How many annotators see each item, defaulting to 2. This is a property of the work rather than
+     * of one annotator's link to it: every annotator on the split sees the same items, so *k* belongs
+     * here, not on the assignment.
+     */
+    private Integer annotationsPerItem;
+
+    /** Allocation strategy the split was cut with, null when it was cut by hand. */
+    private SplitStrategy strategy;
+
+    /**
+     * Seed the allocation used, null when none was given. Rule 7 requires a seeded split to be
+     * reproducible, so the seed is stored rather than asked for again.
+     */
+    private Long seed;
 
     /** Amount paid for each item, fixed once the split is assigned. */
     private Double itemReward;
@@ -40,6 +61,30 @@ public class Split {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public Integer getAnnotationsPerItem() {
+        return annotationsPerItem;
+    }
+
+    public void setAnnotationsPerItem(Integer annotationsPerItem) {
+        this.annotationsPerItem = annotationsPerItem;
+    }
+
+    public SplitStrategy getStrategy() {
+        return strategy;
+    }
+
+    public void setStrategy(SplitStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public Long getSeed() {
+        return seed;
+    }
+
+    public void setSeed(Long seed) {
+        this.seed = seed;
     }
 
     public String getName() {
