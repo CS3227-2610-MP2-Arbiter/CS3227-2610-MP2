@@ -5,7 +5,10 @@ package arbiter.model.project;
  *
  * <p>This is its own entity rather than a value object embedded in {@code Project}, because ORMLite
  * has no equivalent of JPA's {@code @Embedded}: it can only persist a type that has its own identity.
- * The scale bounds therefore live in their own row, tied back by {@code projectId}.
+ *
+ * <p>{@code projectId} is the only link between the two, in the same direction as {@code Label},
+ * {@code Item} and {@code Split}. {@code Project} deliberately holds no reference back, so the
+ * relationship cannot be recorded twice and disagree with itself.
  */
 public class TaxonomySettings {
     /** Database identifier. */

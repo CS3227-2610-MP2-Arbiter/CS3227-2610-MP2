@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import arbiter.model.project.Assignment;
+import arbiter.model.project.AssignmentStatus;
 
 /** Stores the link between one split and one annotator. */
 public interface AssignmentRepository {
@@ -18,6 +19,9 @@ public interface AssignmentRepository {
 
     /** Returns everyone assigned to a split. */
     List<Assignment> listBySplit(long splitId);
+
+    /** Returns assignments with the given status, such as the ones an adjudicator returned. */
+    List<Assignment> listByStatus(AssignmentStatus status);
 
     /** Removes an assignment that has no submitted work. */
     void deleteById(long id);

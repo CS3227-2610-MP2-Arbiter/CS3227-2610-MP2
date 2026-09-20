@@ -79,8 +79,12 @@ public class Annotation {
         this.annotatorId = annotatorId;
     }
 
+    /**
+     * Returns the chosen label, or null when this is a scale answer. The read path enforces the same
+     * rule as the setters, for the reason given on {@code getScaleValue}.
+     */
     public Long getLabelId() {
-        return labelId;
+        return scaleValue != null ? null : labelId;
     }
 
     /** Sets the chosen label and clears any scale value, so only one answer shape is ever set. */
@@ -91,8 +95,15 @@ public class Annotation {
         }
     }
 
+    /**
+     * Returns the numeric answer, or null when this is a label answer.
+     *
+     * <p>The read path enforces the same rule as the setters. ORMLite sets fields reflectively, so a
+     * row loaded from the database never goes through {@code setLabelId} or {@code setScaleValue};
+     * without this, a row could come back with both set.
+     */
     public Integer getScaleValue() {
-        return scaleValue;
+        return labelId != null ? null : scaleValue;
     }
 
     /** Sets the numeric answer and clears any chosen label, so only one answer shape is ever set. */

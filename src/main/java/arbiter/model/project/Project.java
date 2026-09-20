@@ -31,9 +31,6 @@ public class Project {
     /** Format the finished dataset is written in. Fixed at creation. */
     private OutputFormat outputFormat;
 
-    /** The label set's shape and, for a scale, its range. */
-    private TaxonomySettings taxonomy;
-
     /** Whether an explanation is required with each label. */
     private boolean rationaleRequired;
 
@@ -93,14 +90,6 @@ public class Project {
 
     public void setOutputFormat(OutputFormat outputFormat) {
         this.outputFormat = outputFormat;
-    }
-
-    public TaxonomySettings getTaxonomy() {
-        return taxonomy;
-    }
-
-    public void setTaxonomy(TaxonomySettings taxonomy) {
-        this.taxonomy = taxonomy;
     }
 
     public boolean isRationaleRequired() {

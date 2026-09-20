@@ -54,8 +54,14 @@ public class Resolution {
         this.itemId = itemId;
     }
 
+    /**
+     * Returns the winning label, or null when this is a scale resolution.
+     *
+     * <p>The read path enforces the same rule as the setters: ORMLite sets fields reflectively, so a
+     * row loaded from the database bypasses them.
+     */
     public Long getLabelId() {
-        return labelId;
+        return scaleValue != null ? null : labelId;
     }
 
     /** Sets the winning label and clears any scale value, so only one answer shape is ever set. */
@@ -66,8 +72,9 @@ public class Resolution {
         }
     }
 
+    /** Returns the winning numeric answer, or null when this is a label resolution. */
     public Double getScaleValue() {
-        return scaleValue;
+        return labelId != null ? null : scaleValue;
     }
 
     /** Sets the winning numeric answer and clears any label, so only one answer shape is ever set. */

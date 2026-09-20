@@ -3,6 +3,7 @@ package arbiter.data.annotation;
 import java.util.List;
 
 import arbiter.model.annotation.Flag;
+import arbiter.model.annotation.FlagDisposition;
 
 /** Stores reports that an item's source material is unusable. */
 public interface FlagRepository {
@@ -17,4 +18,13 @@ public interface FlagRepository {
 
     /** Returns a project's flags, which the review screen lists. */
     List<Flag> listByProject(long projectId);
+
+    /**
+     * Returns a project's flags with the given disposition. The review screen lists PENDING ones,
+     * which is how the queue empties once every flag has been dealt with.
+     */
+    List<Flag> listByProjectAndDisposition(long projectId, FlagDisposition disposition);
+
+    /** Counts a project's flags still awaiting review. */
+    long countPendingByProject(long projectId);
 }

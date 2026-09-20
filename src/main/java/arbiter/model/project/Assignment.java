@@ -24,6 +24,15 @@ public class Assignment {
     /** When the assignment was made. */
     private Instant assignedAt;
 
+    /** When an adjudicator last returned it for rework, null if never returned. */
+    private Instant returnedAt;
+
+    /** Adjudicator who last returned it, null if never returned. */
+    private Long returnedByUserId;
+
+    /** Why it was returned, so the annotator knows what to fix. */
+    private String returnReason;
+
     /** Creates an empty Assignment. */
     public Assignment() {
     }
@@ -58,6 +67,30 @@ public class Assignment {
 
     public void setStatus(AssignmentStatus status) {
         this.status = status;
+    }
+
+    public Instant getReturnedAt() {
+        return returnedAt;
+    }
+
+    public void setReturnedAt(Instant returnedAt) {
+        this.returnedAt = returnedAt;
+    }
+
+    public Long getReturnedByUserId() {
+        return returnedByUserId;
+    }
+
+    public void setReturnedByUserId(Long returnedByUserId) {
+        this.returnedByUserId = returnedByUserId;
+    }
+
+    public String getReturnReason() {
+        return returnReason;
+    }
+
+    public void setReturnReason(String returnReason) {
+        this.returnReason = returnReason;
     }
 
     public Instant getAssignedAt() {
