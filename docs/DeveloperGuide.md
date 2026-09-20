@@ -43,15 +43,15 @@ arbiter.ui.annotator      arbiter.ui.adjudicator      <-- role screens
                 arbiter.workspace                    <-- paths, single-writer lock, asset resolution
 ```
 
-Dependencies point downward only, and neither role package imports the other - they meet in `arbiter.ui.shared` and `arbiter.service`. That rule does not exist to keep the roles independent; they are not. It exists so the shared code has one home and neither track can grow a private copy. Because `arbiter.ui.shared` is on both critical paths, `A0` (model and repository interfaces) and `A4` (UI kit and error handling) come before feature code.
+Dependencies point downward only, and neither role package imports the other - they meet in `arbiter.ui.shared` and `arbiter.service`. That rule does not exist to keep the roles independent; they are not. It exists so the shared code has one home and neither track can grow a private copy. Because `arbiter.ui.shared` is on both critical paths, [#4] (model and repository interfaces) and [#8] (UI kit and error handling) come before feature code.
 
 ### The two roles share one workflow
 
 The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, a rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
 
-- **Manual resolution** (`C12`) shows competing annotations side by side with the item, rationale and boxes, so the adjudicator screen must render an annotation exactly as the annotator made it.
-- **Box geometry** (`B4`) is hard: drawing, snapping, clamping, and coordinates that stay correct at any zoom level. Two implementations would drift.
-- **Adjudicators also annotate.** They supply their own label in `C12` and repair flagged items in `C13`, so they need the annotator's editing widgets.
+- **Manual resolution** ([#34]) shows competing annotations side by side with the item, rationale and boxes, so the adjudicator screen must render an annotation exactly as the annotator made it.
+- **Box geometry** ([#15]) is hard: drawing, snapping, clamping, and coordinates that stay correct at any zoom level. Two implementations would drift.
+- **Adjudicators also annotate.** They supply their own label in [#34] and repair flagged items in [#35], so they need the annotator's editing widgets.
 
 Building the roles as separate silos would duplicate the hardest UI code in the app, and a subtle disagreement between two coordinate transforms would hide there. So `AnnotationEditor`, `BoxCanvas` and `ItemView` live in `arbiter.ui.shared` and are used by both roles, with a role difference as a mode flag rather than a second implementation. Every rule about the data lives in `arbiter.service`, which both roles call, so no rule is implemented twice with two different answers.
 
@@ -60,7 +60,7 @@ Building the roles as separate silos would duplicate the hardest UI code in the 
 Annotators must never see another annotator's annotation, a resolved label or a per-item agreement stat. Keeping the role packages apart cannot guarantee that once they share components, because a shared `AnnotationEditor` can be handed any annotation. Blindness is enforced where it can be seen and tested instead:
 
 - **At the query boundary.** Annotator reads go through `AnnotationService`, which scopes every read to the session user. Resolved labels are never loaded on that path.
-- **By a test.** `A7` includes a test that fails if any annotator-facing code path can reach another annotator's annotation.
+- **By a test.** [#11] includes a test that fails if any annotator-facing code path can reach another annotator's annotation.
 
 This is stronger than package separation: it holds for code written later, by anyone, in any package.
 
@@ -88,7 +88,7 @@ This is stronger than package separation: it holds for code written later, by an
 
 The fifth and sixth rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
 
-The behaviour this implements is specified step by step in [User Flows](UserFlows.md), including the cross-cutting rules in section 3.
+The product context, the shape of both flows and the cross-cutting rules in section 3 are in [User Flows](UserFlows.md); the step-by-step behaviour is in the GitHub issues each step links to.
 
 ## Software engineering process
 
@@ -108,20 +108,20 @@ Two skills do not fit the linear flow. `log` records each task into `logs/<user>
 
 Each skill declares its input, steps and completion criteria, and states what it must not do: `create-pull-request` commits, pushes and publishes only with authorization, and `review` never weakens a test to make it pass.
 
-**Branching.** `write-plan` reuses or creates a descriptively named branch per task. Both of us work on `main` otherwise and keep the shared packages (`model`, `data`, `service`) agreed in `A0` before feature code starts, since that is where conflicts would come from.
+**Branching.** `write-plan` reuses or creates a descriptively named branch per task. Both of us work on `main` otherwise and keep the shared packages (`model`, `data`, `service`) agreed in [#4] before feature code starts, since that is where conflicts would come from.
 
 **Markdown.** Never hard-wrap prose in `.md` files: write one sentence or bullet per line and let the viewer wrap it. The 120-character Checkstyle limit applies to Java only.
 
 **CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and pull request, since the deliverable is a desktop jar that must launch on all three. A second job catches the release jar failing to start on Apple Silicon. A separate workflow publishes the `docs/` folder to GitHub Pages.
 
-**Definition of done.** Behaviour implemented and reachable from the UI, `./gradlew check` passing (JUnit and Checkstyle), new logic unit-tested, database-touching code tested against the temp-DB harness, user-visible wording matching `docs/UserFlows.md`, and a PR reviewed by the other person.
+**Definition of done.** Behaviour implemented and reachable from the UI, `./gradlew check` passing (JUnit and Checkstyle), new logic unit-tested, database-touching code tested against the temp-DB harness, user-visible wording matching the shared rules in `docs/UserFlows.md`, and a PR reviewed by the other person.
 
 ## Testing
 
 | Level | Where | What |
 | --- | --- | --- |
 | Unit | `src/test/java` | Services and model logic, no database |
-| Repository | `src/test/java` | Temp SQLite file per test, seeded by `A7` fixtures |
+| Repository | `src/test/java` | Temp SQLite file per test, seeded by [#11] fixtures |
 | Blindness | `src/test/java` | Fails if annotator code can reach another annotator's work |
 | Shared component | `src/test/java` | Box geometry and editor modes, tested once where the component lives |
 | Acceptance | Manual | A human walks the agreed scenarios |
@@ -139,3 +139,10 @@ The blindness test exists because rule 1 (annotators never see each other's anno
 - The skill-and-workflow structure was developed by this team for this project; the per-task skills in `.codex/skills/` are our own.
 
 [Back to home](index.md)
+
+[#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
+[#8]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/8
+[#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
+[#15]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/15
+[#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
+[#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35

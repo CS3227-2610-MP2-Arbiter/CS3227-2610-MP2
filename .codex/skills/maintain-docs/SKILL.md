@@ -11,6 +11,7 @@ description: Update Arbiter guides, architecture context and product site conten
 2. Check descriptions against the implementation. Update role-specific instructions, setup, examples and limitations without presenting planned features as available.
 3. Keep each shared fact in one home:
    - `docs/index.md` for what Arbiter is and what each role does.
+   - `docs/Glossary.md` for the domain terms.
    - The Developer Guide's "Setting up" section for setup and build instructions.
    - The Developer Guide's "Design" section for the design and its rationale.
 
