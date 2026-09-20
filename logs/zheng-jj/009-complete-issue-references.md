@@ -23,6 +23,14 @@ Status: Awaiting human verification.
 - The glossary gained `Bounding box`, `Flag`, `Resolution` and `Workspace`, taking it from 8 terms to 12.
 - Section 4 is now prose grouped by track, so each issue is named with what it does rather than hidden inside a range.
 
+## Review follow-up
+
+- Whimsyturtle requested changes on the companion PR #58, and several comments are really spec decisions rather than code-style points. They are applied here, because this page is the shared context the issues hang off.
+- Removed from the documented behaviour: multi-select taxonomies, `.md` as a distinct source type, the `RETURNED` assignment status, gold-standard reservation, the `PENDING` account status, three flag reasons, plaintext email as a credential, and any notion of time spent per item.
+- The glossary gained a **Fixed value sets** section listing every enum and its values, which is what the reviewer asked for on `ResolutionMethod` and `FlagReason` and makes the remaining values discoverable in one place.
+- Rule 4 now says the output format locks at creation alongside task type and source type, which the reviewer questioned. Rule 6 describes exclusion as retiring the item rather than as a separate flag state, matching the removal of `Flag.excluded`.
+- `context/architecture.md` was edited to describe the new subpackages and then reverted: that file documents code structure, and the structure ships in #58, so describing it here would put the docs ahead of the code. It is being updated in #58 instead.
+
 ## Verification
 
 - 46 of 46 backlog issues referenced; the definition block matches the used set exactly, with nothing undefined and nothing unused.
