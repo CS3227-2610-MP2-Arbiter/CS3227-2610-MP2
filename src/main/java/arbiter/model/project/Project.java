@@ -22,13 +22,13 @@ public class Project {
     /** What the project is for. */
     private String description;
 
-    /** Classification or detection. Fixed at creation; see the class comment for why this is not final. */
+    /** Classification or detection. Fixed at creation. */
     private TaskType taskType;
 
-    /** Image or text. Fixed at creation; see the class comment for why this is not final. */
+    /** Image or text. Fixed at creation. */
     private SourceType sourceType;
 
-    /** Format the finished dataset is written in. Fixed at creation; see the class comment. */
+    /** Format the finished dataset is written in. Fixed at creation. */
     private OutputFormat outputFormat;
 
     /** The label set's shape and, for a scale, its range. */
