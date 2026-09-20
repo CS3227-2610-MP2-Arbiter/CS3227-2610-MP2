@@ -28,7 +28,7 @@ log in -> my splits -> open a split -> blind queue -> annotate one item -> next
 2. **Work the blind queue.** One item at a time, with no list view and no jumping to arbitrary indexes. Closing the app restores the exact position and any saved input, and an item can be skipped with a reason. [#13]
 3. **Annotate the item.** A classification item takes a label from the taxonomy - single-select, or a numeric scale - plus a rationale. A detection item takes labelled boxes drawn on the image. [#14], [#15]
 4. **Flag bad source material.** An unclear flag records why the item is unusable and surfaces it for the adjudicator, while the annotation is still saved. [#16]
-5. **Save and submit.** Every answer is written through immediately, so a power cut loses nothing. Submitting a split completes the annotator's side of it. [#17]
+5. **Save and submit.** Every answer is written through immediately, so a power cut loses nothing. Submitting a split completes the annotator's side of it, and an adjudicator may send it back for rework. [#17]
 6. **Track progress and earnings.** Per-split progress, lifetime totals, and earnings split into released and pending. Submitting does not pay: an adjudicator must mark the whole dataset complete. [#18], [#19], [#20], [#21]
 
 ## 2. The adjudicator flow
@@ -65,7 +65,7 @@ These cut across both surfaces and are where the two tracks can accidentally con
 10. **A dispute is a missing strict majority.** With *k* annotations, if no label holds a strict majority the item is a dispute, including a flat tie between two labels. Disputes go to [#34].
 11. **One shared SQLite file on a shared drive.** The team shares a single `arbiter.db` over a shared drive; there is no package exchange and no merge path. Arbiter takes a workspace lock so only one instance writes at a time ([#1]).
 12. **Adjudicators own credentials, and email is deferred.** Accounts are a username and a password, issued and reset by an adjudicator ([#31], [#23]). Email verification and email reset ([#39], [#40]) are out of scope unless time remains.
-13. **The adjudicator has final authority over project data.** They may edit or delete any annotation, remove files entirely, and add files to an existing split - recorded, so provenance still explains every item. This overrides the annotator-side locks in [#17].
+13. **The adjudicator has final authority over project data.** They may edit or delete any annotation, remove files entirely, add files to an existing split, and return a submitted split for rework - recorded, so provenance still explains every item. This overrides the annotator-side locks in [#17].
 14. **Rewards are fixed once a split is assigned.** Nothing about an assigned split changes but its status, because altering a rate after the work would change what someone already earned. [#28], [#32]
 15. **An incomplete export is still a valid export.** A dataset may be exported before it is complete, and the result must parse as a proper file of its format. Unresolved items are absent or explicitly marked, never given a wrong label. [#37]
 

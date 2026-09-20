@@ -78,6 +78,7 @@ Two rules keep the model honest:
 - **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items, so the adjudicator can add an item to an assigned split or withdraw one (rule 13) without rewriting either side.
 - ***k* and the seed live on `Split`, not `Assignment`.** Both describe the work rather than one annotator's link to it: every annotator on the split sees the same items, and rule 7 needs the seed kept so a split can be reproduced.
 - **`Label` has no soft-delete flag.** Rule 5 makes labels the one exception: deleting a label removes it and its annotations outright, so a retired state would contradict the rule.
+- **A submitted assignment can be returned.** `AssignmentStatus.RETURNED` exists because an adjudicator may send a split back for rework ([#12], [#17]); without it a corrected resubmission could not be told apart from the original.
 - **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
 - **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Split.annotationsPerItem` stays null until a split is cut and assigned.
 
