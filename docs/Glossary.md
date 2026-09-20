@@ -16,7 +16,7 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Assignment** | The link between one split and one annotator. One split can go to several annotators. An assignment is submitted by the annotator and may be returned by an adjudicator for rework. |
 | **Annotation** | One annotator's answer for one item: a label, a rationale, optional boxes. |
 | **Bounding box** | One labelled rectangle drawn on a detection item, in image coordinates. |
-| **Flag** | An annotator's report that an item's source material is unusable, with a reason and an optional comment. A reason is one of the values of `FlagReason`. |
+| **Flag** | An annotator's report that an item's source material is unusable, with a reason and an optional comment. A reason is one of the values of `FlagReason`, and an adjudicator later gives it a `FlagDisposition`. |
 | **Resolved label** | The final answer for an item after adjudication. |
 | **Resolution** | The record of how an item was settled: its resolved label, how it was reached, and who decided. How it was reached is one of the values of `ResolutionMethod`. An item with no strict majority stays a dispute until an adjudicator decides it. |
 | **Workspace** | The folder a team's data lives in: one `arbiter.db`, plus `media/`, `exports/` and `logs/`. |
@@ -38,6 +38,7 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED`, `RETURNED` | Where an assignment has got to. `RETURNED` means an adjudicator sent it back for rework. |
 | **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final label was reached, recorded for provenance. |
 | **Flag reason** | `CORRUPT_OR_UNREADABLE`, `WRONG_CONTENT`, `TOXIC_OR_SENSITIVE` | Why an annotator reported an item's source material as unusable. |
+| **Flag disposition** | `PENDING`, `EXCLUDED`, `REPAIRED`, `KEPT` | What an adjudicator decided about a flag. `PENDING` is the review queue; `EXCLUDED` retires the item, so it leaves the export and earnings. |
 | **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. Deactivation is a soft delete, so a disabled account's annotations remain history. |
 
 See [User Flows](UserFlows.md) for the shape of both flows and the rules that follow from these terms.
