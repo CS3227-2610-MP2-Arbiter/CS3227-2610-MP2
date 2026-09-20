@@ -24,11 +24,18 @@ Status: Awaiting human verification.
 - Replaced the backticked codes in `context/architecture.md` (18) and `docs/DeveloperGuide.md` (9) with links to the real issues.
 - Rewrote all 46 issues: codes became issue links, and each body was condensed from Summary, Context, Scope, Tasks, Acceptance criteria and Dependencies to Summary, Scope, Acceptance criteria and Dependencies. Total body text fell from about 96,000 to about 60,000 characters, a 37% reduction.
 
+## Review fixes
+
+- Whimsyturtle reviewed PR #56 and raised two points. Both are addressed in a follow-up commit on the same branch.
+- **Stale code style.** `context/architecture.md` still labelled two package owners `B*` and `C*`, and `docs/UserFlows.md` used the same style in its ownership sentence. He asked for a sweep rather than a spot fix, so the whole current documentation set was scanned for the pattern; those were the only two, and both now name the track or the owner in words. Historical `logs/` and `reflections/` were left alone, since they are a record of what was believed at the time.
+- **Vocabulary as a glossary.** The vocabulary table moved out of `docs/UserFlows.md` into a new `docs/Glossary.md`, which `docs/index.md`, `AGENTS.md` and the `maintain-docs` skill now point at. `docs/index.md` also lists it under Documentation. This gives the domain terms one home instead of burying them inside the flows page.
+
 ## Verification
 
 - Dependency graph: 0 mismatches of 46 against the original `Blocked by` and `Blocks` clauses.
 - All issues: 0 backticked codes, 0 bare codes, 0 links to non-existent issues, 0 self-references.
 - Rule citations in the rewritten issues (rules 9, 11, 12) all resolve to the intended rule in the new section 3.
-- Cross-document anchor check: 0 broken links across `docs/`, `README.md` and `context/`.
+- Cross-document anchor check: 0 broken links across `docs/`, `README.md`, `AGENTS.md` and `context/`, including the new glossary page.
+- After the review fixes: every reference-style issue link still resolves with no undefined or unused definitions, and no stale `B*`-style code remains in the current documentation.
 - `./gradlew check` was not run because the change is documentation-only and touches no Java source.
 - A human has not yet verified this summary.

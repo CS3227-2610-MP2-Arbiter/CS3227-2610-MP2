@@ -4,24 +4,7 @@ title: User Flows
 
 # Arbiter user flows
 
-Arbiter is an offline desktop app for teams labelling data. This page is the shared context for the project: the vocabulary, the shape of the two flows, and the rules both tracks must respect. It stays at the level of intent. Screen-by-screen behaviour lives in the GitHub issues, which each step links to.
-
-## Vocabulary
-
-Arbiter has [two roles](index.md#the-two-roles), annotator and adjudicator. Each term below uses only the terms above it.
-
-| Term | Meaning |
-| --- | --- |
-| **Project** | One labelling job, whose task type, source type and output format are fixed at creation. |
-| **Item** | One annotatable unit: one image, or one `.txt` or `.md` document. |
-| **Corpus** | The collection of items imported into a project. |
-| **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
-| **Split** | A batch of items cut from the corpus. |
-| **Assignment** | The link between one split and one annotator. One split can go to several annotators. |
-| **Annotation** | One annotator's answer for one item: a label, a rationale, optional boxes. |
-| **Resolved label** | The final answer for an item after adjudication. |
-
-**The key rule:** every item in a split is annotated independently by *k* annotators, and annotators never see each other's work. That is what makes "resolve by highest count" meaningful, and it is why the queue is blind. *k* defaults to 2 and is set per assignment.
+Arbiter is an offline desktop app for teams labelling data. This page is the shared context for the project: the shape of the two flows and the rules both tracks must respect. It stays at the level of intent. Screen-by-screen behaviour lives in the GitHub issues, which each step links to. The terms it uses are defined in the [Glossary](Glossary.md).
 
 ## Getting started
 
@@ -88,7 +71,7 @@ These cut across both surfaces and are where the two tracks can accidentally con
 
 ## 4. Where the work lives
 
-The v1.0.0 backlog is on GitHub under the [v1.0.0 milestone](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/milestone/7), and the flows above link to the issues that implement them. `B*` is zheng-jj, `C*` is Whimsyturtle, and the spikes, foundation and delivery issues are shared.
+The v1.0.0 backlog is on GitHub under the [v1.0.0 milestone](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/milestone/7), and the flows above link to the issues that implement them. zheng-jj owns the annotator track and Whimsyturtle the adjudicator track; the spikes, foundation and delivery issues are shared.
 
 | Area | Owner | Issues |
 | --- | --- | --- |

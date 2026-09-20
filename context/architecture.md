@@ -8,8 +8,8 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 | Layer | Package | Owns | Owner |
 | --- | --- | --- | --- |
-| 1 | `arbiter.ui.annotator` | The annotator screens, using the shared components. | zheng-jj (`B*`) |
-| 1 | `arbiter.ui.adjudicator` | The adjudicator screens, using the shared components. | Whimsyturtle (`C*`) |
+| 1 | `arbiter.ui.annotator` | The annotator screens, using the shared components. | zheng-jj (annotator track) |
+| 1 | `arbiter.ui.adjudicator` | The adjudicator screens, using the shared components. | Whimsyturtle (adjudicator track) |
 | 2 | `arbiter.ui.shared` | Shell, navigation, routing, UI kit, error handling, and the annotation components. | zheng-jj ([#5], [#8]) |
 | 3 | `arbiter.service` | All business rules: assignment, resolution, export, earnings, access scoping. | Shared ([#4]) |
 | 4 | `arbiter.data` | Repository interfaces. Signatures only, no SQL. | Shared ([#4]) |
