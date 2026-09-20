@@ -27,7 +27,7 @@ log in -> my splits -> open a split -> blind queue -> annotate one item -> next
 1. **Sign in and see my splits.** Each assignment shows its project, progress and status. Splits the annotator is not assigned to are absent, not greyed out. [#12]
 2. **Work the blind queue.** One item at a time, with no list view and no jumping to arbitrary indexes. Closing the app restores the exact position and any saved input, and an item can be skipped with a reason. [#13]
 3. **Annotate the item.** A classification item takes a label from the taxonomy - single-select, or a numeric scale - plus a rationale. A detection item takes labelled boxes drawn on the image. [#14], [#15]
-4. **Flag bad source material.** An unclear flag records why the item is unusable - corrupt, wrong content, or toxic - and surfaces it for the adjudicator, while the annotation is still saved. [#16]
+4. **Flag bad source material.** An unclear flag records why the item is unusable and surfaces it for the adjudicator, while the annotation is still saved. [#16]
 5. **Save and submit.** Every answer is written through immediately, so a power cut loses nothing. Submitting a split completes the annotator's side of it. [#17]
 6. **Track progress and earnings.** Per-split progress, lifetime totals, and earnings split into released and pending. Submitting does not pay: an adjudicator must mark the whole dataset complete. [#18], [#19], [#20], [#21]
 
@@ -47,7 +47,7 @@ create project -> import corpus -> define taxonomy -> split -> assign
 4. **Split the corpus and assign.** Cut splits by count, proportion or by hand, set a per-item reward, then assign annotators and set *k*. Rewards lock once a split is assigned. [#28], [#32], [#31]
 5. **Monitor progress.** A dashboard shows items, annotations, agreement and unresolved conflicts per project. [#33]
 6. **Resolve disagreements.** Where annotators agreed, the item resolves automatically; where they did not, the adjudicator decides, seeing the competing annotations without names attached. Flagged items are reviewed here too. [#27], [#34], [#35], [#36]
-7. **Complete and export.** Marking the dataset complete releases everyone's earnings and is permanent. Export writes CSV, JSON or COCO plus a provenance record explaining every decision. [#46], [#37]
+7. **Complete and export.** Marking the dataset complete releases everyone's earnings and is permanent. Export writes the dataset in the project's chosen format, plus a provenance record explaining every decision. [#46], [#37]
 
 ## 3. Rules both tracks share
 

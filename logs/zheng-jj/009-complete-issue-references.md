@@ -31,6 +31,8 @@ Status: Awaiting human verification.
 - Rule 4 now says the output format locks at creation alongside task type and source type, which the reviewer questioned. Rule 6 describes exclusion as retiring the item rather than as a separate flag state, matching the removal of `Flag.excluded`.
 - `context/architecture.md` was edited to describe the new subpackages and then reverted: that file documents code structure, and the structure ships in #58, so describing it here would put the docs ahead of the code. It is being updated in #58 instead.
 
+- A further comment asked for the flag subtypes to be removed from the annotator flow, since the glossary now owns them. The same pattern was found one step further on - the export step still enumerated CSV, JSON and COCO - so both were trimmed. Value sets now appear in exactly one place, the glossary's Fixed value sets table.
+
 ## Verification
 
 - 46 of 46 backlog issues referenced; the definition block matches the used set exactly, with nothing undefined and nothing unused.
