@@ -25,8 +25,11 @@ public class Annotation {
     /** Chosen label, for a taxonomy whose kind is SINGLE. */
     private Long labelId;
 
-    /** Numeric answer, for a taxonomy whose kind is SCALE. */
-    private Double scaleValue;
+    /**
+     * Numeric answer, for a taxonomy whose kind is SCALE. An annotator picks a whole number, so
+     * this is an int; only the value agreed at resolution may be an average.
+     */
+    private Integer scaleValue;
 
     /** The annotator's explanation. */
     private String rationale;
@@ -88,12 +91,12 @@ public class Annotation {
         }
     }
 
-    public Double getScaleValue() {
+    public Integer getScaleValue() {
         return scaleValue;
     }
 
     /** Sets the numeric answer and clears any chosen label, so only one answer shape is ever set. */
-    public void setScaleValue(Double scaleValue) {
+    public void setScaleValue(Integer scaleValue) {
         this.scaleValue = scaleValue;
         if (scaleValue != null) {
             this.labelId = null;

@@ -73,7 +73,8 @@ They are grouped into subpackages by area, mirroring the repository interfaces i
 Two rules keep the model honest:
 
 - **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value, and their setters clear the other, so the two can never both be set.
-- **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only.
+- **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity.
+- **An annotator's scale answer is an `Integer`.** They pick a whole number; only the value agreed at resolution may be an average, which is why `Resolution.scaleValue` is a `Double` and `Annotation.scaleValue` is not.
 - **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
 - **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Assignment.annotationsPerItem` stays null until an assignment is created.
 

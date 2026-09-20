@@ -1,7 +1,19 @@
 package arbiter.model.project;
 
-/** The settings a taxonomy needs, kept out of Project so a project is not a bag of optional numbers. */
+/**
+ * The settings a taxonomy needs, kept out of Project so a project is not a bag of optional numbers.
+ *
+ * <p>This is its own entity rather than a value object embedded in {@code Project}, because ORMLite
+ * has no equivalent of JPA's {@code @Embedded}: it can only persist a type that has its own identity.
+ * The scale bounds therefore live in their own row, tied back by {@code projectId}.
+ */
 public class TaxonomySettings {
+    /** Database identifier. */
+    private Long id;
+
+    /** Project these settings belong to. */
+    private Long projectId;
+
     /** Whether the label set is a pick-one list or a numeric scale. */
     private TaxonomyKind kind;
 
@@ -13,6 +25,22 @@ public class TaxonomySettings {
 
     /** Creates an empty TaxonomySettings. */
     public TaxonomySettings() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
     }
 
     public TaxonomyKind getKind() {

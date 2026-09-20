@@ -22,7 +22,12 @@ public interface AnnotationRepository {
     /** Returns every answer recorded under an assignment. */
     List<Annotation> listByAssignment(long assignmentId);
 
-    /** Counts an annotator's submitted answers, which is what progress and earnings are derived from. */
+    /**
+     * Counts an annotator's submitted answers. Progress is derived from this.
+     *
+     * <p>Earnings are not: they also exclude retired items and depend on the project being marked
+     * complete, so they are computed in {@code EarningsService} rather than from this count.
+     */
     long countSubmittedByAnnotator(long annotatorId);
 
     /** Removes an answer, which adjudicators may do to any answer. */
