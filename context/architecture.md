@@ -59,10 +59,21 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 ## Model
 
-Classes in `arbiter.model` carry ORM mapping annotations but no queries or UI logic, and tests must be able to construct them without a database.
+Model classes are plain value objects: no queries, no UI logic and no annotations. They are deliberately **not** annotated for the ORM, so the mapping is designed once in `arbiter.data.sqlite` alongside the schema rather than guessed at here. Tests must be able to construct them without a database.
 
-- Classes: `User`, `Project`, `Label`, `Item`, `Split`, `Assignment`, `Annotation`, `BoundingBox`, `Resolution`, `Flag`.
-- Enums: `Role`, `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus`, `ResolutionMethod`, `FlagReason`.
+They are grouped into subpackages by area, mirroring the repository interfaces in `arbiter.data`:
+
+| Subpackage | Classes | Enums |
+| --- | --- | --- |
+| `arbiter.model.user` | `User` | `Role`, `AccountStatus` |
+| `arbiter.model.project` | `Project`, `TaxonomySettings`, `Label`, `Item`, `Split`, `Assignment` | `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus` |
+| `arbiter.model.annotation` | `Annotation`, `BoundingBox`, `Flag` | `FlagReason` |
+| `arbiter.model.resolution` | `Resolution` | `ResolutionMethod` |
+
+Two rules keep the model honest:
+
+- **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value, and their setters clear the other, so the two can never both be set.
+- **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only.
 
 ## Services
 

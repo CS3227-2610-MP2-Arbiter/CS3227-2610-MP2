@@ -25,6 +25,16 @@ Status: Awaiting human verification.
 - Added `arbiter.data`: 10 repository interfaces with 47 method signatures in total.
 - Added no automated tests. The issue ships no behaviour, and [#11] owns the test harness and fixtures.
 
+## Review follow-up
+
+- Whimsyturtle requested changes with 26 inline comments and one structural request. All are applied in the same branch, which was rebased on the docs branch so the stack stays linear.
+- The structural request was to split both modules into submodules. `arbiter.model` and `arbiter.data` now each have `user`, `project`, `annotation` and `resolution`, mirroring each other.
+- Most comments were decisions rather than defects: eight enum constants and five fields were dropped, the scale bounds moved into a new `TaxonomySettings`, `Resolution.scaleValue` became a `Double`, and collection-returning repositories were renamed from `find*` to `list*`.
+- Two comments caught real problems. `Annotation` and `Resolution` could hold a label and a scale value at once with nothing preventing it; their setters now clear the other. And `countByRole` did not do what its comment claimed: it counted disabled accounts, so the last-adjudicator guard did not hold and two adjudicators could disable each other out of the workspace. It is now `countActiveByRole`.
+- The fixes ripple into the documentation, since several of them remove documented behaviour. Those edits were applied on the docs branch, which this branch is now stacked on, so the two cannot contradict each other.
+- Checkstyle caught two lines over 120 characters that the restructure introduced, both in javadoc, and both were wrapped.
+- Several Gradle runs failed with access errors on `build/` while writing class files and reports. This is the sandbox, not the code: each time the folder was cleared after checking it resolved inside the workspace, and the run then succeeded.
+
 ## Verification
 
 - `./gradlew check` passes: `compileJava` and `checkstyleMain` both succeed. `test` and `checkstyleTest` report `NO-SOURCE`, since there are no tests in this change.

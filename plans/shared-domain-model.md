@@ -43,6 +43,21 @@ The three the issue asks for, plus four that came up while drafting.
 - `arbiter.data`: 9 repository interfaces, signatures only.
 - No `build.gradle` change.
 
+## Review decisions
+
+Whimsyturtle requested changes on the first revision. The decisions below are his, applied after rebasing on the docs branch; the original numbered list above is kept as the record of what was proposed.
+
+- **Subpackages.** Both `arbiter.model` and `arbiter.data` are split by area - `user`, `project`, `annotation`, `resolution` - mirroring each other.
+- **Dropped enum constants.** `AccountStatus.PENDING`, `SourceType.MD`, `TaxonomyKind.MULTI`, `ResolutionMethod.GOLD`, `AssignmentStatus.RETURNED`, and three of the six `FlagReason` values (`DUPLICATE`, `OFF_TOPIC`, `INSTRUCTIONS_UNCLEAR`). Rationale given: no email verification in v1.0.0, no practical difference between Markdown and plain text, multi-select is extra complexity, gold standards are unnecessary, and a returned split is not a distinct state.
+- **Dropped fields.** `User.email` becomes `username`. `Label.name` and `Label.colour` go, leaving `key` plus `description`. `Annotation.timeSpentMillis` goes. `Flag.excluded` goes, because `Item.retired` already covers exclusion.
+- **`TaxonomySettings`.** The scale bounds moved out of `Project` into their own class, so a project is not a bag of optional numbers that matter for one taxonomy kind only.
+- **Mutual exclusion.** `Annotation` and `Resolution` each store a label or a scale value, and their setters now clear the other, so both can never be set.
+- **`Resolution.scaleValue` is a `Double`**, because an agreed scale value may be the average of several answers.
+- **`Project.outputFormat` is fixed at creation too**, which the review questioned and the docs now state.
+- **Repository naming.** Methods returning a collection are `list*`; `findAll()` became `listAll()`, and the same rule applied to every other collection-returning method.
+- **`countByRole` was a real bug.** It counted disabled accounts, so the last-adjudicator guard did not hold: two adjudicators could disable each other out of the workspace. It is now `countActiveByRole`, and the comment says why.
+- **`Item.path`** documents that the missing-source-file case belongs to media resolution.
+
 ## Verification
 
 | Acceptance criterion | How it is verified |
