@@ -10,9 +10,6 @@ public class User {
     /** Login name, compared case-insensitively. */
     private String username;
 
-    /** Name shown in the interface. */
-    private String displayName;
-
     /** Salted hash of the password, never the password itself. */
     private String passwordHash;
 
@@ -46,14 +43,6 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
     }
 
     public String getPasswordHash() {
