@@ -70,7 +70,7 @@ They are grouped into subpackages by area, mirroring the repository interfaces i
 | `arbiter.model.annotation` | `Annotation`, `BoundingBox`, `Flag` | `FlagReason` |
 | `arbiter.model.resolution` | `Resolution` | `ResolutionMethod` |
 
-Two rules keep the model honest:
+A few rules keep the model honest:
 
 - **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value, and their setters clear the other, so the two can never both be set.
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity.
