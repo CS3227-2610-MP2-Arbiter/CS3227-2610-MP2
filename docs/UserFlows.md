@@ -56,30 +56,38 @@ These cut across both surfaces and are where the two tracks can accidentally con
 1. **Blindness is absolute.** No annotator-visible screen shows another annotator's annotation, any resolved label, or a per-item agreement stat. Aggregate progress is fine; per-item is not. [#13]
 2. **Write-through persistence.** Every annotator action hits the store immediately, never an in-memory queue flushed at the end. [#6]
 3. **Deleting a label clears its annotations.** Removing a label deletes the annotations that used it and returns those items to unannotated **for the same annotator to redo**. There is no merge and no split of labels. [#26]
-4. **Immutable project shape.** Task type and source type lock at creation.
-5. **Soft delete everywhere, except labels.** Accounts and items are deactivated or retired, never purged, so historical annotations stay interpretable. Labels are the exception: deleting one genuinely removes its annotations (rule 3).
-6. **Exclusion means excluded.** Flagged-and-excluded items leave both the export and the earnings calculation.
-7. **Reproducibility.** Seeded splits and a recorded resolution rule mean a dataset can be regenerated and explained months later.
+4. **Immutable project shape.** Task type and source type lock at creation. [#24], [#29]
+5. **Soft delete everywhere, except labels.** Accounts and items are deactivated or retired, never purged, so historical annotations stay interpretable. Labels are the exception: deleting one genuinely removes its annotations (rule 3). [#31], [#25]
+6. **Exclusion means excluded.** Flagged-and-excluded items leave both the export and the earnings calculation. [#35]
+7. **Reproducibility.** Seeded splits and a recorded resolution rule mean a dataset can be regenerated and explained months later. [#28]
 8. **Everything is local.** No network calls in core flows; the only exceptions are the stretch email features [#39], [#40].
 9. **Earnings are released when the dataset completes, and that is final.** An annotator is paid only once an adjudicator marks the whole project `COMPLETE` ([#46]). Submitting a split is necessary but not sufficient, and there is no per-split payout. Marking complete is permanent, so it cannot be undone to withdraw pay. Earnings stay derived, never stored.
 10. **A dispute is a missing strict majority.** With *k* annotations, if no label holds a strict majority the item is a dispute, including a flat tie between two labels. Disputes go to [#34].
 11. **One shared SQLite file on a shared drive.** The team shares a single `arbiter.db` over a shared drive; there is no package exchange and no merge path. Arbiter takes a workspace lock so only one instance writes at a time ([#1]).
 12. **Adjudicators own credentials, and email is deferred.** Login ids and passwords are issued and reset by an adjudicator ([#31], [#23]). [#39] and [#40] are out of scope unless time remains.
 13. **The adjudicator has final authority over project data.** They may edit or delete any annotation, remove files entirely, and add files to an existing split - recorded, so provenance still explains every item. This overrides the annotator-side locks in [#17].
-14. **Rewards are fixed once a split is assigned.** Nothing about an assigned split changes but its status, because altering a rate after the work would change what someone already earned.
-15. **An incomplete export is still a valid export.** A dataset may be exported before it is complete, and the result must parse as a proper file of its format. Unresolved items are absent or explicitly marked, never given a wrong label.
+14. **Rewards are fixed once a split is assigned.** Nothing about an assigned split changes but its status, because altering a rate after the work would change what someone already earned. [#28], [#32]
+15. **An incomplete export is still a valid export.** A dataset may be exported before it is complete, and the result must parse as a proper file of its format. Unresolved items are absent or explicitly marked, never given a wrong label. [#37]
 
 ## 4. Where the work lives
 
-The v1.0.0 backlog is on GitHub under the [v1.0.0 milestone](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/milestone/7), and the flows above link to the issues that implement them. zheng-jj owns the annotator track and Whimsyturtle the adjudicator track; the spikes, foundation and delivery issues are shared.
+The v1.0.0 backlog is on GitHub under the [v1.0.0 milestone](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/milestone/7), and the 46 issues below are all of it. Every one is referenced somewhere in this document.
 
-| Area | Owner | Issues |
-| --- | --- | --- |
-| Spikes | shared | [#1], [#2], [#3] |
-| Foundation | shared | [#4] - [#11] |
-| Annotator track | zheng-jj | [#12] - [#22] |
-| Adjudicator track | Whimsyturtle | [#23] - [#38], [#46] |
-| Delivery | zheng-jj | [#39] - [#45] |
+**Spikes.** Three questions were settled in writing before any feature code, and they are closed: how a team shares data while staying offline ([#1]), when annotator earnings vest ([#2]), and whether the email features are in scope ([#3]).
+
+**Foundation.** Shared groundwork both tracks build on, before either can ship a screen:
+
+- [#4] agrees the model classes and repository interfaces both tracks code against.
+- [#6] implements the SQLite schema and repositories, and [#11] the test harness, fixtures and blindness test.
+- [#7] covers registration, login and logout, and [#31] the adjudicator's account management.
+- [#5] is the app shell and role-based routing, and [#8] the shared UI kit and error-handling convention.
+- [#9] sets up the workspace and its layout, and [#10] resolves media paths and decodes images.
+
+**Annotator track (zheng-jj).** The whole of section 1: [#12] the home and assigned splits, [#13] the blind queue, [#14] classification, [#15] detection, [#16] flagging, [#17] autosave and submit, [#18] progress, [#19] lifetime totals, [#20] earnings, [#21] the income statement, and [#22] the annotator guide.
+
+**Adjudicator track (Whimsyturtle).** The whole of section 2: [#24] creating a project, [#29] task type, [#30] output format, [#25] importing a corpus, [#26] the taxonomy, [#28] splitting and rewards, [#32] assigning annotators, [#33] the dashboard, [#27] automatic resolution, [#34] manual resolution, [#35] flagged items, [#36] the per-item breakdown, [#37] export, [#46] marking the dataset complete, and [#38] the adjudicator guide. [#23] adds the offline password reset.
+
+**Delivery (zheng-jj).** Everything that turns the code into a submitted project: [#39] and [#40] are the deferred email features, [#41] the demo corpus and smoke checklist, [#42] packaging, [#43] the developer guide, [#44] the reflections, and [#45] the product site.
 
 [Back to home](index.md)
 
@@ -87,9 +95,12 @@ The v1.0.0 backlog is on GitHub under the [v1.0.0 milestone](https://github.com/
 [#2]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/2
 [#3]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/3
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
+[#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
 [#6]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6
 [#7]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/7
+[#8]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/8
 [#9]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9
+[#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
@@ -120,5 +131,9 @@ The v1.0.0 backlog is on GitHub under the [v1.0.0 milestone](https://github.com/
 [#38]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/38
 [#39]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/39
 [#40]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/40
+[#41]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/41
+[#42]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/42
+[#43]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/43
+[#44]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/44
 [#45]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/45
 [#46]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/46
