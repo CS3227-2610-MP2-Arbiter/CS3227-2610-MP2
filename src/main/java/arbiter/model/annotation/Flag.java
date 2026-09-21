@@ -9,12 +9,15 @@ import java.time.Instant;
  * recorded as a {@code FlagDisposition} so the flagged queue empties once every flag has been dealt
  * with (#35) and the disposition can be shown per item (#36). Excluding a flag retires its item, so
  * {@code Item.retired} remains the one place that decides whether an item is in the dataset.
+ *
+ * <p>A flag is submitted with its annotation. Until then it is an editable draft that stays out of
+ * review; afterwards its reason and comment are permanent.
  */
 public class Flag {
     /** Database identifier. */
     private Long id;
 
-    /** Annotation the flag was raised against. */
+    /** Annotation the flag belongs to, whose submission also submits the flag. */
     private Long annotationId;
 
     /** Item that was flagged. */
@@ -35,7 +38,7 @@ public class Flag {
     /** When an adjudicator reviewed the flag, null while it is still pending. */
     private Instant reviewedAt;
 
-    /** When the flag was raised. */
+    /** When the flag was first saved; its submission time is the annotation's. */
     private Instant createdAt;
 
     /** Creates an empty Flag. */

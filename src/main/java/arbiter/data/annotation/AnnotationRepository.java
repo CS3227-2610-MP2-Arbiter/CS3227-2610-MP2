@@ -23,12 +23,13 @@ public interface AnnotationRepository {
     List<Annotation> listByAssignment(long assignmentId);
 
     /**
-     * Counts an annotator's valid submitted answers for items that are not retired.
+     * Counts an annotator's valid answers, as {@code Annotation.isValidAnswer} defines them, for items
+     * that are not retired.
      *
-     * <p>This is the lifetime annotation count, not handled-work progress. Drafts and report-only
-     * outcomes do not count here. Progress separately treats both valid answers and terminal
-     * report-only outcomes as handled, while retirement removes an item from the outstanding work
-     * without inventing a submission.
+     * <p>This is the lifetime annotation count, not handled-work progress. Progress separately counts
+     * every submitted annotation as handled ({@code Annotation.isSubmitted}), report-only outcomes
+     * included, while retirement removes an item from the outstanding work without inventing a
+     * submission.
      */
     long countValidSubmittedByAnnotator(long annotatorId);
 }

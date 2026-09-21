@@ -5,7 +5,12 @@ import java.util.List;
 import arbiter.model.annotation.Flag;
 import arbiter.model.annotation.FlagDisposition;
 
-/** Stores reports that an item's source material is unusable. */
+/**
+ * Stores reports that an item's source material is unusable.
+ *
+ * <p>A flag is a draft until its annotation is submitted. Only {@code listByAnnotation} returns
+ * drafts; every other read returns submitted flags only, so a draft never reaches review.
+ */
 public interface FlagRepository {
     /** Inserts or updates a flag and returns the stored copy. */
     Flag save(Flag flag);

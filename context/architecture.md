@@ -104,6 +104,7 @@ They are grouped into subpackages by area, mirroring the repository interfaces i
 A few rules keep the model honest:
 
 - **One scalar answer shape at a time.** `Annotation` and `Resolution` may carry a label or a scale value, and may carry neither for drafts, detection or unresolved records. Their setters clear the other field when given a non-null value. Because reflective hydration bypasses those setters, both scalar getters reject a record with both fields populated; reads never hide or repair the invalid state.
+- **Terminal outcomes are explicit.** An `Annotation` is a draft until `submittedAt` is set. `reportOnly` alone marks a report-only outcome, which holds no label, scale value or boxes and carries a flag; null fields or an empty box list never stand for one. `isSubmitted()` defines handled work and `isValidAnswer()` defines an input toward *k*. A flag is submitted with its annotation, and only submitted flags reach review ([#16], [#17]).
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded`, and its update, delete and find-by-id operations need an identity column. **`Project` holds no reference back**: `projectId` is the only link, in the same direction as `Label`, `Item` and `Split`, so the relationship cannot be recorded twice and disagree.
 - **An annotator's scale answer is an `Integer`.** `Resolution.scaleValue` is a `Double` so the arithmetic mean required by rule 10 retains fractional results.
 - **Detection resolution needs a selected-annotation relationship.** Rule 16 requires `Resolution` to identify one submitted `Annotation` for the same item; that annotation's `BoundingBox` records provide the complete final set. The current scalar-only model does not yet represent this relationship. It must be added for [#34] and [#37], while preserving unselected submissions.
@@ -134,6 +135,7 @@ A few rules keep the model honest:
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
+[#16]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/16
 [#17]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/17
 [#18]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/18
 [#19]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/19

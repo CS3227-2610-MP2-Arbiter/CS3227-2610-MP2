@@ -3,7 +3,13 @@ package arbiter.model.annotation;
 import java.time.Instant;
 
 /**
- * One annotator's answer for one item, stored in canonical form.
+ * One annotator's answer or report for one item, stored in canonical form.
+ *
+ * <p>An annotation is a draft until {@code submittedAt} is set; a draft's fields, boxes and flag may
+ * still change and are not evidence. Submission is permanent and has one of two outcomes. A valid
+ * answer holds the complete answer and may carry a flag. A report-only outcome holds no label, scale
+ * value or boxes, and carries the flag that explains why (#16). Only {@code reportOnly} tells them
+ * apart: missing fields or an empty box list never mean report-only.
  *
  * <p>An answer carries at most one of {@code labelId} or {@code scaleValue}, depending on the
  * project's taxonomy kind. The setters switch between scalar answer shapes, and the getters reject
@@ -34,14 +40,17 @@ public class Annotation {
     /** The annotator's explanation. */
     private String rationale;
 
-    /** When the answer was first saved. */
+    /** When the draft was first saved. */
     private Instant createdAt;
 
-    /** When the answer was last changed. */
+    /** When the draft was last saved. */
     private Instant updatedAt;
 
-    /** True once the answer has been submitted. */
-    private boolean submitted;
+    /** When the annotation was submitted, or null while it is a draft. */
+    private Instant submittedAt;
+
+    /** True for a submitted report-only outcome, which holds no answer. */
+    private boolean reportOnly;
 
     /** Creates an empty Annotation. */
     public Annotation() {
@@ -145,11 +154,29 @@ public class Annotation {
         this.updatedAt = updatedAt;
     }
 
-    public boolean isSubmitted() {
-        return submitted;
+    public Instant getSubmittedAt() {
+        return submittedAt;
     }
 
-    public void setSubmitted(boolean submitted) {
-        this.submitted = submitted;
+    public void setSubmittedAt(Instant submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public boolean isReportOnly() {
+        return reportOnly;
+    }
+
+    public void setReportOnly(boolean reportOnly) {
+        this.reportOnly = reportOnly;
+    }
+
+    /** True once submitted, as a valid answer or report-only; either outcome is handled work. */
+    public boolean isSubmitted() {
+        return submittedAt != null;
+    }
+
+    /** True for a submitted answer, the only kind that counts toward k; drafts and reports do not. */
+    public boolean isValidAnswer() {
+        return isSubmitted() && !reportOnly;
     }
 }
