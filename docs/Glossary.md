@@ -14,14 +14,14 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
 | **Split** | A batch of items cut from the corpus, which is what gets assigned. A split names its items, so they can be moved or withdrawn without rewriting it. |
 | **Assignment** | The link between one split and one annotator. One split can go to several annotators. An assignment is submitted by the annotator and may be returned by an adjudicator for rework. |
-| **Annotation** | One annotator's answer for one item: a label, a rationale, optional boxes. |
+| **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with a rationale. |
 | **Bounding box** | One labelled rectangle drawn on a detection item, in image coordinates. |
 | **Flag** | An annotator's report that an item's source material is unusable, with a reason and an optional comment. A reason is one of the values of `FlagReason`, and an adjudicator later gives it a `FlagDisposition`. |
-| **Resolved label** | The final answer for an item after adjudication. |
-| **Resolution** | The record of how an item was settled: its resolved label, how it was reached, and who decided. How it was reached is one of the values of `ResolutionMethod`. An item with no strict majority stays a dispute until an adjudicator decides it. |
+| **Resolved label** | The final answer for an item, including an averaged numeric rating for a scale item. |
+| **Resolution** | The record of how an item was settled: its final answer, how it was reached, and who decided when applicable. How it was reached is one of the values of `ResolutionMethod`; the rules for each taxonomy kind are in [User Flows](UserFlows.md#3-rules-both-tracks-share). |
 | **Workspace** | The folder a team's data lives in: one `arbiter.db`, plus `media/`, `exports/` and `logs/`. |
 
-*k* is the number of annotators who see each item, set on the split and defaulting to 2. Every item is annotated independently by *k* annotators, and annotators never see each other's work. That is what makes "resolve by highest count" meaningful, and it is why the queue is blind.
+*k* is the number of annotators who see each item, set on the split and defaulting to 2. Every item is annotated independently by *k* annotators, and annotators never see each other's work. Their submitted answers are the inputs to the resolution rule for the project's taxonomy kind.
 
 ## Fixed value sets
 
@@ -36,7 +36,7 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | **Split strategy** | `BY_COUNT`, `BY_PROPORTION`, `MANUAL` | How a split's items were chosen. Kept so a seeded split can be reproduced. |
 | **Output format** | `CSV`, `JSON`, `COCO` | The on-disk format the finished dataset is written in. Only the exporter writes these. |
 | **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED`, `RETURNED` | Where an assignment has got to. `RETURNED` means an adjudicator sent it back for rework. |
-| **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final label was reached, recorded for provenance. |
+| **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final answer was reached: strict-majority label, adjudicator decision or arithmetic mean of scale ratings, respectively. Recorded for provenance. |
 | **Flag reason** | `CORRUPT_OR_UNREADABLE`, `WRONG_CONTENT`, `TOXIC_OR_SENSITIVE` | Why an annotator reported an item's source material as unusable. |
 | **Flag disposition** | `PENDING`, `EXCLUDED`, `REPAIRED`, `KEPT` | What an adjudicator decided about a flag. `PENDING` is the review queue; `EXCLUDED` retires the item, so it leaves the export and earnings. |
 | **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. Deactivation is a soft delete, so a disabled account's annotations remain history. |

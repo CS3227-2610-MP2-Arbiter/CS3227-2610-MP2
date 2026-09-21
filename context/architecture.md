@@ -74,7 +74,7 @@ A few rules keep the model honest:
 
 - **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value. Their setters clear the other, **and so do their getters**: ORMLite sets fields reflectively, so a row read back from the database never passes through the setters.
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity. **`Project` holds no reference back**: `projectId` is the only link, in the same direction as `Label`, `Item` and `Split`, so the relationship cannot be recorded twice and disagree.
-- **An annotator's scale answer is an `Integer`.** They pick a whole number; only the value agreed at resolution may be an average, which is why `Resolution.scaleValue` is a `Double` and `Annotation.scaleValue` is not.
+- **An annotator's scale answer is an `Integer`.** `Resolution.scaleValue` is a `Double` so the arithmetic mean required by rule 10 retains fractional results.
 - **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items, so the adjudicator can add an item to an assigned split or withdraw one (rule 13) without rewriting either side.
 - ***k* and the seed live on `Split`, not `Assignment`.** Both describe the work rather than one annotator's link to it: every annotator on the split sees the same items, and rule 7 needs the seed kept so a split can be reproduced.
 - **`Label` has no soft-delete flag.** Rule 5 makes labels the one exception: deleting a label removes it and its annotations outright, so a retired state would contradict the rule.
@@ -90,7 +90,7 @@ A few rules keep the model honest:
 - `ProjectService`, `CorpusService`: import, splits, taxonomy.
 - `AssignmentService`: assignment, *k*, load, completion and the reward lock.
 - `AnnotationService`: autosave, submit, flags, and the annotator-facing read path (rule 1).
-- `ResolutionService`: majority, ties and disputes; idempotent.
+- `ResolutionService`: strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE`, following rule 10 and [#27]; idempotent.
 - `EarningsService`: derived earnings, released versus pending.
 - `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical annotations and never choose a format.
 
@@ -103,6 +103,7 @@ A few rules keep the model honest:
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
+[#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
 [#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
 [#36]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/36
