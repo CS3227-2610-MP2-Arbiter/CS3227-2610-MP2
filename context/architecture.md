@@ -37,15 +37,15 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - Retain every immutable submitted answer/report-only outcome, including unselected evidence, with attribution and submission time. Persist the current decision's exact valid answer contributors/selected set and metadata. Drafts and report-only outcomes are not resolution inputs ([#36], [#37]).
 - Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
 
-### Lifecycle (rules 3, 5, 6, 9, 13, 14, 17, 18)
+### Lifecycle (rules 3, 5, 6, 9, 13, 14, 17, 18, 19)
 
-- First assignment freezes corpus and taxonomy project-wide; each split's first assignment locks its definition, including membership/order, `annotationsPerItem` and `itemReward`. Persist the first-assignment evidence/locks atomically with assignment creation. Removing the last current assignment must not unfreeze setup.
+- First assignment freezes corpus and taxonomy project-wide; each split's first assignment locks its definition, including membership/order, `annotationsPerItem` and `itemReward`. Persist the first-assignment evidence/locks atomically with assignment creation. Assignments cannot be removed/reassigned; account deactivation must not unfreeze setup.
 - `SplitItem` records stay unchanged after assignment. Pre-completion flagged exclusion changes item retirement, retaining memberships and current answers/provenance; it does not move or delete memberships.
 - `Project.complete` seals all project-owned records. Every mutating service must check the seal in its write transaction, including autosave, per-item submission, assignment, flag batches, resolution and deletion. Completion commits atomically; export/viewing may read but never mutate sealed data.
 - Earnings read sealed inputs after completion and must not filter away contributions merely because a user is disabled. No stored balance/ledger is introduced.
 - Submit & next validates, fixes submitted content, records submission time, advances the queue and updates assignment completion in one transaction. Retry must be idempotent; failure leaves the current draft editable. Submitted content cannot change through either role, including stale editors (rules 13/18).
 - A current draft becomes a permanent submitted answer or explicit report-only outcome; no old snapshot plus revised draft, withdrawal, return or resubmission representation is required. Report-only outcomes handle queue work but never become valid labels/ratings/box sets. Resolution readiness is per item, independent of other unfinished items in the assignment.
-- Keep immutable reporter content and current adjudicator dispositions/reviewer/time; no historical event collections or return metadata are required. Exclusion retains evidence and memberships but removes items from active queues/results/earnings; recompute affected assignment completion. Account replacement remains a follow-up and cannot overwrite submissions. Validate by-reference source integrity: freezing database rows alone cannot prevent external file changes.
+- Keep immutable reporter content and current adjudicator dispositions/reviewer/time; no historical event collections or return metadata are required. Exclusion retains evidence and memberships but removes items from active queues/results/earnings; recompute affected assignment completion. Account replacement is deferred; existing assignments, including those of disabled accounts, retain their original ownership and place within the split's fixed *k*. Validate by-reference source integrity: freezing database rows alone cannot prevent external file changes.
 
 ### Persistence
 
@@ -99,7 +99,7 @@ A few rules keep the model honest:
 - `AuthService`: login, session, password hashing (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup, the lock, paths.
 - `ProjectService`, `CorpusService`: project completion/deletion guards, import, splits and taxonomy, respecting project freeze and completion.
-- `AssignmentService`: assignment, *k*, load, first-assignment freeze/locks and the completion guard.
+- `AssignmentService`: create assignments to distinct active annotators up to the fixed *k*, counting all existing assignments including disabled owners. Reject ownership/split changes, individual deletion and duplicate split/annotator assignments even before work starts. Persist capacity/uniqueness checks and first-assignment locks atomically; COMPLETE forbids new assignments. Normal queue/status updates remain allowed before completion. Whole incomplete-project deletion belongs only to the separate confirmed project operation (rule 19).
 - `AnnotationService`: current-draft autosave, atomic one-way answer/report submission and queue advancement, immutable-content guards, flags, and the annotator-scoped read path (rule 1).
 - `ResolutionService`: branch on task type first. Classification uses strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE` (rule 10, [#27]); detection requires manual selection of one complete submitted box set (rule 16, [#34]). No automatic detection matching. Re-running resolution with unchanged inputs is idempotent.
 - `EarningsService`: derived earnings, released versus pending.

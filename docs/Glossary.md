@@ -13,7 +13,7 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Corpus** | The collection of items imported into a project. |
 | **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
 | **Split** | A work batch generated automatically from the corpus by item count, which is what gets assigned. Its definition, including membership, *k* and reward, locks permanently on its first assignment. |
-| **Assignment** | The link between one split and one annotator. One split can go to several annotators. The assignment becomes SUBMITTED automatically when all non-retired required items have permanent answer/report submissions; there is no separate batch-submit or return. |
+| **Assignment** | A permanent link between one split and one annotator: no unassignment, transfer or individual deletion, even before work starts. One split can go to several annotators up to its fixed *k*. The assignment becomes SUBMITTED automatically when all non-retired required items have permanent answer/report submissions; there is no separate batch-submit or return. |
 | **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with a rationale. |
 | **Submitted answer** | An annotator's answer permanently recorded by Submit & next, including its rationale and boxes where applicable. The current draft is editable before submission; afterwards neither role can rewrite it. |
 | **Bounding box** | One labelled rectangle drawn on a detection item, in image coordinates. |

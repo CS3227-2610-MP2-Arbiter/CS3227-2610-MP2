@@ -30,7 +30,7 @@ The behaviour behind each task is specified in [User Flows](UserFlows.md); the i
 | Resolve disagreements | Adjudicator | [#27], [#34] |
 | Export the dataset | Adjudicator | [#37] |
 
-The agreed [workflow and lifecycle rules](UserFlows.md#3-rules-both-tracks-share) use editable current drafts followed by permanent Submit & next, with no backward review or return-for-rework. Setup freezes after assignment and completed projects are read-only; viewing and exporting remain available.
+The agreed [workflow and lifecycle rules](UserFlows.md#3-rules-both-tracks-share) use editable current drafts followed by permanent Submit & next, with no backward review or return-for-rework. Assignments cannot be removed or transferred after creation. Setup freezes after assignment and completed projects are read-only; viewing and exporting remain available.
 
 Step-by-step instructions for each screen will be added as features are released.
 
