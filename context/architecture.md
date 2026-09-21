@@ -27,7 +27,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 ### Blindness (rule 1)
 
-- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or per-item agreement stats.
+- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or agreement statistics, including aggregate agreement.
 - Do not rely on package separation for blindness.
 - The blindness test ([#11]) must cover every annotator-facing code path, including new ones.
 
@@ -36,6 +36,13 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - Retain every immutable submitted answer/report-only outcome, including unselected evidence, with attribution and submission time. Persist the current decision's exact valid answer contributors/selected set and metadata. Drafts and report-only outcomes are not resolution inputs ([#36], [#37]).
 - Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
 - Money tracking is outside v1. The current source still has the obsolete `Split.itemReward` field and earnings-specific repository/model comments, including the earnings paragraph on `AnnotationRepository.countSubmittedByAnnotator`; remove those during model/repository cleanup while retaining a valid-annotation count for [#19]. No reward, earnings or income-statement service contract belongs in the v1 design ([#20], [#21]).
+
+### Statistics (rule 20)
+
+- Keep progress/session statistics ([#18]) and valid-annotation totals/activity charts ([#19]). Persist the terminal submission time required by [#17]; activity reads must not substitute mutable draft timestamps. Session timing does not require a persistent edit/event log.
+- For [#33], compute SINGLE agreement from distinct original valid submitted labels with the same per-item eligibility as the shared rule. Aggregate the sum of unrounded item scores and eligible-item count so each item has equal weight across splits with different sizes or *k*. Do not derive agreement from resolutions or majority size.
+- Return unavailable agreement for SCALE/DETECTION or no eligible items (*k* below 2 supplies no pairs); the UI renders N/A with its reason. Keep these reads adjudicator-only and do not filter out valid evidence because its author was deactivated. Reads after COMPLETE never write new resolutions or records.
+- The current model/repository interfaces still need the submission-time and aggregate query contracts; this documentation does not implement those features or add a stored agreement counter.
 
 ### Lifecycle (rules 3, 5, 6, 9, 13, 14, 17, 18, 19)
 
@@ -112,12 +119,14 @@ A few rules keep the model honest:
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
 [#17]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/17
+[#18]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/18
 [#19]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/19
 [#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
 [#21]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/21
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
 [#28]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/28
+[#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
 [#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
 [#36]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/36

@@ -27,10 +27,13 @@ The behaviour behind each task is specified in [User Flows](UserFlows.md); the i
 | Import a corpus before the first assignment | Adjudicator | [#25] |
 | Configure labels before the first assignment | Adjudicator | [#26] |
 | Assign annotators | Adjudicator | [#32] |
+| Monitor project progress and label agreement | Adjudicator | [#33] |
 | Resolve disagreements | Adjudicator | [#27], [#34] |
 | Export the dataset | Adjudicator | [#37] |
 
 The agreed [workflow and lifecycle rules](UserFlows.md#3-rules-both-tracks-share) use editable current drafts followed by permanent Submit & next, with no backward review or return-for-rework. Assignments cannot be removed or transferred after creation. Setup freezes after assignment and completed projects are read-only; viewing and exporting remain available.
+
+The agreed statistics scope keeps session counts/timing and the 14-day activity chart ([#18], [#19]). Adjudicators get single-select label agreement; scales, detection and cases with no eligible items show N/A under [#33].
 
 Reward configuration, earnings and income statements ([#20], [#21]) are deferred beyond v1.0.0.
 
@@ -50,5 +53,6 @@ Step-by-step instructions for each screen will be added as features are released
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
 [#32]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/32
+[#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
 [#37]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/37
