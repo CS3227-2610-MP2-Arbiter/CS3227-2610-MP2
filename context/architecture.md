@@ -86,8 +86,8 @@ A few rules keep the model honest:
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity. **`Project` holds no reference back**: `projectId` is the only link, in the same direction as `Label`, `Item` and `Split`, so the relationship cannot be recorded twice and disagree.
 - **An annotator's scale answer is an `Integer`.** `Resolution.scaleValue` is a `Double` so the arithmetic mean required by rule 10 retains fractional results.
 - **Detection resolution needs a selected-annotation relationship.** Rule 16 requires `Resolution` to identify one submitted `Annotation` for the same item; that annotation's `BoundingBox` records provide the complete final set. The current scalar-only model does not yet represent this relationship. It must be added for [#34] and [#37], while preserving unselected submissions.
-- **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items. Configure it before that split's first assignment; retain it unchanged afterwards, including when an item is excluded (rules 6/14).
-- ***k* and the seed live on `Split`, not `Assignment`.** Both describe the work rather than one annotator's link to it: every annotator on the split sees the same items, and rule 7 needs the seed kept so a split can be reproduced.
+- **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items. Generate it through count-based batching before that split's first assignment; there is no manual membership editor. Retain it unchanged afterwards, including when an item is excluded (rules 6/14). Retirement after generation does not alter membership; exclude retired members from work and reject new assignments with no remaining non-retired members.
+- ***k* and allocation metadata describe the split, not an assignment.** Every annotator on a split sees the same items. Count-only creation uses one specified seeded shuffle over a stable input order. Persist the actual seed, requested batch size and generated `SplitItem` membership/order; reopening uses saved membership, not a new allocation. Seed alone does not reconstruct past inputs (rule 7, [#28]). The current model still needs obsolete strategy values/contracts removed and requested batch size represented.
 - **`Label` has no soft-delete flag.** An unused label can be deleted during setup only. Once the project has been assigned, taxonomy writes and deletion are forbidden; there is no annotation-deletion cascade (rules 3/5).
 - **A submitted assignment can be returned, and the return is recorded.** `AssignmentStatus.RETURNED` exists because an adjudicator may send an assignment back for rework before project completion ([#12], [#17]), and `Assignment` carries `returnedAt`, `returnedByUserId` and `returnReason` so the latest return's reason and actor remain available after resubmission. These fields do not describe every past return (rule 17).
 - **Every flag has a disposition.** `FlagDisposition` is `PENDING`, `EXCLUDED`, `REPAIRED` or `KEPT`, so the review queue empties once each flag is dealt with ([#35]) and the disposition can be shown per item ([#36]). Excluding before completion retires the item while preserving its records, so `Item.retired` stays the one place that decides whether an item is in the dataset; COMPLETE blocks all disposition changes.
@@ -103,7 +103,7 @@ A few rules keep the model honest:
 - `AnnotationService`: autosaved drafts, current submitted snapshots, submit/return withdrawal and coordinated resolution invalidation, flags, and the annotator-facing read path (rule 1).
 - `ResolutionService`: branch on task type first. Classification uses strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE` (rule 10, [#27]); detection requires manual selection of one complete submitted box set (rule 16, [#34]). No automatic detection matching. Re-running resolution with unchanged inputs is idempotent.
 - `EarningsService`: derived earnings, released versus pending.
-- `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical annotations and never choose a format.
+- `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical annotations and never choose a format. Write one dataset with current provenance; no train/validation/test partitioning in v1 (rule 15).
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
@@ -117,6 +117,7 @@ A few rules keep the model honest:
 [#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
+[#28]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/28
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
 [#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
 [#36]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/36

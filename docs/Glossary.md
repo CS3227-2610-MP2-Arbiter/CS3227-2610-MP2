@@ -12,7 +12,7 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Item** | One annotatable unit: one image, or one plain-text document. |
 | **Corpus** | The collection of items imported into a project. |
 | **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
-| **Split** | A batch of items cut from the corpus, which is what gets assigned. Its definition, including membership, *k* and reward, locks permanently on its first assignment. |
+| **Split** | A work batch generated automatically from the corpus by item count, which is what gets assigned. Its definition, including membership, *k* and reward, locks permanently on its first assignment. |
 | **Assignment** | The link between one split and one annotator. One split can go to several annotators. An assignment is submitted by the annotator and may be returned for rework before project completion. |
 | **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with a rationale. |
 | **Submitted answer** | The retained snapshot of an annotator's latest submitted annotation. During returned work it remains visible as withdrawn/ineligible while the working draft is edited separately; valid resubmission replaces the snapshot. |
@@ -36,7 +36,7 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | **Task type** | `CLASSIFICATION`, `DETECTION` | Whether an annotator picks a label or draws boxes. Fixed when the project is created. |
 | **Source type** | `IMAGE`, `TXT` | Whether an item is an image or a text document. Fixed when the project is created. |
 | **Taxonomy kind** | `SINGLE`, `SCALE` | Whether a label set is a pick-one list or a numeric scale. |
-| **Split strategy** | `BY_COUNT`, `BY_PROPORTION`, `MANUAL` | How a split's items were chosen. Kept so a seeded split can be reproduced. |
+| **Split strategy** | `BY_COUNT` for v1 | Automatic batching by item count with one seeded shuffle. Proportion, manual and stratified allocation are deferred; obsolete enum values still await model cleanup. |
 | **Output format** | `CSV`, `JSON`, `COCO` | The on-disk format the finished dataset is written in. Only the exporter writes these. |
 | **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED`, `RETURNED` | Where an assignment has got to. `RETURNED` means an adjudicator sent it back for rework before project completion. |
 | **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final answer was reached: strict-majority label, adjudicator decision or arithmetic mean of scale ratings, respectively. Recorded for provenance. |
