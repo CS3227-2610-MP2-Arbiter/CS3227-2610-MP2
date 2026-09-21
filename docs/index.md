@@ -9,11 +9,11 @@ Arbiter is an offline Java desktop app for teams that label data.
 ## The two roles
 
 - **Annotators** work a blind queue: one item at a time, choose a label, add a rationale, flag anything unclear. They never see each other's answers.
-- **Adjudicators** import a corpus, split it into batches, assign annotators, review annotations and decide unresolved items. They own the label taxonomy and export the finished dataset with provenance for every decision.
+- **Adjudicators** import a corpus, split it into batches, assign annotators, review annotations and decide unresolved items. They own the label taxonomy and export the finished dataset with provenance for each item's current decision.
 
 ## How it works
 
-An adjudicator imports a corpus and splits it into batches. Each split goes to several annotators, so every item collects several independent annotations. For classification, single-select labels resolve by strict majority or an adjudicator's decision, while numeric scale ratings are averaged. For detection, the adjudicator selects one annotator's complete submitted set of labelled boxes. The result exports as CSV, JSON or COCO, with a provenance record explaining every decision. The [shared rules](UserFlows.md#3-rules-both-tracks-share) freeze setup after assignment and seal completed projects.
+An adjudicator imports a corpus and splits it into batches. Each split goes to several annotators, so every item collects several independent annotations. For classification, single-select labels resolve by strict majority or an adjudicator's decision, while numeric scale ratings are averaged. For detection, the adjudicator selects one annotator's complete submitted set of labelled boxes. The result exports as CSV, JSON or COCO, with provenance identifying the latest submitted answers and each item's current decision. The [shared rules](UserFlows.md#3-rules-both-tracks-share) freeze setup after assignment and seal completed projects.
 
 See the [Glossary](Glossary.md) for the terms used throughout, and [User Flows](UserFlows.md) for the shape of both flows and the rules they share. The step-by-step behaviour is in the GitHub issues those pages link to.
 
