@@ -66,7 +66,6 @@ This is stronger than package separation: it holds for code written later, by an
 
 ### Data and persistence
 
-- **Money is derived, never stored.** There is no balance column and no ledger. Earnings are recomputed from eligible submitted work and per-item rewards; completing the project seals all inputs, so later edits or account deactivation cannot reduce released earnings.
 - **Keep immutable evidence and the current decision.** Retain all submitted answers/report-only outcomes with attribution, the current decision and contributors, and current flag dispositions/review metadata. Earlier versions, return metadata and edit timelines are deferred. A draft becomes an immutable submission; it never needs to coexist with a revised draft of the same submitted answer.
 - **One-way submission.** Submit & next atomically locks an answer/report and advances the queue; a failed save leaves the current draft editable and a repeated request cannot submit twice. No Back, review pass, return or repair flow is required. [User Flows rules 13/17/18](UserFlows.md#3-rules-both-tracks-share) define this accepted contract; persistence/service enforcement remains pending.
 - **Retain the evidence.** Deactivated accounts and retired items keep their annotations and attribution. Unused labels may be deleted only before the first assignment, without deleting answers; whole-project deletion remains available only for incomplete projects with a loss confirmation.
@@ -85,7 +84,6 @@ This is stronger than package separation: it holds for code written later, by an
 | One shared SQLite file with a workspace lock | Package exchange with merge | Only one person can write at a time |
 | Lightweight ORM (ORMLite) over JDBC | Hibernate | Complex queries still need raw SQL |
 | Services in one shared package | Per-role service layers | Both tracks edit the same package |
-| Money derived, never stored | Balance or ledger column | Recomputed on every read |
 | Annotation components shared by both roles | One editor per role | `ui.shared` is a shared dependency |
 | Blindness enforced in the service and a test | Enforced by package separation | Relies on discipline in the read path |
 | Single-writer lock | Optimistic concurrency | Cannot have two annotators open at once |

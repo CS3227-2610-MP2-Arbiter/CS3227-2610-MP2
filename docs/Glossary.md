@@ -12,7 +12,7 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Item** | One annotatable unit: one image, or one plain-text document. |
 | **Corpus** | The collection of items imported into a project. |
 | **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
-| **Split** | A work batch generated automatically from the corpus by item count, which is what gets assigned. Its definition, including membership, *k* and reward, locks permanently on its first assignment. |
+| **Split** | A work batch generated automatically from the corpus by item count, which is what gets assigned. Its definition, including membership and *k*, locks permanently on its first assignment. |
 | **Assignment** | A permanent link between one split and one annotator: no unassignment, transfer or individual deletion, even before work starts. One split can go to several annotators up to its fixed *k*. The assignment becomes SUBMITTED automatically when all non-retired required items have permanent answer/report submissions; there is no separate batch-submit or return. |
 | **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with a rationale. |
 | **Submitted answer** | An annotator's answer permanently recorded by Submit & next, including its rationale and boxes where applicable. The current draft is editable before submission; afterwards neither role can rewrite it. |
@@ -41,7 +41,7 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED` | Progress through the forward-only queue; SUBMITTED follows automatically when all non-retired required items are handled. The obsolete `RETURNED` value and return fields still await model cleanup. |
 | **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final answer was reached: strict-majority label, adjudicator decision or arithmetic mean of scale ratings, respectively. Recorded for provenance. |
 | **Flag reason** | `CORRUPT_OR_UNREADABLE`, `WRONG_CONTENT`, `TOXIC_OR_SENSITIVE` | Why an annotator reported an item's source material as unusable. |
-| **Flag disposition** | `PENDING`, `EXCLUDED`, `KEPT` | Current adjudicator review state. Exclusion retires the item from work/export/earnings while retaining evidence; KEEP never invents a missing answer or reverses item retirement. The obsolete `REPAIRED` value still awaits model cleanup. |
+| **Flag disposition** | `PENDING`, `EXCLUDED`, `KEPT` | Current adjudicator review state. Exclusion retires the item from work and export while retaining evidence; KEEP never invents a missing answer or reverses item retirement. The obsolete `REPAIRED` value still awaits model cleanup. |
 | **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. Deactivation is a soft delete, so a disabled account's retained answers and attribution remain available. |
 
 See [User Flows](UserFlows.md) for the shape of both flows and the rules that follow from these terms.
