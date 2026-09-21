@@ -34,7 +34,7 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 
 | Set | Values | Meaning |
 | --- | --- | --- |
-| **Role** | `ANNOTATOR`, `ADJUDICATOR` | Which side of the workflow an account works on. |
+| **Role** | `ANNOTATOR`, `ADJUDICATOR` | Which side of the workflow an account works on, fixed at creation. The setup account is the workspace's sole adjudicator; every later account is an annotator. |
 | **Task type** | `CLASSIFICATION`, `DETECTION` | Whether an annotator picks a label or draws boxes. Fixed when the project is created. |
 | **Source type** | `IMAGE`, `TXT` | Whether an item is an image or a text document. Fixed when the project is created. |
 | **Taxonomy kind** | `SINGLE`, `SCALE` | Whether a label set is a pick-one list or a numeric scale. |
@@ -44,7 +44,7 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final answer was reached: strict-majority label, adjudicator decision or arithmetic mean of scale ratings, respectively. Recorded for provenance. |
 | **Flag reason** | `CORRUPT_OR_UNREADABLE`, `WRONG_CONTENT`, `TOXIC_OR_SENSITIVE` | Why an annotator reported an item's source material as unusable. |
 | **Flag disposition** | `PENDING`, `EXCLUDED`, `KEPT` | Current adjudicator review state. Exclusion retires the item from work and export while retaining evidence; KEEP never invents a missing answer or reverses item retirement. The obsolete `REPAIRED` value still awaits model cleanup. |
-| **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. Deactivation is a soft delete, so a disabled account's retained answers and attribution remain available. |
+| **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. Annotators may be disabled while retaining their answers and attribution; the sole adjudicator stays active. |
 
 See [User Flows](UserFlows.md) for the shape of both flows and the rules that follow from these terms.
 

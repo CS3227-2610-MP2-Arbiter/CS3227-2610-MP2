@@ -37,6 +37,13 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
 - Money tracking is outside v1. The current source still has the obsolete `Split.itemReward` field and earnings-specific repository/model comments, including the earnings paragraph on `AnnotationRepository.countSubmittedByAnnotator`; remove those during model/repository cleanup while retaining a valid-annotation count for [#19]. No reward, earnings or income-statement service contract belongs in the v1 design ([#20], [#21]).
 
+### Accounts (rule 12)
+
+- Bootstrap exactly one ACTIVE adjudicator per workspace in a transaction; close bootstrap after successful initialization. Reject duplicate/repeated bootstrap, invalid initialized owner state and attempts to add, replace, disable, delete or demote the owner ([#7], [#6]).
+- All later account creation is authenticated adjudicator-only and creates ANNOTATOR accounts; persisted roles cannot change. Retain `Role`, `AccountStatus`, user IDs and decision/review attribution. Only annotators may be disabled ([#31]).
+- Reuse one username/password validation and salted-hashing boundary for bootstrap, annotator creation and direct replacement. A [#23] reset updates credentials atomically without changing identity, status, assignments or project records; never store/log plaintext or retrieve credentials for display.
+- No self-signup, reset-code/token/expiry model, email-verification state or additional-owner/transfer contract belongs in v1. Owner password recovery remains unresolved, with no rebootstrap bypass. Narrow the obsolete last-adjudicator rationale on `UserRepository.countActiveByRole` during model/repository cleanup; actual bootstrap/account guards remain service/persistence work.
+
 ### Source media (rule 21)
 
 - Register existing supported images/TXT only beneath `<workspace>/media/`, including nested folders. Import never copies, moves, renames or modifies source files ([#25]).
@@ -110,7 +117,7 @@ A few rules keep the model honest:
 
 ## Services
 
-- `AuthService`: login, session, password hashing (PBKDF2 or bcrypt with a per-user salt).
+- `AuthService`: sole-owner bootstrap, login/session and shared credential validation/hashing (PBKDF2 or bcrypt with a per-user salt). Account operations enforce rule 12: owner-created annotators, annotator deactivation and direct annotator password replacement; no role change or reset-code flow.
 - `WorkspaceService`: first-run setup, the lock, paths.
 - `ProjectService`, `CorpusService`: project completion/deletion guards, import, splits and taxonomy, respecting project freeze and completion.
 - `AssignmentService`: create assignments to distinct active annotators up to the fixed *k*, counting all existing assignments including disabled owners. Reject ownership/split changes, individual deletion and duplicate split/annotator assignments even before work starts. Persist capacity/uniqueness checks and first-assignment locks atomically; COMPLETE forbids new assignments. Normal queue/status updates remain allowed before completion. Whole incomplete-project deletion belongs only to the separate confirmed project operation (rule 19).
@@ -121,6 +128,7 @@ A few rules keep the model honest:
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
 [#6]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6
+[#7]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/7
 [#8]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/8
 [#9]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
@@ -131,10 +139,12 @@ A few rules keep the model honest:
 [#19]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/19
 [#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
 [#21]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/21
+[#23]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/23
 [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
 [#28]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/28
+[#31]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/31
 [#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
 [#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
