@@ -22,7 +22,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 ### Shared code
 
 - `AnnotationEditor`, `BoxCanvas` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
-- `AnnotationEditor` is editable for annotators, for adjudicators supplying their own classification label ([#34]), and in the separate flagged-item repair flow ([#35]). Submitted answers are read-only during comparison; detection resolution uses a read-only `BoxCanvas` and selects one complete submitted box set ([#34], rule 16).
+- `AnnotationEditor` edits only the current annotator draft. Adjudicator classification resolution uses a shared label picker to record a separate final decision ([#34]); it never edits the original answer. Detection comparison uses read-only `BoxCanvas`; flag review has keep/exclude only ([#35], rules 13/16).
 - Every rule about the data lives in `arbiter.service`, never in a controller or a repository.
 
 ### Blindness (rule 1)
@@ -34,18 +34,18 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 ### Data
 
 - Never store money: no `balance` column and no ledger table. Earnings are derived from eligible submitted work and per-item rewards ([#20]).
-- Resolution retains each annotator's latest submitted snapshot, including unselected answers; [#36] and [#37] need current evidence, not earlier revisions. Persist the current decision's exact contributing submissions/selected set and metadata, or derive them only under invariants that invalidate the decision whenever its inputs change.
+- Retain every immutable submitted answer/report-only outcome, including unselected evidence, with attribution and submission time. Persist the current decision's exact valid answer contributors/selected set and metadata. Drafts and report-only outcomes are not resolution inputs ([#36], [#37]).
 - Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
 
 ### Lifecycle (rules 3, 5, 6, 9, 13, 14, 17, 18)
 
 - First assignment freezes corpus and taxonomy project-wide; each split's first assignment locks its definition, including membership/order, `annotationsPerItem` and `itemReward`. Persist the first-assignment evidence/locks atomically with assignment creation. Removing the last current assignment must not unfreeze setup.
 - `SplitItem` records stay unchanged after assignment. Pre-completion flagged exclusion changes item retirement, retaining memberships and current answers/provenance; it does not move or delete memberships.
-- `Project.complete` seals all project-owned records. Every mutating service must check the seal in the transaction that writes, including autosave, assignment/return, flag batches, resolution and deletion. UI controls alone are insufficient. Completion commits atomically; export/viewing may read but never mutate sealed data.
+- `Project.complete` seals all project-owned records. Every mutating service must check the seal in its write transaction, including autosave, per-item submission, assignment, flag batches, resolution and deletion. Completion commits atomically; export/viewing may read but never mutate sealed data.
 - Earnings read sealed inputs after completion and must not filter away contributions merely because a user is disabled. No stored balance/ledger is introduced.
-- Return/correction withdraws affected inputs and invalidates current resolutions in the same transaction. Invalidation must remove the old answer/selection and decision metadata from current-final reads; changing only a status flag must not leave stale values exportable.
-- Keep the latest submitted snapshot separate from autosaved drafts during rework; mark the snapshot withdrawn/ineligible. Valid resubmission replaces it, then re-evaluates readiness and automatic classification or fresh manual selection. No older answer/decision archive is required (rules 17/18).
-- Current flags/dispositions and only the latest return metadata are required; no historical revision/event collections are needed for v1. Preserve original annotator ownership and identify adjudicator corrections truthfully. The specific repair/resubmission flow and account replacement remain follow-ups. By-reference source integrity also needs validation: freezing database records alone cannot prevent external file changes.
+- Submit & next validates, fixes submitted content, records submission time, advances the queue and updates assignment completion in one transaction. Retry must be idempotent; failure leaves the current draft editable. Submitted content cannot change through either role, including stale editors (rules 13/18).
+- A current draft becomes a permanent submitted answer or explicit report-only outcome; no old snapshot plus revised draft, withdrawal, return or resubmission representation is required. Report-only outcomes handle queue work but never become valid labels/ratings/box sets. Resolution readiness is per item, independent of other unfinished items in the assignment.
+- Keep immutable reporter content and current adjudicator dispositions/reviewer/time; no historical event collections or return metadata are required. Exclusion retains evidence and memberships but removes items from active queues/results/earnings; recompute affected assignment completion. Account replacement remains a follow-up and cannot overwrite submissions. Validate by-reference source integrity: freezing database rows alone cannot prevent external file changes.
 
 ### Persistence
 
@@ -89,8 +89,8 @@ A few rules keep the model honest:
 - **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items. Generate it through count-based batching before that split's first assignment; there is no manual membership editor. Retain it unchanged afterwards, including when an item is excluded (rules 6/14). Retirement after generation does not alter membership; exclude retired members from work and reject new assignments with no remaining non-retired members.
 - ***k* and allocation metadata describe the split, not an assignment.** Every annotator on a split sees the same items. Count-only creation uses one specified seeded shuffle over a stable input order. Persist the actual seed, requested batch size and generated `SplitItem` membership/order; reopening uses saved membership, not a new allocation. Seed alone does not reconstruct past inputs (rule 7, [#28]). The current model still needs obsolete strategy values/contracts removed and requested batch size represented.
 - **`Label` has no soft-delete flag.** An unused label can be deleted during setup only. Once the project has been assigned, taxonomy writes and deletion are forbidden; there is no annotation-deletion cascade (rules 3/5).
-- **A submitted assignment can be returned, and the return is recorded.** `AssignmentStatus.RETURNED` exists because an adjudicator may send an assignment back for rework before project completion ([#12], [#17]), and `Assignment` carries `returnedAt`, `returnedByUserId` and `returnReason` so the latest return's reason and actor remain available after resubmission. These fields do not describe every past return (rule 17).
-- **Every flag has a disposition.** `FlagDisposition` is `PENDING`, `EXCLUDED`, `REPAIRED` or `KEPT`, so the review queue empties once each flag is dealt with ([#35]) and the disposition can be shown per item ([#36]). Excluding before completion retires the item while preserving its records, so `Item.retired` stays the one place that decides whether an item is in the dataset; COMPLETE blocks all disposition changes.
+- **Assignment completion is automatic and one-way.** When every non-retired required item is terminally handled, the assignment becomes SUBMITTED; exclusion may remove its final outstanding requirement. There is no final batch-submit, rework or backward-navigation state. Remove obsolete `RETURNED` and return metadata during model cleanup ([#12], [#17]).
+- **Flags support keep/exclude review.** The accepted values are PENDING, EXCLUDED and KEPT; REPAIRED is obsolete and awaits model cleanup. Reporter content becomes immutable with the terminal item submission. Adjudicator disposition/reviewer/time may change only before COMPLETE; KEEP cannot create an answer or unretire the item ([#35], [#36]).
 - **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
 - **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Split.annotationsPerItem` stays null until a split is cut and assigned.
 
@@ -100,7 +100,7 @@ A few rules keep the model honest:
 - `WorkspaceService`: first-run setup, the lock, paths.
 - `ProjectService`, `CorpusService`: project completion/deletion guards, import, splits and taxonomy, respecting project freeze and completion.
 - `AssignmentService`: assignment, *k*, load, first-assignment freeze/locks and the completion guard.
-- `AnnotationService`: autosaved drafts, current submitted snapshots, submit/return withdrawal and coordinated resolution invalidation, flags, and the annotator-facing read path (rule 1).
+- `AnnotationService`: current-draft autosave, atomic one-way answer/report submission and queue advancement, immutable-content guards, flags, and the annotator-scoped read path (rule 1).
 - `ResolutionService`: branch on task type first. Classification uses strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE` (rule 10, [#27]); detection requires manual selection of one complete submitted box set (rule 16, [#34]). No automatic detection matching. Re-running resolution with unchanged inputs is idempotent.
 - `EarningsService`: derived earnings, released versus pending.
 - `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical annotations and never choose a format. Write one dataset with current provenance; no train/validation/test partitioning in v1 (rule 15).
