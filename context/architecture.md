@@ -35,7 +35,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - Retain every immutable submitted answer/report-only outcome, including unselected evidence, with attribution and submission time. Persist the current decision's exact valid answer contributors/selected set and metadata. Drafts and report-only outcomes are not resolution inputs ([#36], [#37]).
 - Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
-- Money tracking is outside v1. The current source still has the obsolete `Split.itemReward` field and earnings-specific repository/model comments, including the earnings paragraph on `AnnotationRepository.countSubmittedByAnnotator`; remove those during model/repository cleanup while retaining a valid-annotation count for [#19]. No reward, earnings or income-statement service contract belongs in the v1 design ([#20], [#21]).
+- Money tracking is outside v1. `Split` carries no reward state, and `AnnotationRepository.countValidSubmittedByAnnotator` serves only [#19]'s valid-answer total. No reward, earnings or income-statement service contract belongs in the v1 design ([#20], [#21]).
 
 ### Accounts (rule 12)
 
@@ -71,7 +71,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 ### Persistence
 
 - One SQLite file at `<workspace>/arbiter.db`, with migrations applied on open and foreign keys enabled.
-- Commit every annotator action immediately (rule 2).
+- Commit each completed logical action immediately (rule 2). Repository calls that participate in one action share [#6]'s transaction and do not commit independently; any failure rolls the whole action back. This boundary covers submission/queue advancement/completion, assignment/freeze, completion sealing and sole-owner bootstrap as their feature contracts require.
 - Code against the repository interfaces in `arbiter.data`. Their implementations in `arbiter.data.sqlite` map rows with ORMLite, not Hibernate, and are the only code with SQL.
 - Take the workspace lock before writing, and refuse to open a second writer (rule 11).
 
@@ -97,7 +97,7 @@ They are grouped into subpackages by area, mirroring the repository interfaces i
 | Subpackage | Classes | Enums |
 | --- | --- | --- |
 | `arbiter.model.user` | `User` | `Role`, `AccountStatus` |
-| `arbiter.model.project` | `Project`, `TaxonomySettings`, `Label`, `Item`, `Split`, `SplitItem`, `Assignment` | `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus`, `SplitStrategy` |
+| `arbiter.model.project` | `Project`, `TaxonomySettings`, `Label`, `Item`, `Split`, `SplitItem`, `Assignment` | `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus` |
 | `arbiter.model.annotation` | `Annotation`, `BoundingBox`, `Flag` | `FlagReason`, `FlagDisposition` |
 | `arbiter.model.resolution` | `Resolution` | `ResolutionMethod` |
 
@@ -108,10 +108,10 @@ A few rules keep the model honest:
 - **An annotator's scale answer is an `Integer`.** `Resolution.scaleValue` is a `Double` so the arithmetic mean required by rule 10 retains fractional results.
 - **Detection resolution needs a selected-annotation relationship.** Rule 16 requires `Resolution` to identify one submitted `Annotation` for the same item; that annotation's `BoundingBox` records provide the complete final set. The current scalar-only model does not yet represent this relationship. It must be added for [#34] and [#37], while preserving unselected submissions.
 - **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items. Generate it through count-based batching before that split's first assignment; there is no manual membership editor. Retain it unchanged afterwards, including when an item is excluded (rules 6/14). Retirement after generation does not alter membership; exclude retired members from work and reject new assignments with no remaining non-retired members.
-- ***k* and allocation metadata describe the split, not an assignment.** Every annotator on a split sees the same items. Count-only creation uses one specified seeded shuffle over a stable input order. Persist the actual seed, requested batch size and generated `SplitItem` membership/order; reopening uses saved membership, not a new allocation. Seed alone does not reconstruct past inputs (rule 7, [#28]). The current model still needs obsolete strategy values/contracts removed and requested batch size represented.
+- ***k* and allocation metadata describe the split, not an assignment.** Every annotator on a split sees the same items. Count-only creation uses one specified seeded shuffle over a stable input order. Persist the actual seed, requested batch size and generated `SplitItem` membership/order; reopening uses saved membership, not a new allocation. Seed alone does not reconstruct past inputs (rule 7, [#28]). The obsolete strategy state is removed; the model still needs the requested batch size represented.
 - **`Label` has no soft-delete flag.** An unused label can be deleted during setup only. Once the project has been assigned, taxonomy writes and deletion are forbidden; there is no annotation-deletion cascade (rules 3/5).
-- **Assignment completion is automatic and one-way.** When every non-retired required item is terminally handled, the assignment becomes SUBMITTED; exclusion may remove its final outstanding requirement. There is no final batch-submit, rework or backward-navigation state. Remove obsolete `RETURNED` and return metadata during model cleanup ([#12], [#17]).
-- **Flags support keep/exclude review.** The accepted values are PENDING, EXCLUDED and KEPT; REPAIRED is obsolete and awaits model cleanup. Reporter content becomes immutable with the terminal item submission. Adjudicator disposition/reviewer/time may change only before COMPLETE; KEEP cannot create an answer or unretire the item ([#35], [#36]).
+- **Assignment completion is automatic and one-way.** When every non-retired required item is terminally handled, the assignment becomes SUBMITTED; exclusion may remove its final outstanding requirement. There is no final batch-submit, rework or backward-navigation state ([#12], [#17]).
+- **Flags support keep/exclude review.** The accepted values are PENDING, EXCLUDED and KEPT. Reporter content becomes immutable with the terminal item submission. Adjudicator disposition/reviewer/time may change only before COMPLETE; KEEP cannot create an answer or unretire the item ([#35], [#36]).
 - **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
 - **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Split.annotationsPerItem` stays null until a split is cut and assigned.
 

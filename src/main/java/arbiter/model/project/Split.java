@@ -25,17 +25,11 @@ public class Split {
      */
     private Integer annotationsPerItem;
 
-    /** Allocation strategy the split was cut with, null when it was cut by hand. */
-    private SplitStrategy strategy;
-
     /**
      * Seed the allocation used, null when none was given. Rule 7 requires a seeded split to be
      * reproducible, so the seed is stored rather than asked for again.
      */
     private Long seed;
-
-    /** Amount paid for each item, fixed once the split is assigned. */
-    private Double itemReward;
 
     /** True once assigned, after which nothing about the split changes. */
     private boolean assigned;
@@ -71,14 +65,6 @@ public class Split {
         this.annotationsPerItem = annotationsPerItem;
     }
 
-    public SplitStrategy getStrategy() {
-        return strategy;
-    }
-
-    public void setStrategy(SplitStrategy strategy) {
-        this.strategy = strategy;
-    }
-
     public Long getSeed() {
         return seed;
     }
@@ -93,14 +79,6 @@ public class Split {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Double getItemReward() {
-        return itemReward;
-    }
-
-    public void setItemReward(Double itemReward) {
-        this.itemReward = itemReward;
     }
 
     public boolean isAssigned() {

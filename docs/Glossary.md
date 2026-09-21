@@ -38,12 +38,12 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | **Task type** | `CLASSIFICATION`, `DETECTION` | Whether an annotator picks a label or draws boxes. Fixed when the project is created. |
 | **Source type** | `IMAGE`, `TXT` | Whether an item is an image or a text document. Fixed when the project is created. |
 | **Taxonomy kind** | `SINGLE`, `SCALE` | Whether a label set is a pick-one list or a numeric scale. |
-| **Split strategy** | `BY_COUNT` for v1 | Automatic batching by item count with one seeded shuffle. Proportion, manual and stratified allocation are deferred; obsolete enum values still await model cleanup. |
+| **Batch allocation** | Automatic count-only batching | Batches use an item count and one seeded shuffle. Proportion, manual and stratified allocation are deferred. |
 | **Output format** | `CSV`, `JSON`, `COCO` | The on-disk format the finished dataset is written in. Only the exporter writes these. |
-| **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED` | Progress through the forward-only queue; SUBMITTED follows automatically when all non-retired required items are handled. The obsolete `RETURNED` value and return fields still await model cleanup. |
+| **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED` | Progress through the forward-only queue; SUBMITTED follows automatically when all non-retired required items are handled. |
 | **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final answer was reached: strict-majority label, adjudicator decision or arithmetic mean of scale ratings, respectively. Recorded for provenance. |
 | **Flag reason** | `CORRUPT_OR_UNREADABLE`, `WRONG_CONTENT`, `TOXIC_OR_SENSITIVE` | Why an annotator reported an item's source material as unusable. |
-| **Flag disposition** | `PENDING`, `EXCLUDED`, `KEPT` | Current adjudicator review state. Exclusion retires the item from work and export while retaining evidence; KEEP never invents a missing answer or reverses item retirement. The obsolete `REPAIRED` value still awaits model cleanup. |
+| **Flag disposition** | `PENDING`, `EXCLUDED`, `KEPT` | Current adjudicator review state. Exclusion retires the item from work and export while retaining evidence; KEEP never invents a missing answer or reverses item retirement. |
 | **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. Annotators may be disabled while retaining their answers and attribution; the sole adjudicator stays active. |
 
 See [User Flows](UserFlows.md) for the shape of both flows and the rules that follow from these terms.

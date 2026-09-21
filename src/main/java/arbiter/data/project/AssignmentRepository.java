@@ -20,7 +20,7 @@ public interface AssignmentRepository {
     /** Returns everyone assigned to a split. */
     List<Assignment> listBySplit(long splitId);
 
-    /** Returns assignments with the given status, such as the ones an adjudicator returned. */
+    /** Returns assignments with the given status. */
     List<Assignment> listByStatus(AssignmentStatus status);
 
     /** Removes an assignment that has no submitted work. */

@@ -1,15 +1,13 @@
 package arbiter.model.project;
 
 /**
- * Where an assignment has got to.
+ * Where an assignment has got to in its forward-only queue.
  *
- * <p>{@code SUBMITTED} is not the end of the road: an adjudicator may send a split back for rework,
- * which sets {@code RETURNED} and reopens it for the annotator. Without that state a corrected
- * resubmission could not be told apart from the original.
+ * <p>{@code SUBMITTED} is terminal and follows automatically once every non-retired required item
+ * is handled.
  */
 public enum AssignmentStatus {
     NOT_STARTED,
     IN_PROGRESS,
-    SUBMITTED,
-    RETURNED
+    SUBMITTED
 }
