@@ -37,6 +37,14 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
 - Money tracking is outside v1. The current source still has the obsolete `Split.itemReward` field and earnings-specific repository/model comments, including the earnings paragraph on `AnnotationRepository.countSubmittedByAnnotator`; remove those during model/repository cleanup while retaining a valid-annotation count for [#19]. No reward, earnings or income-statement service contract belongs in the v1 design ([#20], [#21]).
 
+### Source media (rule 21)
+
+- Register existing supported images/TXT only beneath `<workspace>/media/`, including nested folders. Import never copies, moves, renames or modifies source files ([#25]).
+- `Item.path` is normalized workspace-relative text such as `media/corpus/cat.jpg`; resolve it against the current workspace root from [#9]. Validate resolved containment at registration and source access; absolute/external paths, traversal and symlink/junction escapes must not bypass the media boundary ([#10]).
+- Retain the hash of the registered bytes. Preview/confirmation revalidate candidate paths/content; display, valid answer submission and included-source export use the common integrity boundary. Missing/corrupt/changed/out-of-root files must not silently update paths/hashes or replace source content. Caches cannot bypass validation ([#10], [#37]).
+- A source error alone never retires an item, submits work or advances progress. The explicit report-only route remains before COMPLETE. Exact-byte restoration at the recorded location permits later reads without database writes or reopening submitted work; no per-file relocation/relink or source-replacement contract is required.
+- Treat source media as user-provided read-only inputs. Incomplete-project deletion removes owned database records, never media files or the workspace directory. Export writes normal outputs without overwriting registered source media. The seal covers app mutations; it cannot prevent file-system edits. Path/hash comments and validation/service contracts remain implementation work.
+
 ### Statistics (rule 20)
 
 - Keep progress/session statistics ([#18]) and valid-annotation totals/activity charts ([#19]). Persist the terminal submission time required by [#17]; activity reads must not substitute mutable draft timestamps. Session timing does not require a persistent edit/event log.
@@ -51,7 +59,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - `Project.complete` seals all project-owned records. Every mutating service must check the seal in its write transaction, including autosave, per-item submission, assignment, flag batches, resolution and deletion. Completion commits atomically; export/viewing may read but never mutate sealed data.
 - Submit & next validates, fixes submitted content, records submission time, advances the queue and updates assignment completion in one transaction. Retry must be idempotent; failure leaves the current draft editable. Submitted content cannot change through either role, including stale editors (rules 13/18).
 - A current draft becomes a permanent submitted answer or explicit report-only outcome; no old snapshot plus revised draft, withdrawal, return or resubmission representation is required. Report-only outcomes handle queue work but never become valid labels/ratings/box sets. Resolution readiness is per item, independent of other unfinished items in the assignment.
-- Keep immutable reporter content and current adjudicator dispositions/reviewer/time; no historical event collections or return metadata are required. Exclusion retains evidence and memberships but removes items from active queues/results/export; recompute affected assignment completion. Account replacement is deferred; existing assignments, including those of disabled accounts, retain their original ownership and place within the split's fixed *k*. Validate by-reference source integrity: freezing database rows alone cannot prevent external file changes.
+- Keep immutable reporter content and current adjudicator dispositions/reviewer/time; no historical event collections or return metadata are required. Exclusion retains evidence and memberships but removes items from active queues/results/export; recompute affected assignment completion. Account replacement is deferred; existing assignments, including those of disabled accounts, retain their original ownership and place within the split's fixed *k*. Enforce source integrity under rule 21; freezing database rows alone cannot prevent file-system edits.
 
 ### Persistence
 
@@ -123,6 +131,7 @@ A few rules keep the model honest:
 [#19]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/19
 [#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
 [#21]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/21
+[#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
 [#28]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/28

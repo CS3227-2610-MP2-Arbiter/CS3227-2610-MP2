@@ -11,7 +11,7 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 
 ## Getting started
 
-1. Launch Arbiter. On first run the workspace wizard asks you to choose a folder where your database, imported media and exports will live.
+1. Launch Arbiter. On first run the workspace wizard asks you to choose the folder both roles will use for the database, source media and exports.
 2. Create the first account. **The first account created is the adjudicator.**
 3. Log in. Annotators see their assigned splits; adjudicators see their projects.
 
@@ -24,7 +24,7 @@ The behaviour behind each task is specified in [User Flows](UserFlows.md); the i
 | Label items | Annotator | [#13], [#14], [#15] |
 | Report a bad image | Annotator | [#16] |
 | Track my split progress and lifetime valid annotations | Annotator | [#18], [#19] |
-| Import a corpus before the first assignment | Adjudicator | [#25] |
+| Register files already inside workspace media, before the first assignment | Adjudicator | [#25] |
 | Configure labels before the first assignment | Adjudicator | [#26] |
 | Assign annotators | Adjudicator | [#32] |
 | Monitor project progress and label agreement | Adjudicator | [#33] |
@@ -32,6 +32,8 @@ The behaviour behind each task is specified in [User Flows](UserFlows.md); the i
 | Export the dataset | Adjudicator | [#37] |
 
 The agreed [workflow and lifecycle rules](UserFlows.md#3-rules-both-tracks-share) use editable current drafts followed by permanent Submit & next, with no backward review or return-for-rework. Assignments cannot be removed or transferred after creation. Setup freezes after assignment and completed projects are read-only; viewing and exporting remain available.
+
+The agreed import flow is to place images or plain-text files in the workspace's `media/` folder first (for example `ArbiterFolder/media/cat.jpg`), then select those files or a subfolder in the project. Import records the existing files without copying or moving them. Keep registered files at the same locations with the same contents; missing or changed files produce an error rather than a replacement-file picker. Deleting an incomplete project leaves source files in place. See [User Flows rule 21](UserFlows.md#3-rules-both-tracks-share) and [#25] for the accepted contract; screen-specific instructions follow implementation.
 
 The agreed statistics scope keeps session counts/timing and the 14-day activity chart ([#18], [#19]). Adjudicators get single-select label agreement; scales, detection and cases with no eligible items show N/A under [#33].
 
