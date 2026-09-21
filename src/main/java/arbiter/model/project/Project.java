@@ -34,7 +34,7 @@ public class Project {
     /** Whether an explanation is required with each label. */
     private boolean rationaleRequired;
 
-    /** Whether the dataset is complete, which releases earnings. */
+    /** Whether the dataset is complete, which permanently seals the project's data. */
     private boolean complete;
 
     /** When the project was created. */
