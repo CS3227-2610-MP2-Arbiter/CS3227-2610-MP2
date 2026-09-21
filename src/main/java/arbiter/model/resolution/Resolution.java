@@ -5,9 +5,10 @@ import java.time.Instant;
 /**
  * The final answer for an item after adjudication.
  *
- * <p>Like an annotation, a resolution carries exactly one of {@code labelId} or {@code scaleValue},
- * and the setters enforce it. A scale value is a {@code Double} because the agreed value may be the
- * average of several annotators' answers.
+ * <p>Like an annotation, a resolution carries at most one of {@code labelId} or {@code scaleValue}.
+ * The setters switch between scalar result shapes, and the getters reject conflicting fields loaded
+ * without the setters. A scale value is a {@code Double} because the agreed value may be the average
+ * of several annotators' answers.
  */
 public class Resolution {
     /** Database identifier. */
@@ -55,13 +56,13 @@ public class Resolution {
     }
 
     /**
-     * Returns the winning label, or null when this is a scale resolution.
+     * Returns the winning label, or null when no label is set.
      *
-     * <p>The read path enforces the same rule as the setters: ORMLite sets fields reflectively, so a
-     * row loaded from the database bypasses them.
+     * @throws IllegalStateException if both scalar result fields are populated
      */
     public Long getLabelId() {
-        return scaleValue != null ? null : labelId;
+        assertScalarStateIsValid();
+        return labelId;
     }
 
     /** Sets the winning label and clears any scale value, so only one answer shape is ever set. */
@@ -72,9 +73,14 @@ public class Resolution {
         }
     }
 
-    /** Returns the winning numeric answer, or null when this is a label resolution. */
+    /**
+     * Returns the winning numeric answer, or null when no scale value is set.
+     *
+     * @throws IllegalStateException if both scalar result fields are populated
+     */
     public Double getScaleValue() {
-        return labelId != null ? null : scaleValue;
+        assertScalarStateIsValid();
+        return scaleValue;
     }
 
     /** Sets the winning numeric answer and clears any label, so only one answer shape is ever set. */
@@ -82,6 +88,12 @@ public class Resolution {
         this.scaleValue = scaleValue;
         if (scaleValue != null) {
             this.labelId = null;
+        }
+    }
+
+    private void assertScalarStateIsValid() {
+        if (labelId != null && scaleValue != null) {
+            throw new IllegalStateException("Resolution cannot contain both a label and a scale value");
         }
     }
 

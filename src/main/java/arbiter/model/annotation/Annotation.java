@@ -5,9 +5,9 @@ import java.time.Instant;
 /**
  * One annotator's answer for one item, stored in canonical form.
  *
- * <p>An answer carries exactly one of {@code labelId} or {@code scaleValue}, depending on the
- * project's taxonomy kind. The setters enforce that, so the two can never both be set and the
- * choice cannot be read two ways.
+ * <p>An answer carries at most one of {@code labelId} or {@code scaleValue}, depending on the
+ * project's taxonomy kind. The setters switch between scalar answer shapes, and the getters reject
+ * conflicting fields loaded without the setters.
  */
 public class Annotation {
     /** Database identifier. */
@@ -80,11 +80,13 @@ public class Annotation {
     }
 
     /**
-     * Returns the chosen label, or null when this is a scale answer. The read path enforces the same
-     * rule as the setters, for the reason given on {@code getScaleValue}.
+     * Returns the chosen label, or null when no label is set.
+     *
+     * @throws IllegalStateException if both scalar answer fields are populated
      */
     public Long getLabelId() {
-        return scaleValue != null ? null : labelId;
+        assertScalarStateIsValid();
+        return labelId;
     }
 
     /** Sets the chosen label and clears any scale value, so only one answer shape is ever set. */
@@ -96,14 +98,13 @@ public class Annotation {
     }
 
     /**
-     * Returns the numeric answer, or null when this is a label answer.
+     * Returns the numeric answer, or null when no scale value is set.
      *
-     * <p>The read path enforces the same rule as the setters. ORMLite sets fields reflectively, so a
-     * row loaded from the database never goes through {@code setLabelId} or {@code setScaleValue};
-     * without this, a row could come back with both set.
+     * @throws IllegalStateException if both scalar answer fields are populated
      */
     public Integer getScaleValue() {
-        return labelId != null ? null : scaleValue;
+        assertScalarStateIsValid();
+        return scaleValue;
     }
 
     /** Sets the numeric answer and clears any chosen label, so only one answer shape is ever set. */
@@ -111,6 +112,12 @@ public class Annotation {
         this.scaleValue = scaleValue;
         if (scaleValue != null) {
             this.labelId = null;
+        }
+    }
+
+    private void assertScalarStateIsValid() {
+        if (labelId != null && scaleValue != null) {
+            throw new IllegalStateException("Annotation cannot contain both a label and a scale value");
         }
     }
 
