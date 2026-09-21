@@ -49,9 +49,9 @@ Dependencies point downward only, and neither role package imports the other - t
 
 The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, a rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
 
-- **Manual resolution** ([#34]) shows competing annotations side by side with the item, rationale and boxes, so the adjudicator screen must render an annotation exactly as the annotator made it.
+- **Manual resolution** ([#34]) shows anonymous submitted annotations side by side with the item and rationale. For classification, the adjudicator chooses or supplies a label. For detection, they select one complete submitted box set, so the read-only view must render every box and label exactly as the annotator made it.
 - **Box geometry** ([#15]) is hard: drawing, snapping, clamping, and coordinates that stay correct at any zoom level. Two implementations would drift.
-- **Adjudicators also annotate.** They supply their own label in [#34] and repair flagged items in [#35], so they need the annotator's editing widgets.
+- **Adjudicators also annotate.** They may supply their own classification label in [#34] and repair flagged items in the separate [#35] flow, so they need shared editing widgets. Detection resolution itself only selects a submitted set; it offers no box editing or combining.
 
 Building the roles as separate silos would duplicate the hardest UI code in the app, and a subtle disagreement between two coordinate transforms would hide there. So `AnnotationEditor`, `BoxCanvas` and `ItemView` live in `arbiter.ui.shared` and are used by both roles, with a role difference as a mode flag rather than a second implementation. Every rule about the data lives in `arbiter.service`, which both roles call, so no rule is implemented twice with two different answers.
 

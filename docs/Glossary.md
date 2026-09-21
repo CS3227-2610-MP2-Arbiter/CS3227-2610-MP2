@@ -16,12 +16,13 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Assignment** | The link between one split and one annotator. One split can go to several annotators. An assignment is submitted by the annotator and may be returned by an adjudicator for rework. |
 | **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with a rationale. |
 | **Bounding box** | One labelled rectangle drawn on a detection item, in image coordinates. |
+| **Box set** | All labelled bounding boxes in one annotator's annotation of one image. Detection resolution selects one complete submitted box set as the final answer. |
 | **Flag** | An annotator's report that an item's source material is unusable, with a reason and an optional comment. A reason is one of the values of `FlagReason`, and an adjudicator later gives it a `FlagDisposition`. |
-| **Resolved label** | The final answer for an item, including an averaged numeric rating for a scale item. |
-| **Resolution** | The record of how an item was settled: its final answer, how it was reached, and who decided when applicable. How it was reached is one of the values of `ResolutionMethod`; the rules for each taxonomy kind are in [User Flows](UserFlows.md#3-rules-both-tracks-share). |
+| **Resolved answer** | The final answer for an item: a label (the *resolved label*), an averaged numeric rating, or a selected complete box set. |
+| **Resolution** | The record of how an item was settled: its final answer, how it was reached, and who decided when applicable. How it was reached is one of the values of `ResolutionMethod`; the rules for each task type and taxonomy kind are in [User Flows](UserFlows.md#3-rules-both-tracks-share). |
 | **Workspace** | The folder a team's data lives in: one `arbiter.db`, plus `media/`, `exports/` and `logs/`. |
 
-*k* is the number of annotators who see each item, set on the split and defaulting to 2. Every item is annotated independently by *k* annotators, and annotators never see each other's work. Their submitted answers are the inputs to the resolution rule for the project's taxonomy kind.
+*k* is the number of annotators who see each item, set on the split and defaulting to 2. Every item is annotated independently by *k* annotators, and annotators never see each other's work. Their submitted answers are the inputs to the resolution rule for the project's task type and taxonomy kind.
 
 ## Fixed value sets
 

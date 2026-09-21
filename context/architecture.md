@@ -22,7 +22,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 ### Shared code
 
 - `AnnotationEditor`, `BoxCanvas` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
-- `AnnotationEditor` is editable for annotators and for adjudicators supplying their own label ([#34]) or repairing flagged items ([#35]), and read-only in the resolution screen ([#34]).
+- `AnnotationEditor` is editable for annotators, for adjudicators supplying their own classification label ([#34]), and in the separate flagged-item repair flow ([#35]). Submitted answers are read-only during comparison; detection resolution uses a read-only `BoxCanvas` and selects one complete submitted box set ([#34], rule 16).
 - Every rule about the data lives in `arbiter.service`, never in a controller or a repository.
 
 ### Blindness (rule 1)
@@ -75,6 +75,7 @@ A few rules keep the model honest:
 - **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value. Their setters clear the other, **and so do their getters**: ORMLite sets fields reflectively, so a row read back from the database never passes through the setters.
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity. **`Project` holds no reference back**: `projectId` is the only link, in the same direction as `Label`, `Item` and `Split`, so the relationship cannot be recorded twice and disagree.
 - **An annotator's scale answer is an `Integer`.** `Resolution.scaleValue` is a `Double` so the arithmetic mean required by rule 10 retains fractional results.
+- **Detection resolution needs a selected-annotation relationship.** Rule 16 requires `Resolution` to identify one submitted `Annotation` for the same item; that annotation's `BoundingBox` records provide the complete final set. The current scalar-only model does not yet represent this relationship. It must be added for [#34] and [#37], while preserving unselected submissions.
 - **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items, so the adjudicator can add an item to an assigned split or withdraw one (rule 13) without rewriting either side.
 - ***k* and the seed live on `Split`, not `Assignment`.** Both describe the work rather than one annotator's link to it: every annotator on the split sees the same items, and rule 7 needs the seed kept so a split can be reproduced.
 - **`Label` has no soft-delete flag.** Rule 5 makes labels the one exception: deleting a label removes it and its annotations outright, so a retired state would contradict the rule.
@@ -90,7 +91,7 @@ A few rules keep the model honest:
 - `ProjectService`, `CorpusService`: import, splits, taxonomy.
 - `AssignmentService`: assignment, *k*, load, completion and the reward lock.
 - `AnnotationService`: autosave, submit, flags, and the annotator-facing read path (rule 1).
-- `ResolutionService`: strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE`, following rule 10 and [#27]; idempotent.
+- `ResolutionService`: branch on task type first. Classification uses strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE` (rule 10, [#27]); detection requires manual selection of one complete submitted box set (rule 16, [#34]). No automatic detection matching. Re-running resolution with unchanged inputs is idempotent.
 - `EarningsService`: derived earnings, released versus pending.
 - `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical annotations and never choose a format.
 
