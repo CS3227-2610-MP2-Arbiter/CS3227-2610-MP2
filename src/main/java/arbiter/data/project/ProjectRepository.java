@@ -16,6 +16,9 @@ public interface ProjectRepository {
     /** Returns every project. */
     List<Project> listAll();
 
-    /** Removes a project and everything recorded under it. */
+    /**
+     * Removes an incomplete project and every database record it owns. Source files under media/ are
+     * never touched, and a completed project cannot be deleted (rules 5/9).
+     */
     void deleteById(long id);
 }

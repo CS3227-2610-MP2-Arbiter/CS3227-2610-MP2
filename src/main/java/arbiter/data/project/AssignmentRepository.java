@@ -22,7 +22,4 @@ public interface AssignmentRepository {
 
     /** Returns assignments with the given status. */
     List<Assignment> listByStatus(AssignmentStatus status);
-
-    /** Removes an assignment that has no submitted work. */
-    void deleteById(long id);
 }

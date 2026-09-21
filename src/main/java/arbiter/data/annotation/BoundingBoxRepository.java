@@ -12,6 +12,9 @@ public interface BoundingBoxRepository {
     /** Returns an answer's boxes in sequence order. */
     List<BoundingBox> listByAnnotation(long annotationId);
 
-    /** Removes every box belonging to an answer. */
+    /**
+     * Removes every box of a draft answer in an incomplete project, so autosave can replace them.
+     * Submitted boxes are permanent (rule 18).
+     */
     void deleteByAnnotation(long annotationId);
 }

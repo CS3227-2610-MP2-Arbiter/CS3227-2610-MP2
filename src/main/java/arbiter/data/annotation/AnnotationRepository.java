@@ -31,7 +31,4 @@ public interface AnnotationRepository {
      * without inventing a submission.
      */
     long countValidSubmittedByAnnotator(long annotatorId);
-
-    /** Removes an answer, which adjudicators may do to any answer. */
-    void deleteById(long id);
 }
