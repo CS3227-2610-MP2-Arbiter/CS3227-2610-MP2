@@ -13,7 +13,7 @@ Arbiter is an offline Java desktop app for teams that label data.
 
 ## How it works
 
-An adjudicator imports a corpus and splits it into batches. Each split goes to several annotators, so every item collects several independent annotations. For classification, single-select labels resolve by strict majority or an adjudicator's decision, while numeric scale ratings are averaged. For detection, the adjudicator selects one annotator's complete submitted set of labelled boxes. The result exports as CSV, JSON or COCO, with a provenance record explaining every decision.
+An adjudicator imports a corpus and splits it into batches. Each split goes to several annotators, so every item collects several independent annotations. For classification, single-select labels resolve by strict majority or an adjudicator's decision, while numeric scale ratings are averaged. For detection, the adjudicator selects one annotator's complete submitted set of labelled boxes. The result exports as CSV, JSON or COCO, with a provenance record explaining every decision. The [shared rules](UserFlows.md#3-rules-both-tracks-share) freeze setup after assignment and seal completed projects.
 
 See the [Glossary](Glossary.md) for the terms used throughout, and [User Flows](UserFlows.md) for the shape of both flows and the rules they share. The step-by-step behaviour is in the GitHub issues those pages link to.
 

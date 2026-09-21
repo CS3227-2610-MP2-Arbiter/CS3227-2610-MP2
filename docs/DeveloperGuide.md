@@ -66,9 +66,10 @@ This is stronger than package separation: it holds for code written later, by an
 
 ### Data and persistence
 
-- **Money is derived, never stored.** There is no balance column and no ledger. Earnings are recomputed from annotations and per-item rewards, so they cannot drift from the data.
+- **Money is derived, never stored.** There is no balance column and no ledger. Earnings are recomputed from eligible submitted work and per-item rewards; completing the project seals all inputs, so later edits or account deactivation cannot reduce released earnings.
 - **Losing annotations are kept.** When resolution picks a winner, the other annotations stay, because the per-item breakdown and the export's provenance need them.
-- **Deletion is soft, except for labels.** Accounts and items are retired rather than purged, so historical annotations stay interpretable. Deleting a label removes the annotations that used it.
+- **Retain the evidence.** Deactivated accounts and retired items keep their annotations and attribution. Unused labels may be deleted only before the first assignment, without deleting answers; whole-project deletion remains available only for incomplete projects with a loss confirmation.
+- **Freeze setup, then seal completed work.** The first assignment freezes the project's corpus/taxonomy, and each assigned split's definition locks. Before completion, annotators continue their work and adjudicators can return assignments, resolve answers and review flags; flagged exclusion preserves records. COMPLETE makes all project data read-only, including unfinished work, while viewing/export remain available. Services enforce the [shared lifecycle rules](UserFlows.md#3-rules-both-tracks-share) at the write boundary; this is a required contract, not an implemented guarantee of the current model-only branch.
 - **Write-through.** Every annotator action commits immediately, because a power cut must not lose work.
 - **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand. Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not fit a desktop app with one connection. Complex queries still drop to raw SQL, inside the repository.
 - **A single writer.** The database is shared over a shared drive, and SQLite is not safe against concurrent writers there, so `arbiter.workspace` takes an advisory lock. The failure is explicit rather than silent corruption.

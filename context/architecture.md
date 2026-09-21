@@ -33,9 +33,17 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 ### Data
 
-- Never store money: no `balance` column and no ledger table. Earnings are derived from annotations and per-item rewards ([#20]).
+- Never store money: no `balance` column and no ledger table. Earnings are derived from eligible submitted work and per-item rewards ([#20]).
 - Resolution never deletes the losing annotations; [#36] and [#37] need them.
-- Retire users and items instead of deleting them (rule 5). Deleting a label is the exception: it removes the annotations that used it and returns those items to unannotated ([#26], rule 3).
+- Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
+
+### Lifecycle (rules 3, 5, 6, 9, 13, 14)
+
+- First assignment freezes corpus and taxonomy project-wide; each split's first assignment locks its definition, including membership/order, `annotationsPerItem` and `itemReward`. Persist the first-assignment evidence/locks atomically with assignment creation. Removing the last current assignment must not unfreeze setup.
+- `SplitItem` records stay unchanged after assignment. Pre-completion flagged exclusion changes item retirement, retaining memberships and all answers/provenance; it does not move or delete memberships.
+- `Project.complete` seals all project-owned records. Every mutating service must check the seal in the transaction that writes, including autosave, assignment/return, flag batches, resolution and deletion. UI controls alone are insufficient. Completion commits atomically; export/viewing may read but never mutate sealed data.
+- Earnings read sealed inputs after completion and must not filter away contributions merely because a user is disabled. No stored balance/ledger is introduced.
+- Return/repair resolution invalidation and account replacement remain explicit follow-ups before implementing those flows. By-reference source integrity also needs validation: freezing database records alone cannot prevent external file changes.
 
 ### Persistence
 
@@ -76,11 +84,11 @@ A few rules keep the model honest:
 - **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity. **`Project` holds no reference back**: `projectId` is the only link, in the same direction as `Label`, `Item` and `Split`, so the relationship cannot be recorded twice and disagree.
 - **An annotator's scale answer is an `Integer`.** `Resolution.scaleValue` is a `Double` so the arithmetic mean required by rule 10 retains fractional results.
 - **Detection resolution needs a selected-annotation relationship.** Rule 16 requires `Resolution` to identify one submitted `Annotation` for the same item; that annotation's `BoundingBox` records provide the complete final set. The current scalar-only model does not yet represent this relationship. It must be added for [#34] and [#37], while preserving unselected submissions.
-- **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items, so the adjudicator can add an item to an assigned split or withdraw one (rule 13) without rewriting either side.
+- **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items. Configure it before that split's first assignment; retain it unchanged afterwards, including when an item is excluded (rules 6/14).
 - ***k* and the seed live on `Split`, not `Assignment`.** Both describe the work rather than one annotator's link to it: every annotator on the split sees the same items, and rule 7 needs the seed kept so a split can be reproduced.
-- **`Label` has no soft-delete flag.** Rule 5 makes labels the one exception: deleting a label removes it and its annotations outright, so a retired state would contradict the rule.
-- **A submitted assignment can be returned, and the return is recorded.** `AssignmentStatus.RETURNED` exists because an adjudicator may send a split back for rework ([#12], [#17]), and `Assignment` carries `returnedAt`, `returnedByUserId` and `returnReason` so rule 13's "recorded" is true and the annotator learns what to fix.
-- **Every flag has a disposition.** `FlagDisposition` is `PENDING`, `EXCLUDED`, `REPAIRED` or `KEPT`, so the review queue empties once each flag is dealt with ([#35]) and the disposition can be shown per item ([#36]). Excluding retires the item, so `Item.retired` stays the one place that decides whether an item is in the dataset.
+- **`Label` has no soft-delete flag.** An unused label can be deleted during setup only. Once the project has been assigned, taxonomy writes and deletion are forbidden; there is no annotation-deletion cascade (rules 3/5).
+- **A submitted assignment can be returned, and the return is recorded.** `AssignmentStatus.RETURNED` exists because an adjudicator may send an assignment back for rework before project completion ([#12], [#17]), and `Assignment` carries `returnedAt`, `returnedByUserId` and `returnReason` so rule 13's "recorded" is true and the annotator learns what to fix.
+- **Every flag has a disposition.** `FlagDisposition` is `PENDING`, `EXCLUDED`, `REPAIRED` or `KEPT`, so the review queue empties once each flag is dealt with ([#35]) and the disposition can be shown per item ([#36]). Excluding before completion retires the item while preserving its records, so `Item.retired` stays the one place that decides whether an item is in the dataset; COMPLETE blocks all disposition changes.
 - **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
 - **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Split.annotationsPerItem` stays null until a split is cut and assigned.
 
@@ -88,8 +96,8 @@ A few rules keep the model honest:
 
 - `AuthService`: login, session, password hashing (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup, the lock, paths.
-- `ProjectService`, `CorpusService`: import, splits, taxonomy.
-- `AssignmentService`: assignment, *k*, load, completion and the reward lock.
+- `ProjectService`, `CorpusService`: project completion/deletion guards, import, splits and taxonomy, respecting project freeze and completion.
+- `AssignmentService`: assignment, *k*, load, first-assignment freeze/locks and the completion guard.
 - `AnnotationService`: autosave, submit, flags, and the annotator-facing read path (rule 1).
 - `ResolutionService`: branch on task type first. Classification uses strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE` (rule 10, [#27]); detection requires manual selection of one complete submitted box set (rule 16, [#34]). No automatic detection matching. Re-running resolution with unchanged inputs is idempotent.
 - `EarningsService`: derived earnings, released versus pending.

@@ -24,11 +24,13 @@ The behaviour behind each task is specified in [User Flows](UserFlows.md); the i
 | Label items | Annotator | [#13], [#14], [#15] |
 | Report a bad image | Annotator | [#16] |
 | See what I have earned | Annotator | [#20], [#21] |
-| Import a corpus | Adjudicator | [#25] |
-| Define or delete labels | Adjudicator | [#26] |
+| Import a corpus before the first assignment | Adjudicator | [#25] |
+| Configure labels before the first assignment | Adjudicator | [#26] |
 | Assign annotators | Adjudicator | [#32] |
 | Resolve disagreements | Adjudicator | [#27], [#34] |
 | Export the dataset | Adjudicator | [#37] |
+
+The agreed [lifecycle rules](UserFlows.md#3-rules-both-tracks-share) freeze setup after assignment and make completed projects read-only; viewing and exporting remain available.
 
 Step-by-step instructions for each screen will be added as features are released.
 
