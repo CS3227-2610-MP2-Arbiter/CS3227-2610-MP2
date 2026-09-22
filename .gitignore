@@ -1,4 +1,4 @@
 .gradle/
 build/
-data/
-bin/
+/data/
+/bin/

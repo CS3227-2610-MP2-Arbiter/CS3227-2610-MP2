@@ -8,12 +8,12 @@ Arbiter is an offline Java desktop app for teams that label data.
 
 ## The two roles
 
-- **Annotators** work a blind queue: one item at a time, choose a label, add a rationale, flag anything unclear. They never see each other's answers.
-- **Adjudicators** import a corpus, split it into batches, assign annotators, and resolve the items where annotators disagreed. They own the label taxonomy and export the finished dataset with provenance for every decision.
+- **Annotators** work a blind queue: one item at a time, choose a label by their best judgement even when the item is ambiguous, optionally add a rationale, and flag only problems with the source material. The adjudicator settles the disagreements that result.
+- **The adjudicator** owns the workspace. They create annotator accounts, set up projects and their label taxonomy, assign the work, review flags, settle disputes, choose detection answers and export the finished dataset.
 
 ## How it works
 
-An adjudicator imports a corpus and splits it into batches. Each split goes to several annotators, so every item collects several independent annotations. Where they agree, Arbiter resolves the item automatically; where they disagree, an adjudicator decides. The result exports as CSV, JSON or COCO, with a provenance record explaining every decision.
+An adjudicator imports a corpus and splits it into batches. Each batch goes to several annotators, so every item collects several independent annotations. Arbiter resolves what it can automatically and the adjudicator decides the rest. The result exports as a dataset with provenance for each decision.
 
 See the [Glossary](Glossary.md) for the terms used throughout, and [User Flows](UserFlows.md) for the shape of both flows and the rules they share. The step-by-step behaviour is in the GitHub issues those pages link to.
 

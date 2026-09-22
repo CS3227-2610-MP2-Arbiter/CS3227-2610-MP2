@@ -4,24 +4,31 @@ title: Glossary
 
 # Glossary
 
-The terms Arbiter's documentation and issues rely on. Each term uses only the terms above it. Arbiter has [two roles](index.md#the-two-roles), annotator and adjudicator, which [the home page](index.md) defines.
+The terms Arbiter's documentation and issues rely on. Each term uses only the terms above it. Arbiter has [two roles](index.md#the-two-roles), annotator and adjudicator, which [the home page](index.md) defines. The rules that follow from these terms are in [User Flows](UserFlows.md#3-rules-both-tracks-share).
 
 | Term | Meaning |
 | --- | --- |
-| **Project** | One labelling job, whose task type, source type and output format are fixed at creation. |
+| **Project** | One labelling job, with a task type, source type, taxonomy kind and output format. |
 | **Item** | One annotatable unit: one image, or one plain-text document. |
 | **Corpus** | The collection of items imported into a project. |
 | **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
-| **Split** | A batch of items cut from the corpus. |
-| **Assignment** | The link between one split and one annotator. One split can go to several annotators. |
-| **Annotation** | One annotator's answer for one item: a label, a rationale, optional boxes. |
+| **Split** | A batch of corpus items, which is what gets assigned. |
+| **Assignment** | The link between one split and one annotator who works it. |
+| **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with an optional rationale. |
+| **Submitted answer** | An annotation permanently recorded by Submit & next, including any rationale and boxes. Before that it is a draft. |
 | **Bounding box** | One labelled rectangle drawn on a detection item, in image coordinates. |
-| **Flag** | An annotator's report that an item's source material is unusable, with a reason and an optional comment. A reason is one of the values of `FlagReason`. |
-| **Resolved label** | The final answer for an item after adjudication. |
-| **Resolution** | The record of how an item was settled: its resolved label, how it was reached, and who decided. How it was reached is one of the values of `ResolutionMethod`. An item with no strict majority stays a dispute until an adjudicator decides it. |
-| **Workspace** | The folder a team's data lives in: one `arbiter.db`, plus `media/`, `exports/` and `logs/`. |
+| **Box set** | All labelled bounding boxes in one annotator's annotation of one image. |
+| **Flag** | An annotator's report of unusable source material, with a reason and optional comment. It either accompanies an answer or is submitted alone as a *report-only outcome*, which holds no answer. |
+| **Resolved answer** | The final answer for an item: a label (the *resolved label*), an averaged numeric rating, or a selected complete box set. |
+| **Unresolved item** | An item with no resolved answer yet, for any reason. |
+| **Dispute** | An unresolved single-select item that has *k* valid submitted answers but no strict-majority label, so it awaits the adjudicator ([rule 10](UserFlows.md#3-rules-both-tracks-share)). |
+| **Resolution** | The record of how an item was settled: its final answer, how it was reached, and who decided when applicable. |
+| **Label agreement** | For single-select classification, the average across eligible items of the fraction of annotator pairs whose original submitted labels match. It measures label consistency, not correctness. [#33](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33) defines eligibility and display. |
+| **Provenance** | The evidence behind an item's current decision: each submitted answer or report-only outcome with its annotator and submission time, the current resolution and its contributors, and current flags with their dispositions. |
+| **Workspace** | The folder both roles use, holding one `arbiter.db` plus `media/`, `exports/` and `logs/`. |
+| **Registration in place** | Recording an existing source file's location and content hash as a project item, without copying, moving or editing the file. |
 
-*k* is the number of annotators who see each item, set per assignment and defaulting to 2. Every item is annotated independently by *k* annotators, and annotators never see each other's work. That is what makes "resolve by highest count" meaningful, and it is why the queue is blind.
+*k* is the number of annotators who independently annotate each item in a split. It defaults to 2.
 
 ## Fixed value sets
 
@@ -30,15 +37,14 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | Set | Values | Meaning |
 | --- | --- | --- |
 | **Role** | `ANNOTATOR`, `ADJUDICATOR` | Which side of the workflow an account works on. |
-| **Task type** | `CLASSIFICATION`, `DETECTION` | Whether an annotator picks a label or draws boxes. Fixed when the project is created. |
-| **Source type** | `IMAGE`, `TXT` | Whether an item is an image or a text document. Fixed when the project is created. |
+| **Task type** | `CLASSIFICATION`, `DETECTION` | Whether an annotator picks a label or draws boxes. |
+| **Source type** | `IMAGE`, `TXT` | Whether an item is an image or a text document. |
 | **Taxonomy kind** | `SINGLE`, `SCALE` | Whether a label set is a pick-one list or a numeric scale. |
-| **Output format** | `CSV`, `JSON`, `COCO` | The on-disk format the finished dataset is written in. Only the exporter writes these. |
-| **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED` | Where an assignment has got to. |
-| **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final label was reached, recorded for provenance. |
+| **Output format** | `CSV`, `JSON`, `COCO` | The format the finished dataset is written in. |
+| **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED` | Progress through an assignment's queue. `SUBMITTED` means every non-retired item in it has a submitted answer or report-only outcome. |
+| **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final answer was reached: strict-majority label, adjudicator decision or arithmetic mean of scale ratings, respectively. |
 | **Flag reason** | `CORRUPT_OR_UNREADABLE`, `WRONG_CONTENT`, `TOXIC_OR_SENSITIVE` | Why an annotator reported an item's source material as unusable. |
-| **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. Deactivation is a soft delete, so a disabled account's annotations remain history. |
-
-See [User Flows](UserFlows.md) for the shape of both flows and the rules that follow from these terms.
+| **Flag disposition** | `PENDING`, `EXCLUDED`, `KEPT` | The adjudicator's decision on a flag: not yet reviewed, item excluded, or item kept. |
+| **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. |
 
 [Back to home](index.md)
