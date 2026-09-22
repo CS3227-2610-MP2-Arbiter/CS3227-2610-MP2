@@ -23,7 +23,6 @@ What the feature does is in [#9], and what each class means is in its Javadoc. T
 ## Open questions
 
 - **UI ownership.** `arbiter.ui.shared` is zheng-jj's package ([#5]); the wizard is a new file there.
-
 ## Verification
 
 | Acceptance criterion | How it is verified |
@@ -33,7 +32,7 @@ What the feature does is in [#9], and what each class means is in its Javadoc. T
 | Multiple workspaces can be created and opened | Unit test creates two workspaces and opens each |
 | A newer workspace fails clearly and is left untouched | Unit test: a workspace stamped with a higher version and an extra field is refused by version and left byte-identical |
 | Paths come from a single shared object | Unit test checks each path `WorkspacePaths` returns |
-| A relative path still resolves after the workspace moves | Not yet tested |
+| A relative path still resolves after the workspace moves | Unit test: a moved workspace opens with its `media/` folder under the new root |
 | `./gradlew check` passes | `./gradlew check shadowJar` |
 
 The JavaFX wizard is not unit-tested: it needs a display, and it only calls `WorkspaceService`.

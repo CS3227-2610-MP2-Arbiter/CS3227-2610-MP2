@@ -1,6 +1,6 @@
 # Rework write-test around test-design techniques
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 

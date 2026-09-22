@@ -73,6 +73,7 @@ public class WorkspaceService {
                             + "). Update Arbiter before opening it. The workspace has not been "
                             + "changed.");
         }
+        requireFile(paths.databaseFile());
         requireDirectory(paths.mediaDirectory());
         requireDirectory(paths.exportsDirectory());
         requireDirectory(paths.logsDirectory());
@@ -98,10 +99,19 @@ public class WorkspaceService {
         }
     }
 
+    private static void requireFile(Path path) {
+        if (!Files.isRegularFile(path)) {
+            throw incomplete(path);
+        }
+    }
+
     private static void requireDirectory(Path path) {
         if (!Files.isDirectory(path)) {
-            throw new WorkspaceException(
-                    "The workspace is incomplete: " + path.getFileName() + " is missing.");
+            throw incomplete(path);
         }
+    }
+
+    private static WorkspaceException incomplete(Path path) {
+        return new WorkspaceException("The workspace is incomplete: " + path.getFileName() + " is missing.");
     }
 }
