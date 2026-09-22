@@ -2,7 +2,6 @@ package arbiter.workspace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -112,15 +111,11 @@ class WorkspaceServiceTest {
         Path folder = workspaceFolder("future");
         WorkspacePaths paths = service.create(folder);
 
-        // Stamp the workspace as written by a later version.
-        String metadata = Files.readString(paths.metadataFile(), StandardCharsets.UTF_8);
+        // Stamp the workspace as written by a later version, which may also add fields.
         int bumped = WorkspaceMetadata.CURRENT_WORKSPACE_VERSION + 3;
-        String newer = metadata.replace(
-                "\"workspaceVersion\": " + WorkspaceMetadata.CURRENT_WORKSPACE_VERSION,
-                "\"workspaceVersion\": " + bumped);
-        assertNotEquals(metadata, newer, "the version field should have been rewritten");
+        String newer = "{\"workspaceVersion\": " + bumped + ", \"schemaVersion\": 1, "
+                + "\"created\": \"2026-09-20T00:00:00Z\", \"addedLater\": true}";
         Files.writeString(paths.metadataFile(), newer, StandardCharsets.UTF_8);
-        String before = Files.readString(paths.metadataFile(), StandardCharsets.UTF_8);
 
         WorkspaceException failure = assertThrows(WorkspaceException.class, () ->
                 service.open(folder));
@@ -129,8 +124,27 @@ class WorkspaceServiceTest {
                 "the message should name the newer version: " + failure.getMessage());
         assertTrue(failure.getMessage().toLowerCase().contains("newer"),
                 "the message should say the workspace is newer: " + failure.getMessage());
-        assertEquals(before, Files.readString(paths.metadataFile(), StandardCharsets.UTF_8),
+        assertEquals(newer, Files.readString(paths.metadataFile(), StandardCharsets.UTF_8),
                 "the workspace must be left exactly as it was");
+    }
+
+    @Test
+    void malformedMetadataIsRefused() throws IOException {
+        WorkspacePaths paths = service.create(workspaceFolder("ws"));
+
+        Files.writeString(paths.metadataFile(), "{ this is not json", StandardCharsets.UTF_8);
+        WorkspaceException notJson = assertThrows(WorkspaceException.class, () ->
+                service.open(paths.root()));
+
+        Files.writeString(paths.metadataFile(), "{\"workspaceVersion\": 1, \"created\": "
+                + "\"2026-09-20T00:00:00Z\"}", StandardCharsets.UTF_8);
+        WorkspaceException missingField = assertThrows(WorkspaceException.class, () ->
+                service.open(paths.root()));
+
+        assertTrue(notJson.getMessage().contains(WorkspacePaths.METADATA_FILE),
+                "the message should name the file: " + notJson.getMessage());
+        assertTrue(missingField.getMessage().contains("schemaVersion"),
+                "the message should name the missing field: " + missingField.getMessage());
     }
 
     @Test

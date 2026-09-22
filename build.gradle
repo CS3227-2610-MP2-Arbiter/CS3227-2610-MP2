@@ -32,6 +32,8 @@ dependencies {
             implementation "org.openjfx:javafx-${module}:${javaFxVersion}:${platform}"
         }
     }
+
+    implementation 'tools.jackson.core:jackson-databind:3.2.3'
 }
 
 test {

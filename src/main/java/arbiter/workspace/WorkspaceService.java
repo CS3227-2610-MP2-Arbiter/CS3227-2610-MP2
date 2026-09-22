@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Creates and opens workspaces.
@@ -16,9 +19,12 @@ import java.util.Optional;
  * reopened.
  */
 public class WorkspaceService {
-    private static final String VERSION_FIELD = "workspaceVersion";
-    private static final String SCHEMA_FIELD = "schemaVersion";
-    private static final String CREATED_FIELD = "created";
+    // Unknown fields are ignored so that a newer workspace reaches the version check below.
+    private static final JsonMapper JSON = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .enable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .build();
 
     private final RecentWorkspaces recent;
 
@@ -51,7 +57,8 @@ public class WorkspaceService {
             Files.createDirectories(paths.exportsDirectory());
             Files.createDirectories(paths.logsDirectory());
             Files.createFile(paths.databaseFile());
-            writeMetadata(paths, WorkspaceMetadata.createNow());
+            Files.writeString(paths.metadataFile(), JSON.writeValueAsString(WorkspaceMetadata.createNow()),
+                    StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new WorkspaceException("Could not create the workspace in " + paths.root(), e);
         }
@@ -122,38 +129,15 @@ public class WorkspaceService {
      */
     public WorkspaceMetadata readMetadata(WorkspacePaths paths) {
         try {
-            Map<String, Object> fields =
-                    Json.read(Files.readString(paths.metadataFile(), StandardCharsets.UTF_8));
-            return new WorkspaceMetadata(
-                    intField(fields, VERSION_FIELD),
-                    intField(fields, SCHEMA_FIELD),
-                    java.time.Instant.parse(String.valueOf(fields.get(CREATED_FIELD))));
+            String text = Files.readString(paths.metadataFile(), StandardCharsets.UTF_8);
+            return JSON.readValue(text, WorkspaceMetadata.class);
         } catch (IOException e) {
             throw new WorkspaceMetadataException(
                     "Could not read " + WorkspacePaths.METADATA_FILE, e);
-        } catch (WorkspaceException e) {
-            throw e;
-        } catch (RuntimeException e) {
+        } catch (JacksonException e) {
             throw new WorkspaceMetadataException(
-                    WorkspacePaths.METADATA_FILE + " is malformed: " + e.getMessage(), e);
+                    WorkspacePaths.METADATA_FILE + " is malformed: " + e.getOriginalMessage(), e);
         }
-    }
-
-    private void writeMetadata(WorkspacePaths paths, WorkspaceMetadata metadata) throws IOException {
-        Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put(VERSION_FIELD, metadata.workspaceVersion());
-        fields.put(SCHEMA_FIELD, metadata.schemaVersion());
-        fields.put(CREATED_FIELD, metadata.created().toString());
-        Files.writeString(paths.metadataFile(), Json.write(fields), StandardCharsets.UTF_8);
-    }
-
-    private static int intField(Map<String, Object> fields, String name) {
-        Object value = fields.get(name);
-        if (!(value instanceof Number)) {
-            throw new WorkspaceMetadataException(
-                    WorkspacePaths.METADATA_FILE + " is missing the " + name + " field");
-        }
-        return ((Number) value).intValue();
     }
 
     private static void requireDirectory(Path path) {

@@ -11,6 +11,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+
 /**
  * Remembers which workspaces exist and which was opened last.
  *
@@ -26,6 +31,10 @@ public final class RecentWorkspaces {
 
     /** How many workspaces are remembered. */
     public static final int LIMIT = 10;
+
+    private static final JsonMapper JSON = JsonMapper.builder()
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .build();
 
     private final Path file;
     private final List<Path> paths = new ArrayList<>();
@@ -62,14 +71,11 @@ public final class RecentWorkspaces {
             return;
         }
         try {
-            Map<String, Object> fields = Json.read(Files.readString(file, StandardCharsets.UTF_8));
-            Object entry = fields.get("workspaces");
-            if (entry instanceof List<?>) {
-                for (Object path : (List<?>) entry) {
-                    paths.add(Path.of(String.valueOf(path)));
-                }
+            JsonNode fields = JSON.readTree(Files.readString(file, StandardCharsets.UTF_8));
+            for (JsonNode path : fields.path("workspaces")) {
+                paths.add(Path.of(path.asString()));
             }
-        } catch (IOException | WorkspaceException e) {
+        } catch (IOException | JacksonException e) {
             // A damaged recent list must never stop the app from starting: treat it as empty.
             paths.clear();
         }
@@ -102,7 +108,7 @@ public final class RecentWorkspaces {
             fields.put("version", 1);
             fields.put("updated", Instant.now().toString());
             fields.put("workspaces", asText);
-            Files.writeString(file, Json.write(fields), StandardCharsets.UTF_8);
+            Files.writeString(file, JSON.writeValueAsString(fields), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new WorkspaceException("Could not save the recent workspace list", e);
         }
