@@ -3,9 +3,9 @@ package arbiter.model.project;
 import java.time.Instant;
 
 /**
- * One labelling job and the settings that shape everything under it.
+ * One text-classification job and the settings that shape everything under it.
  *
- * <p>{@code taskType}, {@code sourceType} and {@code outputFormat} are fixed at creation (rule 4).
+ * <p>{@code outputFormat} is fixed at creation (rule 4).
  */
 public class Project {
     /** Database identifier. */
@@ -17,17 +17,8 @@ public class Project {
     /** What the project is for. */
     private String description;
 
-    /** Classification or detection. */
-    private TaskType taskType;
-
-    /** Image or text. */
-    private SourceType sourceType;
-
     /** Format the finished dataset is written in. */
     private OutputFormat outputFormat;
-
-    /** Whether the dataset is complete, which seals the project's data (rule 9). */
-    private boolean complete;
 
     /** When the project was created. */
     private Instant createdAt;
@@ -60,36 +51,12 @@ public class Project {
         this.description = description;
     }
 
-    public TaskType getTaskType() {
-        return taskType;
-    }
-
-    public void setTaskType(TaskType taskType) {
-        this.taskType = taskType;
-    }
-
-    public SourceType getSourceType() {
-        return sourceType;
-    }
-
-    public void setSourceType(SourceType sourceType) {
-        this.sourceType = sourceType;
-    }
-
     public OutputFormat getOutputFormat() {
         return outputFormat;
     }
 
     public void setOutputFormat(OutputFormat outputFormat) {
         this.outputFormat = outputFormat;
-    }
-
-    public boolean isComplete() {
-        return complete;
-    }
-
-    public void setComplete(boolean complete) {
-        this.complete = complete;
     }
 
     public Instant getCreatedAt() {

@@ -21,13 +21,13 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 ### Shared code
 
-- `AnnotationEditor`, `BoxCanvas` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
-- `AnnotationEditor` edits only the current annotator draft. Adjudicator screens use the shared label picker and a read-only `BoxCanvas`, and never edit a submission (rule 13).
-- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check the project seal (rule 9) and setup freezes (rules 3, 14) inside the write transaction; a disabled control is not enforcement.
+- `AnnotationEditor` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
+- `AnnotationEditor` holds only the annotator's current unsubmitted choice. Adjudicator screens reuse the label picker for resolution and never edit a submission (rule 13).
+- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check setup freezes and the pre-assignment deletion guard (rules 3, 5, 14) inside the write transaction; a disabled control is not enforcement.
 
 ### Blindness (rule 1)
 
-- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or agreement statistics.
+- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or another annotator's work.
 - Do not rely on package separation for blindness.
 - The blindness test ([#11]) must cover every annotator-facing code path, including new ones.
 
@@ -69,10 +69,10 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 
 - `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup, the lock, paths.
-- `ProjectService`, `CorpusService`: project completion and deletion, import, splits and taxonomy.
+- `ProjectService`, `CorpusService`: pre-assignment project deletion, import, splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
-- `AnnotationService`: draft autosave, submission and queue advancement (rule 18), flags, and the annotator-scoped read path (rule 1).
-- `ResolutionService`: automatic and manual resolution, branching on task type first (rules 10, 16).
+- `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
+- `ResolutionService`: automatic and manual classification resolution (rule 10).
 - `ExportService`: the only code that knows about output formats. Annotators persist canonical annotations and never choose a format.
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4

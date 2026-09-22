@@ -16,6 +16,6 @@ public interface SplitRepository {
     /** Returns a project's splits. */
     List<Split> listByProject(long projectId);
 
-    /** Removes a never-assigned split of an incomplete project (rule 14). */
+    /** Removes a split before that split's first assignment (rule 14). */
     void deleteById(long id);
 }

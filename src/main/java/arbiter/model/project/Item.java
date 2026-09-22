@@ -2,7 +2,7 @@ package arbiter.model.project;
 
 import java.time.Instant;
 
-/** One annotatable unit: an image, or a plain-text document. */
+/** One annotatable plain-text document. */
 public class Item {
     /** Database identifier. */
     private Long id;
@@ -10,14 +10,11 @@ public class Item {
     /** Project this item belongs to. */
     private Long projectId;
 
-    /** Workspace-relative location of the source file under {@code media/}, such as {@code media/corpus/cat.jpg}. */
+    /** Workspace-relative location under {@code media/}, such as {@code media/corpus/review.txt}. */
     private String path;
 
     /** Hash of the bytes registered at import, used to reject duplicates and detect a changed source file. */
     private String contentHash;
-
-    /** True once the item is excluded, which drops it from work and the export while keeping its records. */
-    private boolean retired;
 
     /** When the item was imported. */
     private Instant importedAt;
@@ -56,14 +53,6 @@ public class Item {
 
     public void setContentHash(String contentHash) {
         this.contentHash = contentHash;
-    }
-
-    public boolean isRetired() {
-        return retired;
-    }
-
-    public void setRetired(boolean retired) {
-        this.retired = retired;
     }
 
     public Instant getImportedAt() {

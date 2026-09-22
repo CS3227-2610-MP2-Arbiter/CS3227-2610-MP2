@@ -2,7 +2,7 @@
 
 **Issue:** [#4] - Agree the shared domain model and repository interfaces
 **Branch:** `feat/shared-domain-model`
-**Status:** Implemented on the branch. The open questions below and review by both track owners remain.
+**Status:** Superseded for V1 by the approved scope reduction in [#62]. This file remains a historical record of the earlier model decisions and is not an active implementation contract.
 
 What each class and field means, and why it has that shape, is in its Javadoc; the conventions all model classes follow are in [context/architecture.md](../context/architecture.md#model). This plan records what was decided along the way and what is still open. Most decisions came from Whimsyturtle's review of the first revision.
 
@@ -62,3 +62,4 @@ What each class and field means, and why it has that shape, is in its Javadoc; t
 [#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
 [#36]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/36
 [#37]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/37
+[#62]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/62
