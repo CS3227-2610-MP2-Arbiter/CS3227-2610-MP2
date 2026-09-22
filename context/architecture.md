@@ -54,6 +54,8 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - Nothing that assumes a backend: no background jobs, webhooks or message queues (rule 8).
 - No plugin system and no dependency-injection framework.
+- Do not reinvent the wheel: use the Java standard library where it suffices, and otherwise a reputable, maintained third-party library. Never hand-write a solved problem (e.g., JSON parsing).
+- Use a record for any class that only carries immutable data, instead of hand-writing its constructor, accessors, `equals` and `hashCode`. Model classes are the exception, because their fields are not `final` (see [Model](#model)).
 - Java lines are at most 120 characters (Checkstyle in `config/checkstyle`). Markdown is exempt:
   never hard-wrap prose, tables or bullets in `.md` files.
 
