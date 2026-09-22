@@ -1,9 +1,6 @@
 package arbiter.model.user;
 
-/**
- * Whether an account may be used. Deactivation is a soft delete, so a disabled account's
- * annotations remain history.
- */
+/** Whether an account may be used. */
 public enum AccountStatus {
     ACTIVE,
     DISABLED

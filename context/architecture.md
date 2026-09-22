@@ -1,6 +1,6 @@
 # Architecture
 
-Written for agents: rules as tables and bullets, with no diagrams or rationale. The design, its reasoning and the test levels are in the "Design" and "Testing" sections of [docs/DeveloperGuide.md](../docs/DeveloperGuide.md), written for human readers. "Rule N" means rule N in section 3 of [docs/UserFlows.md](../docs/UserFlows.md).
+Written for agents: rules as tables and bullets, with no diagrams or rationale. The design, its reasoning and the test levels are in the "Design" and "Testing" sections of [docs/DeveloperGuide.md](../docs/DeveloperGuide.md), written for human readers. "Rule N" means rule N in section 3 of [docs/UserFlows.md](../docs/UserFlows.md); product rules live there and in the GitHub issues, and this file only says where the code enforces them.
 
 ## Packages
 
@@ -22,56 +22,23 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 ### Shared code
 
 - `AnnotationEditor`, `BoxCanvas` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
-- `AnnotationEditor` edits only the current annotator draft. Adjudicator classification resolution uses a shared label picker to record a separate final decision ([#34]); it never edits the original answer. Detection comparison uses read-only `BoxCanvas`; flag review has keep/exclude only ([#35], rules 13/16).
-- Every rule about the data lives in `arbiter.service`, never in a controller or a repository.
+- `AnnotationEditor` edits only the current annotator draft. Adjudicator screens use the shared label picker and a read-only `BoxCanvas`, and never edit a submission (rule 13).
+- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check the project seal (rule 9) and setup freezes (rules 3, 14) inside the write transaction; a disabled control is not enforcement.
 
 ### Blindness (rule 1)
 
-- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or agreement statistics, including aggregate agreement.
+- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or agreement statistics.
 - Do not rely on package separation for blindness.
 - The blindness test ([#11]) must cover every annotator-facing code path, including new ones.
 
-### Data
-
-- Retain every immutable submitted answer/report-only outcome, including unselected evidence, with attribution and submission time. Persist the current decision, its metadata and any selected detection annotation; derive its exact contributors as the model rules below define. Drafts and report-only outcomes are not resolution inputs ([#36], [#37]).
-- Preserve annotations/attribution when deactivating users or retiring items; item retirement is limited to setup before assignment and the pre-completion flagged exclusion exception. Label deletion is only for unused labels before first assignment; never cascade it into annotations ([#26], rules 3/5). Completed projects cannot be deleted.
-- Money tracking is outside v1. `Split` carries no reward state, and `AnnotationRepository.countValidSubmittedByAnnotator` serves only [#19]'s valid-answer total. No reward, earnings or income-statement service contract belongs in the v1 design ([#20], [#21]).
-
-### Accounts (rule 12)
-
-- Bootstrap exactly one ACTIVE adjudicator per workspace in a transaction; close bootstrap after successful initialization. Reject duplicate/repeated bootstrap, invalid initialized owner state and attempts to add, replace, disable, delete or demote the owner ([#7], [#6]).
-- All later account creation is authenticated adjudicator-only and creates ANNOTATOR accounts; persisted roles cannot change. Retain `Role`, `AccountStatus`, user IDs and decision/review attribution. Only annotators may be disabled ([#31]).
-- Reuse one username/password validation and salted-hashing boundary for bootstrap, annotator creation and direct replacement. A [#23] reset updates credentials atomically without changing identity, status, assignments or project records; never store/log plaintext or retrieve credentials for display.
-- No self-signup, reset-code/token/expiry model, email-verification state or additional-owner/transfer contract belongs in v1. Owner password recovery remains unresolved, with no rebootstrap bypass. Narrow the obsolete last-adjudicator rationale on `UserRepository.countActiveByRole` during model/repository cleanup; actual bootstrap/account guards remain service/persistence work.
-
 ### Source media (rule 21)
 
-- Register existing supported images/TXT only beneath `<workspace>/media/`, including nested folders. Import never copies, moves, renames or modifies source files ([#25]).
-- `Item.path` is normalized workspace-relative text such as `media/corpus/cat.jpg`; resolve it against the current workspace root from [#9]. Validate resolved containment at registration and source access; absolute/external paths, traversal and symlink/junction escapes must not bypass the media boundary ([#10]).
-- Retain the hash of the registered bytes. Preview/confirmation revalidate candidate paths/content; display, valid answer submission and included-source export use the common integrity boundary. Missing/corrupt/changed/out-of-root files must not silently update paths/hashes or replace source content. Caches cannot bypass validation ([#10], [#37]).
-- A source error alone never retires an item, submits work or advances progress. The explicit report-only route remains before COMPLETE. Exact-byte restoration at the recorded location permits later reads without database writes or reopening submitted work; no per-file relocation/relink or source-replacement contract is required.
-- Treat source media as user-provided read-only inputs. Incomplete-project deletion removes owned database records, never media files or the workspace directory. Export writes normal outputs without overwriting registered source media. The seal covers app mutations; it cannot prevent file-system edits. Validation/service contracts remain implementation work.
-
-### Statistics (rule 20)
-
-- Keep progress/session statistics ([#18]) and valid-annotation totals/activity charts ([#19]). Persist the terminal submission time required by [#17]; activity reads must not substitute mutable draft timestamps. Session timing does not require a persistent edit/event log.
-- For [#33], compute SINGLE agreement from distinct original valid submitted labels with the same per-item eligibility as the shared rule. Aggregate the sum of unrounded item scores and eligible-item count so each item has equal weight across splits with different sizes or *k*. Do not derive agreement from resolutions or majority size.
-- Return unavailable agreement for SCALE/DETECTION or no eligible items (*k* below 2 supplies no pairs); the UI renders N/A with its reason. Keep these reads adjudicator-only and do not filter out valid evidence because its author was deactivated. Reads after COMPLETE never write new resolutions or records.
-- The current model/repository interfaces still need the submission-time and aggregate query contracts; this documentation does not implement those features or add a stored agreement counter.
-
-### Lifecycle (rules 3, 5, 6, 9, 13, 14, 17, 18, 19)
-
-- First assignment freezes corpus and taxonomy project-wide; each split's first assignment locks its definition, including membership/order and `annotationsPerItem`. Persist the first-assignment evidence/locks atomically with assignment creation. Assignments cannot be removed/reassigned; account deactivation must not unfreeze setup.
-- `SplitItem` records stay unchanged after assignment. Pre-completion flagged exclusion changes item retirement, retaining memberships and current answers/provenance; it does not move or delete memberships.
-- `Project.complete` seals all project-owned records. Every mutating service must check the seal in its write transaction, including autosave, per-item submission, assignment, flag batches, resolution and deletion. Completion commits atomically; export/viewing may read but never mutate sealed data.
-- Submit & next validates, fixes submitted content, records submission time, advances the queue and updates assignment completion in one transaction. Retry must be idempotent; failure leaves the current draft editable. Submitted content cannot change through either role, including stale editors (rules 13/18).
-- A current draft becomes a permanent submitted answer or explicit report-only outcome; no old snapshot plus revised draft, withdrawal, return or resubmission representation is required. Report-only outcomes handle queue work but never become valid labels/ratings/box sets. Resolution readiness is per item, independent of other unfinished items in the assignment.
-- Keep immutable reporter content and current adjudicator dispositions/reviewer/time; no historical event collections or return metadata are required. Exclusion retains evidence and memberships but removes items from active queues/results/export; recompute affected assignment completion. Account replacement is deferred; existing assignments, including those of disabled accounts, retain their original ownership and place within the split's fixed *k*. Enforce source integrity under rule 21; freezing database rows alone cannot prevent file-system edits.
+- Every source read goes through the one resolver in `arbiter.workspace` ([#10]), which checks containment and content. Caches never bypass it.
 
 ### Persistence
 
 - One SQLite file at `<workspace>/arbiter.db`, with migrations applied on open and foreign keys enabled.
-- Commit each completed logical action immediately (rule 2). Repository calls that participate in one action share [#6]'s transaction and do not commit independently; any failure rolls the whole action back. This boundary covers submission/queue advancement/completion, assignment/freeze, completion sealing and sole-owner bootstrap as their feature contracts require.
+- Commit each completed logical action immediately (rule 2). Repository calls within one action share [#6]'s transaction and never commit on their own.
 - Code against the repository interfaces in `arbiter.data`. Their implementations in `arbiter.data.sqlite` map rows with ORMLite, not Hibernate, and are the only code with SQL.
 - Take the workspace lock before writing, and refuse to open a second writer (rule 11).
 
@@ -90,67 +57,27 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 ## Model
 
-Model classes are plain value objects: no queries, no UI logic and no annotations. They are deliberately **not** annotated for the ORM, so the mapping is designed once in `arbiter.data.sqlite` alongside the schema rather than guessed at here. Tests must be able to construct them without a database.
+Model classes are plain value objects in `arbiter.model`, grouped into subpackages by area (`user`, `project`, `annotation`, `resolution`) that mirror `arbiter.data`. What each class and field means is in its Javadoc.
 
-They are grouped into subpackages by area, mirroring the repository interfaces in `arbiter.data`:
-
-| Subpackage | Classes | Enums |
-| --- | --- | --- |
-| `arbiter.model.user` | `User` | `Role`, `AccountStatus` |
-| `arbiter.model.project` | `Project`, `TaxonomySettings`, `Label`, `Item`, `Split`, `SplitItem`, `Assignment` | `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus` |
-| `arbiter.model.annotation` | `Annotation`, `BoundingBox`, `Flag` | `FlagReason`, `FlagDisposition` |
-| `arbiter.model.resolution` | `Resolution` | `ResolutionMethod` |
-
-A few rules keep the model honest:
-
-- **One answer shape at a time.** `Annotation` may carry a label or a scale value, and `Resolution` a label, a scale value or a selected annotation; either may carry none for drafts, detection answers or unresolved records. Their setters clear the other fields when given a non-null value. Because reflective hydration bypasses those setters, the getters reject a record with more than one populated; reads never hide or repair the invalid state.
-- **Terminal outcomes are explicit.** An `Annotation` is a draft until `submittedAt` is set. `reportOnly` alone marks a report-only outcome, which holds no label, scale value or boxes and carries a flag; null fields or an empty box list never stand for one. `isSubmitted()` defines handled work and `isValidAnswer()` defines an input toward *k*. A flag is submitted with its annotation, and only submitted flags reach review ([#16], [#17]).
-- **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded`, and its update, delete and find-by-id operations need an identity column. **`Project` holds no reference back**: `projectId` is the only link, in the same direction as `Label`, `Item` and `Split`, so the relationship cannot be recorded twice and disagree.
-- **An annotator's scale answer is an `Integer`.** `Resolution.scaleValue` is a `Double` so the arithmetic mean required by rule 10 retains fractional results.
-- **Detection resolution names the selected annotation.** `Resolution.selectedAnnotationId` identifies one valid submitted `Annotation` for the same item, and that annotation's `BoundingBox` records are the complete final set. `ResolutionService` rejects any other annotation and only selects once the item has *k* valid answers. Unselected submissions stay as evidence (rule 16, [#34], [#37]).
-- **Contributors are derived, not stored.** A label or scale decision's contributors are the item's *k* valid submitted answers, one per annotator, whether it resolved automatically or an adjudicator picked or supplied the label. A detection decision's only contributor is its selected annotation. Derivation relies on each item being in at most one retained split ([#28]), at most *k* assignments per split to distinct annotators ([#32]), one immutable submission per assignment and item ([#17]), and no decision before *k* valid answers ([#27], [#34]). Relaxing any of these requires persisting contributors instead.
-- **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items. Generate it through count-based batching before that split's first assignment; there is no manual membership editor. Retain it unchanged afterwards, including when an item is excluded (rules 6/14). Retirement after generation does not alter membership; exclude retired members from work and reject new assignments with no remaining non-retired members.
-- ***k* and allocation metadata describe the split, not an assignment.** Every annotator on a split sees the same items. Count-only creation uses one specified seeded shuffle over a stable input order. Persist the actual seed (`Split.seed`, including a generated one), the requested batch size (`Split.requestedBatchSize`) and generated `SplitItem` membership/order; reopening uses saved membership, not a new allocation. Seed alone does not reconstruct past inputs (rule 7, [#28]).
-- **`Label` has no soft-delete flag.** An unused label can be deleted during setup only. Once the project has been assigned, taxonomy writes and deletion are forbidden; there is no annotation-deletion cascade (rules 3/5).
-- **Assignment completion is automatic and one-way.** When every non-retired required item is terminally handled, the assignment becomes SUBMITTED; exclusion may remove its final outstanding requirement. There is no final batch-submit, rework or backward-navigation state ([#12], [#17]).
-- **Flags support keep/exclude review.** The accepted values are PENDING, EXCLUDED and KEPT. Reporter content becomes immutable with the terminal item submission. Adjudicator disposition/reviewer/time may change only before COMPLETE; KEEP cannot create an answer or unretire the item ([#35], [#36]).
-- **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
-- **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Split.annotationsPerItem` stays null until a split is cut and assigned.
+- No queries, no UI logic and no annotations. The ORM mapping is designed once in `arbiter.data.sqlite`, alongside the schema.
+- Tests must be able to construct every model class without a database.
+- Fields are not `final`. Settings fixed at creation (rule 4) are enforced in services.
+- A model class stores what was chosen and never decides. Defaults are applied by services: *k*'s by `AssignmentService`, so `Split.annotationsPerItem` is null until then.
 
 ## Services
 
-- `AuthService`: sole-owner bootstrap, login/session and shared credential validation/hashing (PBKDF2 or bcrypt with a per-user salt). Account operations enforce rule 12: owner-created annotators, annotator deactivation and direct annotator password replacement; no role change or reset-code flow.
+- `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup, the lock, paths.
-- `ProjectService`, `CorpusService`: project completion/deletion guards, import, splits and taxonomy, respecting project freeze and completion.
-- `AssignmentService`: create assignments to distinct active annotators up to the fixed *k*, counting all existing assignments including disabled owners. Reject ownership/split changes, individual deletion and duplicate split/annotator assignments even before work starts. Persist capacity/uniqueness checks and first-assignment locks atomically; COMPLETE forbids new assignments. Normal queue/status updates remain allowed before completion. Whole incomplete-project deletion belongs only to the separate confirmed project operation (rule 19).
-- `AnnotationService`: current-draft autosave, atomic one-way answer/report submission and queue advancement, immutable-content guards, flags, and the annotator-scoped read path (rule 1).
-- `ResolutionService`: branch on task type first. Classification uses strict majority and disputes for `SINGLE`, arithmetic mean for `SCALE` (rule 10, [#27]); detection requires manual selection of one complete submitted box set (rule 16, [#34]). No automatic detection matching. Re-running resolution with unchanged inputs is idempotent.
-- `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical annotations and never choose a format. Write one dataset with current provenance; no train/validation/test partitioning in v1 (rule 15).
+- `ProjectService`, `CorpusService`: project completion and deletion, import, splits and taxonomy.
+- `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
+- `AnnotationService`: draft autosave, submission and queue advancement (rule 18), flags, and the annotator-scoped read path (rule 1).
+- `ResolutionService`: automatic and manual resolution, branching on task type first (rules 10, 16).
+- `ExportService`: the only code that knows about output formats. Annotators persist canonical annotations and never choose a format.
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
 [#6]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6
-[#7]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/7
 [#8]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/8
 [#9]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
-[#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
-[#16]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/16
-[#17]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/17
-[#18]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/18
-[#19]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/19
-[#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
-[#21]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/21
-[#23]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/23
-[#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
-[#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
-[#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
-[#28]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/28
-[#31]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/31
-[#32]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/32
-[#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
-[#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
-[#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
-[#36]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/36
-[#37]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/37

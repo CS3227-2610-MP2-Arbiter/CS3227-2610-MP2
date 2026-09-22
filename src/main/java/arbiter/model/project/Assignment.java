@@ -2,12 +2,7 @@ package arbiter.model.project;
 
 import java.time.Instant;
 
-/**
- * The link between one split and one annotator.
- *
- * <p>A model class holds data only. Defaults and the rules about when a value may change live in
- * {@code arbiter.service}.
- */
+/** The link between one split and one annotator. */
 public class Assignment {
     /** Database identifier. */
     private Long id;

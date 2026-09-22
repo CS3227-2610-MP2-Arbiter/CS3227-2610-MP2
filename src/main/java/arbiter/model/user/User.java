@@ -7,7 +7,7 @@ public class User {
     /** Database identifier. */
     private Long id;
 
-    /** Login name, compared case-insensitively. */
+    /** Login name. */
     private String username;
 
     /** Salted hash of the password, never the password itself. */

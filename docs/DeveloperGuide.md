@@ -4,7 +4,7 @@ title: Developer Guide
 
 # Developer Guide
 
-Arbiter is an offline Java desktop app for teams that label data. This guide describes how the system is designed, how the team works on it, and how to set up and verify a change.
+This guide describes how Arbiter is designed, how the team works on it, and how to set up and verify a change.
 
 ## Setting up
 
@@ -15,13 +15,11 @@ Arbiter is an offline Java desktop app for teams that label data. This guide des
 
 On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
-The `review` skill runs `./gradlew check shadowJar` together, which is what CI does.
-
 ## Design
 
-Arbiter runs locally. There is no server, no network and no accounts department: one SQLite file lives in the workspace both roles use on one computer or a shared disk, and JavaFX talks to it directly. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no retries, no eventual-consistency problems and no distributed state.
+Arbiter runs locally. There is no server, no network and no accounts department: one SQLite file lives in the workspace folder both roles share, and JavaFX talks to it directly. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no retries, no eventual-consistency problems and no distributed state.
 
-Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to an app with a dozen screens and one database file. There is an ORM, because hand-mapping eleven tables is exactly the kind of boilerplate it removes.
+Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to a small app with one database file. There is an ORM, because hand-mapping every table is exactly the kind of boilerplate it removes.
 
 The code-level rules that follow from this design, which the agent works from, are in [`context/architecture.md`](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md).
 
@@ -49,15 +47,15 @@ Dependencies point downward only, and neither role package imports the other - t
 
 The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, a rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
 
-- **Manual resolution** ([#34]) shows anonymous submitted annotations side by side with the item and rationale. For classification, the adjudicator chooses or supplies a label. For detection, they select one complete submitted box set, so the read-only view must render every box and label exactly as the annotator made it.
+- **Manual resolution** ([#34]) shows submitted annotations side by side, so the adjudicator's read-only view must render every box and label exactly as the annotator made it.
 - **Box geometry** ([#15]) is hard: drawing, snapping, clamping, and coordinates that stay correct at any zoom level. Two implementations would drift.
-- **Adjudicators record separate final decisions.** They may supply a classification label in [#34], using the shared picker without changing the annotator's answer. Detection comparison is read-only and selects a submitted set. Flag review in [#35] only keeps or excludes; direct annotation repair is deferred.
+- **Adjudicators pick labels too.** Supplying a classification label in [#34] uses the annotator's label picker, recorded as a separate decision rather than an edit.
 
 Building the roles as separate silos would duplicate the hardest UI code in the app, and a subtle disagreement between two coordinate transforms would hide there. So `AnnotationEditor`, `BoxCanvas` and `ItemView` live in `arbiter.ui.shared` and are used by both roles, with a role difference as a mode flag rather than a second implementation. Every rule about the data lives in `arbiter.service`, which both roles call, so no rule is implemented twice with two different answers.
 
 ### How blindness is enforced
 
-Annotators must never see another annotator's annotation, a resolved label or an agreement statistic. Keeping the role packages apart cannot guarantee that once they share components, because a shared `AnnotationEditor` can be handed any annotation. Blindness is enforced where it can be seen and tested instead:
+Keeping the role packages apart cannot guarantee [blindness](UserFlows.md#3-rules-both-tracks-share) once they share components, because a shared `AnnotationEditor` can be handed any annotation. Blindness is enforced where it can be seen and tested instead:
 
 - **At the query boundary.** Annotator reads go through `AnnotationService`, which scopes every read to the session user. Resolved labels are never loaded on that path.
 - **By a test.** [#11] includes a test that fails if any annotator-facing code path can reach another annotator's annotation.
@@ -66,19 +64,10 @@ This is stronger than package separation: it holds for code written later, by an
 
 ### Data and persistence
 
-- **Keep immutable evidence and the current decision.** Retain all submitted answers/report-only outcomes with attribution, the current decision and contributors, and current flag dispositions/review metadata. Earlier versions, return metadata and edit timelines are deferred. A draft becomes an immutable submission; it never needs to coexist with a revised draft of the same submitted answer.
-- **One-way submission.** Submit & next atomically locks an answer/report and advances the queue; a failed save leaves the current draft editable and a repeated request cannot submit twice. No Back, review pass, return or repair flow is required. [User Flows rules 13/17/18](UserFlows.md#3-rules-both-tracks-share) define this accepted contract; persistence/service enforcement remains pending.
-- **One fixed workspace owner.** [User Flows rule 12](UserFlows.md#3-rules-both-tracks-share) removes self-signup, role changes and reset-code machinery; implement one transactional bootstrap and owner-mediated annotator credentials while retaining role-based access and attribution, with owner recovery still unresolved.
-- **Retain the evidence.** Deactivated annotator accounts and retired items keep their annotations and attribution. Unused labels may be deleted only before the first assignment, without deleting answers; whole-project deletion remains available only for incomplete projects with a loss confirmation.
-- **Freeze setup, then seal completed work.** First assignment freezes the project's corpus/taxonomy and each assigned split's definition. Before completion, annotators submit items once and adjudicators resolve answers and review flags; exclusion preserves evidence while removing the item from active work/results. COMPLETE seals all project data, including unfinished drafts, while viewing/export remain available. Services must enforce the [shared lifecycle rules](UserFlows.md#3-rules-both-tracks-share); the current model alone does not provide these guarantees.
-- **Keep assignment ownership fixed.** Once created, an assignment cannot be removed or transferred, including before work starts; deactivation preserves ownership and does not free a place for a replacement. This removes partial-takeover and redistribution rules at the cost of unfinished work potentially remaining unresolved. [User Flows rule 19](UserFlows.md#3-rules-both-tracks-share) defines the contract and the separate whole-project deletion exception; implementation remains pending.
-- **One batch-creation mode.** Automatic count-based batches avoid separate percentage, manual and stratified allocation flows. Persist the generated membership/order so reopening work never reshuffles it; [User Flows rule 7](UserFlows.md#3-rules-both-tracks-share) bounds the reproducibility promise. This accepted scope still needs model/service implementation.
-- **Source files stay in workspace media.** Users place images/text under `media/`, and import records workspace-relative paths and content hashes without copying or modifying files. One resolver enforces actual containment and validates content for display, valid submission and export; source errors preserve recorded work and retain the explicit report-only route before COMPLETE. Source files survive project deletion, and database sealing cannot prevent operating-system edits. [User Flows rule 21](UserFlows.md#3-rules-both-tracks-share) defines this accepted scope; resolver/importer enforcement remains pending.
 - **Write-through.** Every annotator action commits immediately, because a power cut must not lose work.
-- **Derive statistics from submitted evidence.** Progress, annotation totals and activity charts use retained outcomes and their submission times; session timing is a separate session measurement, not elapsed time inferred from saves. Adjudicator-only label agreement uses original submitted labels under [User Flows rule 20](UserFlows.md#3-rules-both-tracks-share); scales and detection show N/A. Repository aggregates support these reads without a full edit-history log. These are accepted requirements; timestamp/aggregate contracts and feature implementation remain pending.
-- **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand. Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not fit a desktop app with one connection. Complex queries still drop to raw SQL, inside the repository.
+- **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand. Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not fit a desktop app with one connection. Complex queries still drop to raw SQL, inside the repository. ORMLite builds rows through a no-arg constructor and sets fields reflectively, so model fields cannot be `final`; settings fixed at creation are enforced in services instead.
 - **A single writer.** The database is shared over a shared drive, and SQLite is not safe against concurrent writers there, so `arbiter.workspace` takes an advisory lock. The failure is explicit rather than silent corruption.
-- **One exporter.** Annotators persist canonical annotations and never choose a file format. Only `ExportService` knows about CSV, JSON and COCO. It exports one dataset with current provenance; training/validation/test partitioning is deferred.
+- **One exporter.** Annotators persist canonical annotations and never choose a file format, so formatting is written once, in `ExportService`.
 
 ### Design decisions and their costs
 
@@ -91,7 +80,7 @@ This is stronger than package separation: it holds for code written later, by an
 | Blindness enforced in the service and a test | Enforced by package separation | Relies on discipline in the read path |
 | Single-writer lock | Optimistic concurrency | Cannot have two annotators open at once |
 
-The fifth and sixth rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
+The shared-components and blindness rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
 
 The product context, the shape of both flows and the cross-cutting rules in section 3 are in [User Flows](UserFlows.md); the step-by-step behaviour is in the GitHub issues each step links to.
 
@@ -131,8 +120,6 @@ Each skill declares its input, steps and completion criteria, and states what it
 | Shared component | `src/test/java` | Box geometry and editor modes, tested once where the component lives |
 | Acceptance | Manual | A human walks the agreed scenarios |
 
-The blindness test exists because rule 1 (annotators never see each other's annotations) is the core invariant of the product. It is too important to leave to review alone.
-
 ## Acknowledgements
 
 - The inherited Checkstyle configuration follows the [SE-Education Java coding standard](https://se-education.org/guides/conventions/java/intermediate.html).
@@ -150,4 +137,3 @@ The blindness test exists because rule 1 (annotators never see each other's anno
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#15]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/15
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
-[#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35

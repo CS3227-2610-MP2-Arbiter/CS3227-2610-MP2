@@ -3,10 +3,8 @@ package arbiter.model.project;
 /**
  * One item's membership of one split.
  *
- * <p>A split names its items through this join rather than by copying them. Count-based batching
- * writes every membership and its position once; nothing edits them afterwards. Changing a batch
- * means deleting it before its first assignment and generating a replacement, and retiring an item
- * keeps its membership (rule 14).
+ * <p>A split names its items through this join rather than by copying them. Each membership is
+ * written once and never edited (rule 14).
  */
 public class SplitItem {
     /** Database identifier. */

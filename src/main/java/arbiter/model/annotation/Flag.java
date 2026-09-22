@@ -5,19 +5,16 @@ import java.time.Instant;
 /**
  * An annotator's report that an item's source material is unusable.
  *
- * <p>The flag is the annotator's report. What an adjudicator does about it is a separate decision,
- * recorded as a {@code FlagDisposition} so the flagged queue empties once every flag has been dealt
- * with (#35) and the disposition can be shown per item (#36). Excluding a flag retires its item, so
- * {@code Item.retired} remains the one place that decides whether an item is in the dataset.
+ * <p>The adjudicator's decision about it is its {@code disposition}. Excluding a flag retires its
+ * item, so {@code Item.retired} remains the one place that decides whether an item is in the dataset.
  *
- * <p>A flag is submitted with its annotation. Until then it is an editable draft that stays out of
- * review; afterwards its reason and comment are permanent.
+ * <p>A flag is submitted with its annotation; until then it is a draft.
  */
 public class Flag {
     /** Database identifier. */
     private Long id;
 
-    /** Annotation the flag belongs to, whose submission also submits the flag. */
+    /** Annotation the flag belongs to. */
     private Long annotationId;
 
     /** Item that was flagged. */
@@ -32,7 +29,7 @@ public class Flag {
     /** The annotator's free-text explanation. */
     private String comment;
 
-    /** What an adjudicator decided about this flag, PENDING until someone reviews it. */
+    /** What an adjudicator decided about this flag. */
     private FlagDisposition disposition;
 
     /** When an adjudicator reviewed the flag, null while it is still pending. */

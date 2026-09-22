@@ -3,16 +3,19 @@ package arbiter.model.resolution;
 import java.time.Instant;
 
 /**
- * The final answer for an item after adjudication.
+ * How an item was settled: its final answer and how it was reached.
  *
  * <p>A resolution carries at most one result: a {@code labelId} or {@code scaleValue} for
- * classification, or a {@code selectedAnnotationId} for detection. The setters switch between result
- * shapes, and the getters reject conflicting fields loaded without the setters. A scale value is a
- * {@code Double} because the agreed value may be the average of several annotators' answers.
+ * classification, or a {@code selectedAnnotationId} for detection. The setters switch between them,
+ * and the getters reject a record loaded with more than one. A scale value is a {@code Double}
+ * because it may be the average of several annotators' answers.
  *
- * <p>Contributors are not stored. A label or scale result was decided from the item's k valid
- * submitted answers, one per annotator, including when an adjudicator supplied the label; a detection
- * result's only contributor is the selected annotation. Unselected answers remain evidence (#27, #34).
+ * <p>Contributors are derived, not stored. A label or scale result comes from the item's k valid
+ * answers, one per annotator, including when an adjudicator supplied the label; a detection result's
+ * only contributor is the selected annotation. This relies on each item being in at most one retained
+ * split (#28), at most k assignments per split to distinct annotators (#32), one immutable submission
+ * per assignment and item (#17), and no decision before k valid answers (#27, #34). Relaxing any of
+ * these requires storing contributors instead.
  */
 public class Resolution {
     /** Database identifier. */
@@ -33,7 +36,7 @@ public class Resolution {
      */
     private Long selectedAnnotationId;
 
-    /** How the decision was reached, recorded for provenance. */
+    /** How the decision was reached. */
     private ResolutionMethod method;
 
     /** Adjudicator who decided, null for an automatic resolution. */
@@ -75,7 +78,7 @@ public class Resolution {
         return labelId;
     }
 
-    /** Sets the winning label and clears any other result, so only one result shape is ever set. */
+    /** Sets the winning label and clears any other result. */
     public void setLabelId(Long labelId) {
         this.labelId = labelId;
         if (labelId != null) {
@@ -94,7 +97,7 @@ public class Resolution {
         return scaleValue;
     }
 
-    /** Sets the winning numeric answer and clears any other result, so only one result shape is ever set. */
+    /** Sets the winning numeric answer and clears any other result. */
     public void setScaleValue(Double scaleValue) {
         this.scaleValue = scaleValue;
         if (scaleValue != null) {
@@ -113,7 +116,7 @@ public class Resolution {
         return selectedAnnotationId;
     }
 
-    /** Selects a detection annotation and clears any other result, so only one result shape is ever set. */
+    /** Selects a detection annotation and clears any other result. */
     public void setSelectedAnnotationId(Long selectedAnnotationId) {
         this.selectedAnnotationId = selectedAnnotationId;
         if (selectedAnnotationId != null) {

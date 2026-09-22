@@ -1,6 +1,6 @@
 package arbiter.model.project;
 
-/** What an annotator does with an item, fixed when the project is created. */
+/** What an annotator does with an item. */
 public enum TaskType {
     CLASSIFICATION,
     DETECTION

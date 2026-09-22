@@ -24,12 +24,8 @@ public interface AnnotationRepository {
 
     /**
      * Counts an annotator's valid answers, as {@code Annotation.isValidAnswer} defines them, for items
-     * that are not retired.
-     *
-     * <p>This is the lifetime annotation count, not handled-work progress. Progress separately counts
-     * every submitted annotation as handled ({@code Annotation.isSubmitted}), report-only outcomes
-     * included, while retirement removes an item from the outstanding work without inventing a
-     * submission.
+     * that are not retired. This is the lifetime annotation total (#19), not handled-work progress
+     * (#18), which counts every {@code Annotation.isSubmitted}.
      */
     long countValidSubmittedByAnnotator(long annotatorId);
 }

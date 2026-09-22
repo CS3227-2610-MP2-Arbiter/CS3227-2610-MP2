@@ -5,12 +5,7 @@ import java.time.Instant;
 /**
  * One labelling job and the settings that shape everything under it.
  *
- * <p>Three settings are fixed once the project is created: {@code taskType}, {@code sourceType} and
- * {@code outputFormat}. They are deliberately <em>not</em> {@code final}, because ORMLite builds rows
- * through a no-arg constructor and then sets fields reflectively, which final fields do not allow.
- * The rule is therefore enforced in {@code ProjectService}, which is where every rule about the data
- * lives. Marking them final would mean giving up annotated row mapping in favour of hand-written
- * mappers.
+ * <p>{@code taskType}, {@code sourceType} and {@code outputFormat} are fixed at creation (rule 4).
  */
 public class Project {
     /** Database identifier. */
@@ -22,19 +17,19 @@ public class Project {
     /** What the project is for. */
     private String description;
 
-    /** Classification or detection. Fixed at creation. */
+    /** Classification or detection. */
     private TaskType taskType;
 
-    /** Image or text. Fixed at creation. */
+    /** Image or text. */
     private SourceType sourceType;
 
-    /** Format the finished dataset is written in. Fixed at creation. */
+    /** Format the finished dataset is written in. */
     private OutputFormat outputFormat;
 
     /** Whether an explanation is required with each label. */
     private boolean rationaleRequired;
 
-    /** Whether the dataset is complete, which permanently seals the project's data. */
+    /** Whether the dataset is complete, which seals the project's data (rule 9). */
     private boolean complete;
 
     /** When the project was created. */

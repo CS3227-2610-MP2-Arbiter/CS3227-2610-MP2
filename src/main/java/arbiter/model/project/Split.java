@@ -5,9 +5,7 @@ import java.time.Instant;
 /**
  * A batch of items cut from the corpus, which is what gets assigned.
  *
- * <p>A split names a set of items rather than copying them: {@code SplitItem} joins this to the
- * items. That saved membership and order is the split's work; reopening or assigning it never reruns
- * the allocation (rule 7).
+ * <p>Its items and their order are the {@code SplitItem} records that name them (rule 7).
  */
 public class Split {
     /** Database identifier. */
@@ -20,26 +18,21 @@ public class Split {
     private String name;
 
     /**
-     * How many annotators see each item, defaulting to 2. This is a property of the work rather than
-     * of one annotator's link to it: every annotator on the split sees the same items, so *k* belongs
-     * here, not on the assignment.
+     * How many annotators see each item (k). It belongs to the split rather than the assignment
+     * because every annotator on a split sees the same items.
      */
     private Integer annotationsPerItem;
 
-    /**
-     * Seed the allocation's shuffle actually used, including one the app generated because none was
-     * supplied. The same input items, requested batch size and seed give the same membership, but a
-     * seed does not rebuild an earlier corpus (rule 7).
-     */
+    /** Seed the allocation's shuffle actually used, including one the app generated. */
     private Long seed;
 
     /**
-     * Items per batch the adjudicator asked for. The last batch of a generation can be smaller, so
-     * this cannot be read back from the membership: 120 items at 50 per batch end with a batch of 20.
+     * Items per batch the adjudicator asked for, which the membership cannot show because the last
+     * batch of a generation can be smaller.
      */
     private Integer requestedBatchSize;
 
-    /** True once assigned, after which nothing about the split changes. */
+    /** True once the split has been assigned, which locks it (rule 14). */
     private boolean assigned;
 
     /** When the split was created. */

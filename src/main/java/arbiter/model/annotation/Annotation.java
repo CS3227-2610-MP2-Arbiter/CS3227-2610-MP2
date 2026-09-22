@@ -3,17 +3,15 @@ package arbiter.model.annotation;
 import java.time.Instant;
 
 /**
- * One annotator's answer or report for one item, stored in canonical form.
+ * One annotator's answer or report for one item.
  *
- * <p>An annotation is a draft until {@code submittedAt} is set; a draft's fields, boxes and flag may
- * still change and are not evidence. Submission is permanent and has one of two outcomes. A valid
- * answer holds the complete answer and may carry a flag. A report-only outcome holds no label, scale
- * value or boxes, and carries the flag that explains why (#16). Only {@code reportOnly} tells them
- * apart: missing fields or an empty box list never mean report-only.
+ * <p>An annotation is a draft until {@code submittedAt} is set. A submitted annotation is either a
+ * valid answer or, when {@code reportOnly} is set, a report-only outcome that holds no label, scale
+ * value or boxes and carries the flag explaining why. Missing fields or an empty box list never mean
+ * report-only.
  *
- * <p>An answer carries at most one of {@code labelId} or {@code scaleValue}, depending on the
- * project's taxonomy kind. The setters switch between scalar answer shapes, and the getters reject
- * conflicting fields loaded without the setters.
+ * <p>An answer carries at most one of {@code labelId} or {@code scaleValue}. The setters switch
+ * between them, and the getters reject a record loaded with both.
  */
 public class Annotation {
     /** Database identifier. */
@@ -31,10 +29,7 @@ public class Annotation {
     /** Chosen label, for a taxonomy whose kind is SINGLE. */
     private Long labelId;
 
-    /**
-     * Numeric answer, for a taxonomy whose kind is SCALE. An annotator picks a whole number, so
-     * this is an int; only the value agreed at resolution may be an average.
-     */
+    /** Whole-number answer, for a taxonomy whose kind is SCALE. */
     private Integer scaleValue;
 
     /** The annotator's explanation. */
@@ -49,7 +44,7 @@ public class Annotation {
     /** When the annotation was submitted, or null while it is a draft. */
     private Instant submittedAt;
 
-    /** True for a submitted report-only outcome, which holds no answer. */
+    /** True for a report-only outcome. */
     private boolean reportOnly;
 
     /** Creates an empty Annotation. */
@@ -98,7 +93,7 @@ public class Annotation {
         return labelId;
     }
 
-    /** Sets the chosen label and clears any scale value, so only one answer shape is ever set. */
+    /** Sets the chosen label and clears any scale value. */
     public void setLabelId(Long labelId) {
         this.labelId = labelId;
         if (labelId != null) {
@@ -116,7 +111,7 @@ public class Annotation {
         return scaleValue;
     }
 
-    /** Sets the numeric answer and clears any chosen label, so only one answer shape is ever set. */
+    /** Sets the numeric answer and clears any chosen label. */
     public void setScaleValue(Integer scaleValue) {
         this.scaleValue = scaleValue;
         if (scaleValue != null) {

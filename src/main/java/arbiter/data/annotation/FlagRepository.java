@@ -25,8 +25,8 @@ public interface FlagRepository {
     List<Flag> listByProject(long projectId);
 
     /**
-     * Returns a project's flags with the given disposition. The review screen lists PENDING ones,
-     * which is how the queue empties once every flag has been dealt with.
+     * Returns a project's flags with the given disposition. The review queue is the PENDING ones, so
+     * it empties once every flag has been dealt with.
      */
     List<Flag> listByProjectAndDisposition(long projectId, FlagDisposition disposition);
 
