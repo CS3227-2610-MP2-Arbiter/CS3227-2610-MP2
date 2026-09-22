@@ -4,7 +4,7 @@ package arbiter.model.project;
  * One item's membership of one split.
  *
  * <p>A split names its items through this join rather than by copying them. Each membership is
- * written once and never edited (rule 14).
+ * written once and never edited (rule 14), and an item has at most one (rule 7).
  */
 public class SplitItem {
     /** Database identifier. */

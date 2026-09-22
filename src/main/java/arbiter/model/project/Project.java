@@ -26,9 +26,6 @@ public class Project {
     /** Format the finished dataset is written in. */
     private OutputFormat outputFormat;
 
-    /** Whether an explanation is required with each label. */
-    private boolean rationaleRequired;
-
     /** Whether the dataset is complete, which seals the project's data (rule 9). */
     private boolean complete;
 
@@ -85,14 +82,6 @@ public class Project {
 
     public void setOutputFormat(OutputFormat outputFormat) {
         this.outputFormat = outputFormat;
-    }
-
-    public boolean isRationaleRequired() {
-        return rationaleRequired;
-    }
-
-    public void setRationaleRequired(boolean rationaleRequired) {
-        this.rationaleRequired = rationaleRequired;
     }
 
     public boolean isComplete() {

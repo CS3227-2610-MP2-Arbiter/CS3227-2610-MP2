@@ -45,7 +45,7 @@ Dependencies point downward only, and neither role package imports the other - t
 
 ### The two roles share one workflow
 
-The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, a rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
+The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, an optional rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
 
 - **Manual resolution** ([#34]) shows submitted annotations side by side, so the adjudicator's read-only view must render every box and label exactly as the annotator made it.
 - **Box geometry** ([#15]) is hard: drawing, snapping, clamping, and coordinates that stay correct at any zoom level. Two implementations would drift.
@@ -104,7 +104,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 
 **Branching.** `write-plan` reuses or creates a descriptively named branch per task. Both of us work on `main` otherwise and keep the shared packages (`model`, `data`, `service`) agreed in [#4] before feature code starts, since that is where conflicts would come from.
 
-**Markdown.** Never hard-wrap prose in `.md` files: write one sentence or bullet per line and let the viewer wrap it. The 120-character Checkstyle limit applies to Java only.
+**Markdown.** Never hard-wrap `.md` files: a paragraph, bullet or table row is one line, however many sentences it holds, and the viewer wraps it. The Java line limit does not apply.
 
 **CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and pull request, since the deliverable is a desktop jar that must launch on all three. A second job catches the release jar failing to start on Apple Silicon. A separate workflow publishes the `docs/` folder to GitHub Pages.
 

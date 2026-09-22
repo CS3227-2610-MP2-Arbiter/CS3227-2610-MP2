@@ -16,8 +16,8 @@ public interface AnnotationRepository {
     /** Returns every answer recorded for an item. */
     List<Annotation> listByItem(long itemId);
 
-    /** Returns one annotator's answer for an item, never anyone else's. */
-    List<Annotation> listByItemAndAnnotator(long itemId, long annotatorId);
+    /** Returns one annotator's answer for an item, if any, never anyone else's. */
+    Optional<Annotation> findByItemAndAnnotator(long itemId, long annotatorId);
 
     /** Returns every answer recorded under an assignment. */
     List<Annotation> listByAssignment(long assignmentId);

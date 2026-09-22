@@ -1,6 +1,7 @@
 package arbiter.data.project;
 
 import java.util.List;
+import java.util.Optional;
 
 import arbiter.model.project.SplitItem;
 
@@ -12,8 +13,8 @@ public interface SplitItemRepository {
     /** Returns a split's memberships in sequence order. */
     List<SplitItem> listBySplit(long splitId);
 
-    /** Returns the splits an item belongs to. */
-    List<SplitItem> listByItem(long itemId);
+    /** Returns an item's membership, if it is in a split (rule 7). */
+    Optional<SplitItem> findByItem(long itemId);
 
     /** Removes every membership of a never-assigned split that is being deleted. */
     void deleteBySplit(long splitId);

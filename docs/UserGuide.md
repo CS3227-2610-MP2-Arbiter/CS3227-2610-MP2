@@ -20,7 +20,7 @@ The behaviour behind each task is specified in [User Flows](UserFlows.md); the i
 | I want to... | Role | Issue |
 | --- | --- | --- |
 | Label items | Annotator | [#13], [#14], [#15] |
-| Report a bad image | Annotator | [#16] |
+| Report bad source material | Annotator | [#16] |
 | Track my split progress and lifetime valid annotations | Annotator | [#18], [#19] |
 | Create or deactivate annotator accounts | Adjudicator | [#31] |
 | Replace an annotator's forgotten password | Adjudicator | [#23] |

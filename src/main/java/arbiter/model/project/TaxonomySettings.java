@@ -18,7 +18,7 @@ public class TaxonomySettings {
     /** Project these settings belong to. */
     private Long projectId;
 
-    /** Whether the label set is a pick-one list or a numeric scale. */
+    /** Whether the label set is a pick-one list or a numeric scale, fixed when the project is created (rule 4). */
     private TaxonomyKind kind;
 
     /** Lowest value of a SCALE taxonomy, null otherwise. */

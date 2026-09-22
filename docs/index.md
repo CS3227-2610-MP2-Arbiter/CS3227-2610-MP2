@@ -8,8 +8,8 @@ Arbiter is an offline Java desktop app for teams that label data.
 
 ## The two roles
 
-- **Annotators** work a blind queue: one item at a time, choose a label, add a rationale, flag anything unclear.
-- **The adjudicator** owns the workspace. They create annotator accounts, set up projects and their label taxonomy, assign the work, review flags, decide unresolved items and export the finished dataset.
+- **Annotators** work a blind queue: one item at a time, choose a label by their best judgement even when the item is ambiguous, optionally add a rationale, and flag only problems with the source material. The adjudicator settles the disagreements that result.
+- **The adjudicator** owns the workspace. They create annotator accounts, set up projects and their label taxonomy, assign the work, review flags, settle disputes, choose detection answers and export the finished dataset.
 
 ## How it works
 

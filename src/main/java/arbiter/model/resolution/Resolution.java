@@ -12,8 +12,8 @@ import java.time.Instant;
  *
  * <p>Contributors are derived, not stored. A label or scale result comes from the item's k valid
  * answers, one per annotator, including when an adjudicator supplied the label; a detection result's
- * only contributor is the selected annotation. This relies on each item being in at most one retained
- * split (#28), at most k assignments per split to distinct annotators (#32), one immutable submission
+ * only contributor is the selected annotation. This relies on each item being in at most one split
+ * (rule 7), at most k assignments per split to distinct annotators (#32), one immutable submission
  * per assignment and item (#17), and no decision before k valid answers (#27, #34). Relaxing any of
  * these requires storing contributors instead.
  */
@@ -45,8 +45,8 @@ public class Resolution {
     /** When the item was resolved. */
     private Instant decidedAt;
 
-    /** True while the item is still a dispute. */
-    private boolean unresolved;
+    /** True while the item is a dispute. */
+    private boolean disputed;
 
     /** Creates an empty Resolution. */
     public Resolution() {
@@ -157,11 +157,11 @@ public class Resolution {
         this.decidedAt = decidedAt;
     }
 
-    public boolean isUnresolved() {
-        return unresolved;
+    public boolean isDisputed() {
+        return disputed;
     }
 
-    public void setUnresolved(boolean unresolved) {
-        this.unresolved = unresolved;
+    public void setDisputed(boolean disputed) {
+        this.disputed = disputed;
     }
 }

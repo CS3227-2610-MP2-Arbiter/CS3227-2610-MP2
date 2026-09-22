@@ -8,18 +8,20 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 
 | Term | Meaning |
 | --- | --- |
-| **Project** | One labelling job, with a task type, source type and output format. |
+| **Project** | One labelling job, with a task type, source type, taxonomy kind and output format. |
 | **Item** | One annotatable unit: one image, or one plain-text document. |
 | **Corpus** | The collection of items imported into a project. |
 | **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
 | **Split** | A batch of corpus items, which is what gets assigned. |
 | **Assignment** | The link between one split and one annotator who works it. |
-| **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with a rationale. |
-| **Submitted answer** | An annotation permanently recorded by Submit & next, including its rationale and any boxes. Before that it is a draft. |
+| **Annotation** | One annotator's answer for one item: a label, an integer scale rating or labelled boxes, with an optional rationale. |
+| **Submitted answer** | An annotation permanently recorded by Submit & next, including any rationale and boxes. Before that it is a draft. |
 | **Bounding box** | One labelled rectangle drawn on a detection item, in image coordinates. |
 | **Box set** | All labelled bounding boxes in one annotator's annotation of one image. |
 | **Flag** | An annotator's report of unusable source material, with a reason and optional comment. It either accompanies an answer or is submitted alone as a *report-only outcome*, which holds no answer. |
 | **Resolved answer** | The final answer for an item: a label (the *resolved label*), an averaged numeric rating, or a selected complete box set. |
+| **Unresolved item** | An item with no resolved answer yet, for any reason. |
+| **Dispute** | An unresolved single-select item that has *k* valid submitted answers but no strict-majority label, so it awaits the adjudicator ([rule 10](UserFlows.md#3-rules-both-tracks-share)). |
 | **Resolution** | The record of how an item was settled: its final answer, how it was reached, and who decided when applicable. |
 | **Label agreement** | For single-select classification, the average across eligible items of the fraction of annotator pairs whose original submitted labels match. It measures label consistency, not correctness. [#33](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33) defines eligibility and display. |
 | **Provenance** | The evidence behind an item's current decision: each submitted answer or report-only outcome with its annotator and submission time, the current resolution and its contributors, and current flags with their dispositions. |

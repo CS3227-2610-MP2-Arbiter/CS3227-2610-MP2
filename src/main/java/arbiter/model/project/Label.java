@@ -14,9 +14,6 @@ public class Label {
     /** What the label means and when to use it. */
     private String description;
 
-    /** Guidance shown while annotating. */
-    private String guideline;
-
     /** Position in the label set, so order is stable. */
     private Integer sequence;
 
@@ -54,14 +51,6 @@ public class Label {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getGuideline() {
-        return guideline;
-    }
-
-    public void setGuideline(String guideline) {
-        this.guideline = guideline;
     }
 
     public Integer getSequence() {

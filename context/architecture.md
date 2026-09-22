@@ -15,7 +15,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 | 4 | `arbiter.data` | Repository interfaces. Signatures only, no SQL. | Shared ([#4]) |
 | 4 | `arbiter.data.sqlite` | The ORM mappings, schema and migrations. | Whimsyturtle ([#6]) |
 | 4 | `arbiter.model` | Value objects and enums. No queries, no UI logic. | Shared ([#4]) |
-| 5 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Shared ([#9], [#10]) |
+| 5 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Whimsyturtle (paths [#9], lock [#61]); zheng-jj (asset resolution [#10]) |
 
 ## Rules
 
@@ -52,8 +52,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - Nothing that assumes a backend: no background jobs, webhooks or message queues (rule 8).
 - No plugin system and no dependency-injection framework.
-- Java lines are at most 120 characters (Checkstyle in `config/checkstyle`). Markdown is exempt:
-  never hard-wrap prose, tables or bullets in `.md` files.
+- Java lines are at most 120 characters (Checkstyle in `config/checkstyle`). Markdown is exempt; see "Markdown" in [docs/DeveloperGuide.md](../docs/DeveloperGuide.md#software-engineering-process).
 
 ## Model
 
@@ -81,3 +80,4 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 [#9]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
+[#61]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61
