@@ -4,7 +4,8 @@ package arbiter.model.project;
  * The settings a taxonomy needs, kept out of Project so a project is not a bag of optional numbers.
  *
  * <p>This is its own entity rather than a value object embedded in {@code Project}, because ORMLite
- * has no equivalent of JPA's {@code @Embedded}: it can only persist a type that has its own identity.
+ * has no equivalent of JPA's {@code @Embedded}. It has its own identity because ORMLite's update, delete
+ * and find-by-id operations need one.
  *
  * <p>{@code projectId} is the only link between the two, in the same direction as {@code Label},
  * {@code Item} and {@code Split}. {@code Project} deliberately holds no reference back, so the
@@ -17,7 +18,7 @@ public class TaxonomySettings {
     /** Project these settings belong to. */
     private Long projectId;
 
-    /** Whether the label set is a pick-one list or a numeric scale. */
+    /** Whether the label set is a pick-one list or a numeric scale, fixed when the project is created (rule 4). */
     private TaxonomyKind kind;
 
     /** Lowest value of a SCALE taxonomy, null otherwise. */

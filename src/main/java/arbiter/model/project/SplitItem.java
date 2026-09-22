@@ -3,9 +3,8 @@ package arbiter.model.project;
 /**
  * One item's membership of one split.
  *
- * <p>A split names its items through this join rather than by copying them, so an item can be moved
- * between splits or withdrawn without rewriting either. The adjudicator may add items to a split
- * after it is assigned (rule 13), which is why membership is its own record.
+ * <p>A split names its items through this join rather than by copying them. Each membership is
+ * written once and never edited (rule 14), and an item has at most one (rule 7).
  */
 public class SplitItem {
     /** Database identifier. */

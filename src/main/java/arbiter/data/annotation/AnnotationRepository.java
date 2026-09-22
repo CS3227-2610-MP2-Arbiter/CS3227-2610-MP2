@@ -16,20 +16,16 @@ public interface AnnotationRepository {
     /** Returns every answer recorded for an item. */
     List<Annotation> listByItem(long itemId);
 
-    /** Returns one annotator's answer for an item, never anyone else's. */
-    List<Annotation> listByItemAndAnnotator(long itemId, long annotatorId);
+    /** Returns one annotator's answer for an item, if any, never anyone else's. */
+    Optional<Annotation> findByItemAndAnnotator(long itemId, long annotatorId);
 
     /** Returns every answer recorded under an assignment. */
     List<Annotation> listByAssignment(long assignmentId);
 
     /**
-     * Counts an annotator's submitted answers. Progress is derived from this.
-     *
-     * <p>Earnings are not: they also exclude retired items and depend on the project being marked
-     * complete, so they are computed in {@code EarningsService} rather than from this count.
+     * Counts an annotator's valid answers, as {@code Annotation.isValidAnswer} defines them, for items
+     * that are not retired. This is the lifetime annotation total (#19), not handled-work progress
+     * (#18), which counts every {@code Annotation.isSubmitted}.
      */
-    long countSubmittedByAnnotator(long annotatorId);
-
-    /** Removes an answer, which adjudicators may do to any answer. */
-    void deleteById(long id);
+    long countValidSubmittedByAnnotator(long annotatorId);
 }

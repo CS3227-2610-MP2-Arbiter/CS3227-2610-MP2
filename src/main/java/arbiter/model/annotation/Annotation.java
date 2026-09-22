@@ -3,11 +3,15 @@ package arbiter.model.annotation;
 import java.time.Instant;
 
 /**
- * One annotator's answer for one item, stored in canonical form.
+ * One annotator's answer or report for one item.
  *
- * <p>An answer carries exactly one of {@code labelId} or {@code scaleValue}, depending on the
- * project's taxonomy kind. The setters enforce that, so the two can never both be set and the
- * choice cannot be read two ways.
+ * <p>An annotation is a draft until {@code submittedAt} is set. A submitted annotation is either a
+ * valid answer or, when {@code reportOnly} is set, a report-only outcome that holds no label, scale
+ * value or boxes and carries the flag explaining why. Missing fields or an empty box list never mean
+ * report-only.
+ *
+ * <p>An answer carries at most one of {@code labelId} or {@code scaleValue}. The setters switch
+ * between them, and the getters reject a record loaded with both.
  */
 public class Annotation {
     /** Database identifier. */
@@ -25,23 +29,23 @@ public class Annotation {
     /** Chosen label, for a taxonomy whose kind is SINGLE. */
     private Long labelId;
 
-    /**
-     * Numeric answer, for a taxonomy whose kind is SCALE. An annotator picks a whole number, so
-     * this is an int; only the value agreed at resolution may be an average.
-     */
+    /** Whole-number answer, for a taxonomy whose kind is SCALE. */
     private Integer scaleValue;
 
-    /** The annotator's explanation. */
+    /** The annotator's optional explanation. */
     private String rationale;
 
-    /** When the answer was first saved. */
+    /** When the draft was first saved. */
     private Instant createdAt;
 
-    /** When the answer was last changed. */
+    /** When the draft was last saved. */
     private Instant updatedAt;
 
-    /** True once the answer has been submitted. */
-    private boolean submitted;
+    /** When the annotation was submitted, or null while it is a draft. */
+    private Instant submittedAt;
+
+    /** True for a report-only outcome. */
+    private boolean reportOnly;
 
     /** Creates an empty Annotation. */
     public Annotation() {
@@ -80,14 +84,16 @@ public class Annotation {
     }
 
     /**
-     * Returns the chosen label, or null when this is a scale answer. The read path enforces the same
-     * rule as the setters, for the reason given on {@code getScaleValue}.
+     * Returns the chosen label, or null when no label is set.
+     *
+     * @throws IllegalStateException if both scalar answer fields are populated
      */
     public Long getLabelId() {
-        return scaleValue != null ? null : labelId;
+        assertScalarStateIsValid();
+        return labelId;
     }
 
-    /** Sets the chosen label and clears any scale value, so only one answer shape is ever set. */
+    /** Sets the chosen label and clears any scale value. */
     public void setLabelId(Long labelId) {
         this.labelId = labelId;
         if (labelId != null) {
@@ -96,21 +102,26 @@ public class Annotation {
     }
 
     /**
-     * Returns the numeric answer, or null when this is a label answer.
+     * Returns the numeric answer, or null when no scale value is set.
      *
-     * <p>The read path enforces the same rule as the setters. ORMLite sets fields reflectively, so a
-     * row loaded from the database never goes through {@code setLabelId} or {@code setScaleValue};
-     * without this, a row could come back with both set.
+     * @throws IllegalStateException if both scalar answer fields are populated
      */
     public Integer getScaleValue() {
-        return labelId != null ? null : scaleValue;
+        assertScalarStateIsValid();
+        return scaleValue;
     }
 
-    /** Sets the numeric answer and clears any chosen label, so only one answer shape is ever set. */
+    /** Sets the numeric answer and clears any chosen label. */
     public void setScaleValue(Integer scaleValue) {
         this.scaleValue = scaleValue;
         if (scaleValue != null) {
             this.labelId = null;
+        }
+    }
+
+    private void assertScalarStateIsValid() {
+        if (labelId != null && scaleValue != null) {
+            throw new IllegalStateException("Annotation cannot contain both a label and a scale value");
         }
     }
 
@@ -138,11 +149,29 @@ public class Annotation {
         this.updatedAt = updatedAt;
     }
 
-    public boolean isSubmitted() {
-        return submitted;
+    public Instant getSubmittedAt() {
+        return submittedAt;
     }
 
-    public void setSubmitted(boolean submitted) {
-        this.submitted = submitted;
+    public void setSubmittedAt(Instant submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public boolean isReportOnly() {
+        return reportOnly;
+    }
+
+    public void setReportOnly(boolean reportOnly) {
+        this.reportOnly = reportOnly;
+    }
+
+    /** True once submitted, as a valid answer or report-only; either outcome is handled work. */
+    public boolean isSubmitted() {
+        return submittedAt != null;
+    }
+
+    /** True for a submitted answer, the only kind that counts toward k; drafts and reports do not. */
+    public boolean isValidAnswer() {
+        return isSubmitted() && !reportOnly;
     }
 }

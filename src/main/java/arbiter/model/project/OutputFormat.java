@@ -1,6 +1,6 @@
 package arbiter.model.project;
 
-/** The on-disk format the finished dataset is written in. Only the exporter writes these. */
+/** The format the finished dataset is written in. */
 public enum OutputFormat {
     CSV,
     JSON,

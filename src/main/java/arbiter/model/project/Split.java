@@ -5,8 +5,7 @@ import java.time.Instant;
 /**
  * A batch of items cut from the corpus, which is what gets assigned.
  *
- * <p>A split names a set of items rather than copying them: {@code SplitItem} joins this to the
- * items, so an item can be moved or removed without rewriting the split.
+ * <p>Its items and their order are the {@code SplitItem} records that name them (rule 7).
  */
 public class Split {
     /** Database identifier. */
@@ -19,25 +18,21 @@ public class Split {
     private String name;
 
     /**
-     * How many annotators see each item, defaulting to 2. This is a property of the work rather than
-     * of one annotator's link to it: every annotator on the split sees the same items, so *k* belongs
-     * here, not on the assignment.
+     * How many annotators see each item (k). It belongs to the split rather than the assignment
+     * because every annotator on a split sees the same items.
      */
     private Integer annotationsPerItem;
 
-    /** Allocation strategy the split was cut with, null when it was cut by hand. */
-    private SplitStrategy strategy;
-
-    /**
-     * Seed the allocation used, null when none was given. Rule 7 requires a seeded split to be
-     * reproducible, so the seed is stored rather than asked for again.
-     */
+    /** Seed the allocation's shuffle actually used, including one the app generated. */
     private Long seed;
 
-    /** Amount paid for each item, fixed once the split is assigned. */
-    private Double itemReward;
+    /**
+     * Items per batch the adjudicator asked for, which the membership cannot show because the last
+     * batch of a generation can be smaller.
+     */
+    private Integer requestedBatchSize;
 
-    /** True once assigned, after which nothing about the split changes. */
+    /** True once the split has been assigned, which locks it (rule 14). */
     private boolean assigned;
 
     /** When the split was created. */
@@ -71,14 +66,6 @@ public class Split {
         this.annotationsPerItem = annotationsPerItem;
     }
 
-    public SplitStrategy getStrategy() {
-        return strategy;
-    }
-
-    public void setStrategy(SplitStrategy strategy) {
-        this.strategy = strategy;
-    }
-
     public Long getSeed() {
         return seed;
     }
@@ -87,20 +74,20 @@ public class Split {
         this.seed = seed;
     }
 
+    public Integer getRequestedBatchSize() {
+        return requestedBatchSize;
+    }
+
+    public void setRequestedBatchSize(Integer requestedBatchSize) {
+        this.requestedBatchSize = requestedBatchSize;
+    }
+
     public String getName() {
         return name;
     }
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Double getItemReward() {
-        return itemReward;
-    }
-
-    public void setItemReward(Double itemReward) {
-        this.itemReward = itemReward;
     }
 
     public boolean isAssigned() {

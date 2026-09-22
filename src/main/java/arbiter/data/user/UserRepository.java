@@ -23,9 +23,6 @@ public interface UserRepository {
     /** Returns every account with this role, enabled or not. */
     List<User> listByRole(Role role);
 
-    /**
-     * Counts enabled accounts with this role. The last-adjudicator guard must ignore disabled
-     * accounts, or two adjudicators could disable each other out of the workspace.
-     */
+    /** Counts enabled accounts with this role. */
     long countActiveByRole(Role role);
 }

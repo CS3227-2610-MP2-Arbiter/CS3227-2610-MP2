@@ -10,13 +10,13 @@ public class Item {
     /** Project this item belongs to. */
     private Long projectId;
 
-    /** Location of the source file; resolution and the missing-file case are handled by media resolution. */
+    /** Workspace-relative location of the source file under {@code media/}, such as {@code media/corpus/cat.jpg}. */
     private String path;
 
-    /** Hash of the file contents, used to detect re-imports. */
+    /** Hash of the bytes registered at import, used to reject duplicates and detect a changed source file. */
     private String contentHash;
 
-    /** True once an item has been removed from the project, which drops it from the export and from earnings. */
+    /** True once the item is excluded, which drops it from work and the export while keeping its records. */
     private boolean retired;
 
     /** When the item was imported. */

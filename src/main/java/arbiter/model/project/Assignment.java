@@ -2,12 +2,7 @@ package arbiter.model.project;
 
 import java.time.Instant;
 
-/**
- * The link between one split and one annotator.
- *
- * <p>A model class holds data only. Defaults and the rules about when a value may change live in
- * {@code arbiter.service}.
- */
+/** The link between one split and one annotator. */
 public class Assignment {
     /** Database identifier. */
     private Long id;
@@ -23,15 +18,6 @@ public class Assignment {
 
     /** When the assignment was made. */
     private Instant assignedAt;
-
-    /** When an adjudicator last returned it for rework, null if never returned. */
-    private Instant returnedAt;
-
-    /** Adjudicator who last returned it, null if never returned. */
-    private Long returnedByUserId;
-
-    /** Why it was returned, so the annotator knows what to fix. */
-    private String returnReason;
 
     /** Creates an empty Assignment. */
     public Assignment() {
@@ -67,30 +53,6 @@ public class Assignment {
 
     public void setStatus(AssignmentStatus status) {
         this.status = status;
-    }
-
-    public Instant getReturnedAt() {
-        return returnedAt;
-    }
-
-    public void setReturnedAt(Instant returnedAt) {
-        this.returnedAt = returnedAt;
-    }
-
-    public Long getReturnedByUserId() {
-        return returnedByUserId;
-    }
-
-    public void setReturnedByUserId(Long returnedByUserId) {
-        this.returnedByUserId = returnedByUserId;
-    }
-
-    public String getReturnReason() {
-        return returnReason;
-    }
-
-    public void setReturnReason(String returnReason) {
-        this.returnReason = returnReason;
     }
 
     public Instant getAssignedAt() {

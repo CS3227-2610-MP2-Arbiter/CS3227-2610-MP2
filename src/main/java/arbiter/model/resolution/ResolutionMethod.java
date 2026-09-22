@@ -1,6 +1,6 @@
 package arbiter.model.resolution;
 
-/** How an item's final label was decided, recorded for provenance. */
+/** How an item's final answer was reached. */
 public enum ResolutionMethod {
     MAJORITY,
     ADJUDICATED,

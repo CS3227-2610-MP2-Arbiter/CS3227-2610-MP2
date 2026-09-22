@@ -1,6 +1,6 @@
 # Architecture
 
-Written for agents: rules as tables and bullets, with no diagrams or rationale. The design, its reasoning and the test levels are in the "Design" and "Testing" sections of [docs/DeveloperGuide.md](../docs/DeveloperGuide.md), written for human readers. "Rule N" means rule N in section 3 of [docs/UserFlows.md](../docs/UserFlows.md).
+Written for agents: rules as tables and bullets, with no diagrams or rationale. The design, its reasoning and the test levels are in the "Design" and "Testing" sections of [docs/DeveloperGuide.md](../docs/DeveloperGuide.md), written for human readers. "Rule N" means rule N in section 3 of [docs/UserFlows.md](../docs/UserFlows.md); product rules live there and in the GitHub issues, and this file only says where the code enforces them.
 
 ## Packages
 
@@ -11,36 +11,34 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 | 1 | `arbiter.ui.annotator` | The annotator screens, using the shared components. | zheng-jj (annotator track) |
 | 1 | `arbiter.ui.adjudicator` | The adjudicator screens, using the shared components. | Whimsyturtle (adjudicator track) |
 | 2 | `arbiter.ui.shared` | Shell, navigation, routing, UI kit, error handling, and the annotation components. | zheng-jj ([#5], [#8]) |
-| 3 | `arbiter.service` | All business rules: assignment, resolution, export, earnings, access scoping. | Shared ([#4]) |
+| 3 | `arbiter.service` | All business rules: assignment, resolution, export, access scoping. | Shared ([#4]) |
 | 4 | `arbiter.data` | Repository interfaces. Signatures only, no SQL. | Shared ([#4]) |
 | 4 | `arbiter.data.sqlite` | The ORM mappings, schema and migrations. | Whimsyturtle ([#6]) |
 | 4 | `arbiter.model` | Value objects and enums. No queries, no UI logic. | Shared ([#4]) |
-| 5 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Shared ([#9], [#10]) |
+| 5 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Whimsyturtle (paths [#9], lock [#61]); zheng-jj (asset resolution [#10]) |
 
 ## Rules
 
 ### Shared code
 
 - `AnnotationEditor`, `BoxCanvas` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
-- `AnnotationEditor` is editable for annotators and for adjudicators supplying their own label ([#34]) or repairing flagged items ([#35]), and read-only in the resolution screen ([#34]).
-- Every rule about the data lives in `arbiter.service`, never in a controller or a repository.
+- `AnnotationEditor` edits only the current annotator draft. Adjudicator screens use the shared label picker and a read-only `BoxCanvas`, and never edit a submission (rule 13).
+- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check the project seal (rule 9) and setup freezes (rules 3, 14) inside the write transaction; a disabled control is not enforcement.
 
 ### Blindness (rule 1)
 
-- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or per-item agreement stats.
+- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or agreement statistics.
 - Do not rely on package separation for blindness.
 - The blindness test ([#11]) must cover every annotator-facing code path, including new ones.
 
-### Data
+### Source media (rule 21)
 
-- Never store money: no `balance` column and no ledger table. Earnings are derived from annotations and per-item rewards ([#20]).
-- Resolution never deletes the losing annotations; [#36] and [#37] need them.
-- Retire users and items instead of deleting them (rule 5). Deleting a label is the exception: it removes the annotations that used it and returns those items to unannotated ([#26], rule 3).
+- Every source read goes through the one resolver in `arbiter.workspace` ([#10]), which checks containment and content. Caches never bypass it.
 
 ### Persistence
 
 - One SQLite file at `<workspace>/arbiter.db`, with migrations applied on open and foreign keys enabled.
-- Commit every annotator action immediately (rule 2).
+- Commit each completed logical action immediately (rule 2). Repository calls within one action share [#6]'s transaction and never commit on their own.
 - Code against the repository interfaces in `arbiter.data`. Their implementations in `arbiter.data.sqlite` map rows with ORMLite, not Hibernate, and are the only code with SQL.
 - Take the workspace lock before writing, and refuse to open a second writer (rule 11).
 
@@ -56,45 +54,26 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - No plugin system and no dependency-injection framework.
 - Do not reinvent the wheel: use the Java standard library where it suffices, and otherwise a reputable, maintained third-party library. Never hand-write a solved problem (e.g., JSON parsing).
 - Use a record for any class that only carries immutable data, instead of hand-writing its constructor, accessors, `equals` and `hashCode`. Model classes are the exception, because their fields are not `final` (see [Model](#model)).
-- Java lines are at most 120 characters (Checkstyle in `config/checkstyle`). Markdown is exempt:
-  never hard-wrap prose, tables or bullets in `.md` files.
+- Java lines are at most 120 characters (Checkstyle in `config/checkstyle`). Markdown is exempt; see "Markdown" in [docs/DeveloperGuide.md](../docs/DeveloperGuide.md#software-engineering-process).
 
 ## Model
 
-Model classes are plain value objects: no queries, no UI logic and no annotations. They are deliberately **not** annotated for the ORM, so the mapping is designed once in `arbiter.data.sqlite` alongside the schema rather than guessed at here. Tests must be able to construct them without a database.
+Model classes are plain value objects in `arbiter.model`, grouped into subpackages by area (`user`, `project`, `annotation`, `resolution`) that mirror `arbiter.data`. What each class and field means is in its Javadoc.
 
-They are grouped into subpackages by area, mirroring the repository interfaces in `arbiter.data`:
-
-| Subpackage | Classes | Enums |
-| --- | --- | --- |
-| `arbiter.model.user` | `User` | `Role`, `AccountStatus` |
-| `arbiter.model.project` | `Project`, `TaxonomySettings`, `Label`, `Item`, `Split`, `SplitItem`, `Assignment` | `TaskType`, `SourceType`, `TaxonomyKind`, `OutputFormat`, `AssignmentStatus`, `SplitStrategy` |
-| `arbiter.model.annotation` | `Annotation`, `BoundingBox`, `Flag` | `FlagReason`, `FlagDisposition` |
-| `arbiter.model.resolution` | `Resolution` | `ResolutionMethod` |
-
-A few rules keep the model honest:
-
-- **One answer shape at a time.** `Annotation` and `Resolution` each carry a label *or* a scale value. Their setters clear the other, **and so do their getters**: ORMLite sets fields reflectively, so a row read back from the database never passes through the setters.
-- **`Project` holds only its own settings.** What a taxonomy needs - the scale range - lives in `TaxonomySettings`, so a project is not a bag of optional numbers that matter for one taxonomy kind only. `TaxonomySettings` is a separate entity with its own `id` and `projectId`, because ORMLite has no equivalent of JPA's `@Embedded` and can only persist a type that has its own identity. **`Project` holds no reference back**: `projectId` is the only link, in the same direction as `Label`, `Item` and `Split`, so the relationship cannot be recorded twice and disagree.
-- **An annotator's scale answer is an `Integer`.** They pick a whole number; only the value agreed at resolution may be an average, which is why `Resolution.scaleValue` is a `Double` and `Annotation.scaleValue` is not.
-- **A split names its items through `SplitItem`.** Membership is a record of its own, not a copy of the items, so the adjudicator can add an item to an assigned split or withdraw one (rule 13) without rewriting either side.
-- ***k* and the seed live on `Split`, not `Assignment`.** Both describe the work rather than one annotator's link to it: every annotator on the split sees the same items, and rule 7 needs the seed kept so a split can be reproduced.
-- **`Label` has no soft-delete flag.** Rule 5 makes labels the one exception: deleting a label removes it and its annotations outright, so a retired state would contradict the rule.
-- **A submitted assignment can be returned, and the return is recorded.** `AssignmentStatus.RETURNED` exists because an adjudicator may send a split back for rework ([#12], [#17]), and `Assignment` carries `returnedAt`, `returnedByUserId` and `returnReason` so rule 13's "recorded" is true and the annotator learns what to fix.
-- **Every flag has a disposition.** `FlagDisposition` is `PENDING`, `EXCLUDED`, `REPAIRED` or `KEPT`, so the review queue empties once each flag is dealt with ([#35]) and the disposition can be shown per item ([#36]). Excluding retires the item, so `Item.retired` stays the one place that decides whether an item is in the dataset.
-- **Settings that lock at creation are not `final`.** ORMLite builds rows through a no-arg constructor and then sets fields reflectively, so `final` would mean hand-written mappers. Rule 4 is enforced in `arbiter.service` instead, like every other rule about the data.
-- **Defaults live in the service, not the model.** A model class stores what was chosen; it never decides. *k* defaults to 2 in `AssignmentService`, so `Split.annotationsPerItem` stays null until a split is cut and assigned.
+- No queries, no UI logic and no annotations. The ORM mapping is designed once in `arbiter.data.sqlite`, alongside the schema.
+- Tests must be able to construct every model class without a database.
+- Fields are not `final`. Settings fixed at creation (rule 4) are enforced in services.
+- A model class stores what was chosen and never decides. Defaults are applied by services: *k*'s by `AssignmentService`, so `Split.annotationsPerItem` is null until then.
 
 ## Services
 
-- `AuthService`: login, session, password hashing (PBKDF2 or bcrypt with a per-user salt).
+- `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup, the lock, paths.
-- `ProjectService`, `CorpusService`: import, splits, taxonomy.
-- `AssignmentService`: assignment, *k*, load, completion and the reward lock.
-- `AnnotationService`: autosave, submit, flags, and the annotator-facing read path (rule 1).
-- `ResolutionService`: majority, ties and disputes; idempotent.
-- `EarningsService`: derived earnings, released versus pending.
-- `ExportService`: the only code that knows about CSV, JSON and COCO. Annotators persist canonical annotations and never choose a format.
+- `ProjectService`, `CorpusService`: project completion and deletion, import, splits and taxonomy.
+- `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
+- `AnnotationService`: draft autosave, submission and queue advancement (rule 18), flags, and the annotator-scoped read path (rule 1).
+- `ResolutionService`: automatic and manual resolution, branching on task type first (rules 10, 16).
+- `ExportService`: the only code that knows about output formats. Annotators persist canonical annotations and never choose a format.
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
@@ -103,9 +82,4 @@ A few rules keep the model honest:
 [#9]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
-[#20]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/20
-[#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
-[#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
-[#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
-[#36]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/36
-[#37]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/37
+[#61]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61

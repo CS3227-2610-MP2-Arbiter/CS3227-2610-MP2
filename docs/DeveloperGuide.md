@@ -4,7 +4,7 @@ title: Developer Guide
 
 # Developer Guide
 
-Arbiter is an offline Java desktop app for teams that label data. This guide describes how the system is designed, how the team works on it, and how to set up and verify a change.
+This guide describes how Arbiter is designed, how the team works on it, and how to set up and verify a change.
 
 ## Setting up
 
@@ -15,13 +15,11 @@ Arbiter is an offline Java desktop app for teams that label data. This guide des
 
 On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
-The `review` skill runs `./gradlew check shadowJar` together, which is what CI does.
-
 ## Design
 
-Arbiter runs locally. There is no server, no network and no accounts department: one SQLite file lives in a workspace folder, reached over a shared drive, and JavaFX talks to it directly. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no retries, no eventual-consistency problems and no distributed state.
+Arbiter runs locally. There is no server, no network and no accounts department: one SQLite file lives in the workspace folder both roles share, and JavaFX talks to it directly. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no retries, no eventual-consistency problems and no distributed state.
 
-Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to an app with a dozen screens and one database file. There is an ORM, because hand-mapping eleven tables is exactly the kind of boilerplate it removes.
+Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to a small app with one database file. There is an ORM, because hand-mapping every table is exactly the kind of boilerplate it removes.
 
 The code-level rules that follow from this design, which the agent works from, are in [`context/architecture.md`](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md).
 
@@ -47,17 +45,17 @@ Dependencies point downward only, and neither role package imports the other - t
 
 ### The two roles share one workflow
 
-The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, a rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
+The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, an optional rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
 
-- **Manual resolution** ([#34]) shows competing annotations side by side with the item, rationale and boxes, so the adjudicator screen must render an annotation exactly as the annotator made it.
+- **Manual resolution** ([#34]) shows submitted annotations side by side, so the adjudicator's read-only view must render every box and label exactly as the annotator made it.
 - **Box geometry** ([#15]) is hard: drawing, snapping, clamping, and coordinates that stay correct at any zoom level. Two implementations would drift.
-- **Adjudicators also annotate.** They supply their own label in [#34] and repair flagged items in [#35], so they need the annotator's editing widgets.
+- **Adjudicators pick labels too.** Supplying a classification label in [#34] uses the annotator's label picker, recorded as a separate decision rather than an edit.
 
 Building the roles as separate silos would duplicate the hardest UI code in the app, and a subtle disagreement between two coordinate transforms would hide there. So `AnnotationEditor`, `BoxCanvas` and `ItemView` live in `arbiter.ui.shared` and are used by both roles, with a role difference as a mode flag rather than a second implementation. Every rule about the data lives in `arbiter.service`, which both roles call, so no rule is implemented twice with two different answers.
 
 ### How blindness is enforced
 
-Annotators must never see another annotator's annotation, a resolved label or a per-item agreement stat. Keeping the role packages apart cannot guarantee that once they share components, because a shared `AnnotationEditor` can be handed any annotation. Blindness is enforced where it can be seen and tested instead:
+Keeping the role packages apart cannot guarantee [blindness](UserFlows.md#3-rules-both-tracks-share) once they share components, because a shared `AnnotationEditor` can be handed any annotation. Blindness is enforced where it can be seen and tested instead:
 
 - **At the query boundary.** Annotator reads go through `AnnotationService`, which scopes every read to the session user. Resolved labels are never loaded on that path.
 - **By a test.** [#11] includes a test that fails if any annotator-facing code path can reach another annotator's annotation.
@@ -66,13 +64,10 @@ This is stronger than package separation: it holds for code written later, by an
 
 ### Data and persistence
 
-- **Money is derived, never stored.** There is no balance column and no ledger. Earnings are recomputed from annotations and per-item rewards, so they cannot drift from the data.
-- **Losing annotations are kept.** When resolution picks a winner, the other annotations stay, because the per-item breakdown and the export's provenance need them.
-- **Deletion is soft, except for labels.** Accounts and items are retired rather than purged, so historical annotations stay interpretable. Deleting a label removes the annotations that used it.
 - **Write-through.** Every annotator action commits immediately, because a power cut must not lose work.
-- **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand. Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not fit a desktop app with one connection. Complex queries still drop to raw SQL, inside the repository.
+- **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand. Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not fit a desktop app with one connection. Complex queries still drop to raw SQL, inside the repository. ORMLite builds rows through a no-arg constructor and sets fields reflectively, so model fields cannot be `final`; settings fixed at creation are enforced in services instead.
 - **A single writer.** The database is shared over a shared drive, and SQLite is not safe against concurrent writers there, so `arbiter.workspace` takes an advisory lock. The failure is explicit rather than silent corruption.
-- **One exporter.** Annotators persist canonical annotations and never choose a file format. Only `ExportService` knows about CSV, JSON and COCO.
+- **One exporter.** Annotators persist canonical annotations and never choose a file format, so formatting is written once, in `ExportService`.
 
 ### Design decisions and their costs
 
@@ -81,12 +76,11 @@ This is stronger than package separation: it holds for code written later, by an
 | One shared SQLite file with a workspace lock | Package exchange with merge | Only one person can write at a time |
 | Lightweight ORM (ORMLite) over JDBC | Hibernate | Complex queries still need raw SQL |
 | Services in one shared package | Per-role service layers | Both tracks edit the same package |
-| Money derived, never stored | Balance or ledger column | Recomputed on every read |
 | Annotation components shared by both roles | One editor per role | `ui.shared` is a shared dependency |
 | Blindness enforced in the service and a test | Enforced by package separation | Relies on discipline in the read path |
 | Single-writer lock | Optimistic concurrency | Cannot have two annotators open at once |
 
-The fifth and sixth rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
+The shared-components and blindness rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
 
 The product context, the shape of both flows and the cross-cutting rules in section 3 are in [User Flows](UserFlows.md); the step-by-step behaviour is in the GitHub issues each step links to.
 
@@ -110,7 +104,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 
 **Branching.** `write-plan` reuses or creates a descriptively named branch per task. Both of us work on `main` otherwise and keep the shared packages (`model`, `data`, `service`) agreed in [#4] before feature code starts, since that is where conflicts would come from.
 
-**Markdown.** Never hard-wrap prose in `.md` files: write one sentence or bullet per line and let the viewer wrap it. The 120-character Checkstyle limit applies to Java only.
+**Markdown.** Never hard-wrap `.md` files: a paragraph, bullet or table row is one line, however many sentences it holds, and the viewer wraps it. The Java line limit does not apply.
 
 **CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and pull request, since the deliverable is a desktop jar that must launch on all three. A second job catches the release jar failing to start on Apple Silicon. A separate workflow publishes the `docs/` folder to GitHub Pages.
 
@@ -125,8 +119,6 @@ Each skill declares its input, steps and completion criteria, and states what it
 | Blindness | `src/test/java` | Fails if annotator code can reach another annotator's work |
 | Shared component | `src/test/java` | Box geometry and editor modes, tested once where the component lives |
 | Acceptance | Manual | A human walks the agreed scenarios |
-
-The blindness test exists because rule 1 (annotators never see each other's annotations) is the core invariant of the product. It is too important to leave to review alone.
 
 ## Acknowledgements
 
@@ -145,4 +137,3 @@ The blindness test exists because rule 1 (annotators never see each other's anno
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#15]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/15
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
-[#35]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/35
