@@ -1,6 +1,6 @@
 # Rank V1 scope cuts
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
