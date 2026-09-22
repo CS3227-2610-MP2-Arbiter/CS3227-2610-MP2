@@ -8,8 +8,10 @@ import java.util.Objects;
  *
  * <p>This is the only place the workspace layout is written down. Callers ask for a path rather than
  * joining names themselves, so the layout cannot drift between features.
+ *
+ * @param root the workspace folder, made absolute and normalised
  */
-public final class WorkspacePaths {
+public record WorkspacePaths(Path root) {
     /** Name of the workspace metadata file. */
     public static final String METADATA_FILE = "workspace.json";
 
@@ -25,20 +27,9 @@ public final class WorkspacePaths {
     /** Name of the folder holding application logs. */
     public static final String LOGS_DIRECTORY = "logs";
 
-    private final Path root;
-
-    /**
-     * Creates paths rooted at a workspace folder.
-     *
-     * @param root the workspace folder
-     */
-    public WorkspacePaths(Path root) {
-        this.root = Objects.requireNonNull(root, "root").toAbsolutePath().normalize();
-    }
-
-    /** Returns the workspace folder itself. */
-    public Path root() {
-        return root;
+    /** Makes the root absolute and normalised. */
+    public WorkspacePaths {
+        root = Objects.requireNonNull(root, "root").toAbsolutePath().normalize();
     }
 
     /** Returns the workspace metadata file. */
@@ -64,26 +55,5 @@ public final class WorkspacePaths {
     /** Returns the folder holding application logs. */
     public Path logsDirectory() {
         return root.resolve(LOGS_DIRECTORY);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (!(other instanceof WorkspacePaths)) {
-            return false;
-        }
-        return root.equals(((WorkspacePaths) other).root);
-    }
-
-    @Override
-    public int hashCode() {
-        return root.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return root.toString();
     }
 }

@@ -54,8 +54,8 @@ class WorkspaceServiceTest {
         WorkspacePaths paths = service.create(workspaceFolder("ws"));
         WorkspaceMetadata metadata = service.readMetadata(paths);
 
-        assertEquals(WorkspaceMetadata.CURRENT_WORKSPACE_VERSION, metadata.getWorkspaceVersion());
-        assertEquals(WorkspaceMetadata.CURRENT_SCHEMA_VERSION, metadata.getSchemaVersion());
+        assertEquals(WorkspaceMetadata.CURRENT_WORKSPACE_VERSION, metadata.workspaceVersion());
+        assertEquals(WorkspaceMetadata.CURRENT_SCHEMA_VERSION, metadata.schemaVersion());
     }
 
     @Test

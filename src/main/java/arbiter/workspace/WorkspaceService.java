@@ -78,10 +78,10 @@ public class WorkspaceService {
                             + " is missing.");
         }
         WorkspaceMetadata metadata = readMetadata(paths);
-        if (metadata.getWorkspaceVersion() > WorkspaceMetadata.CURRENT_WORKSPACE_VERSION) {
+        if (metadata.workspaceVersion() > WorkspaceMetadata.CURRENT_WORKSPACE_VERSION) {
             throw new WorkspaceException(
                     "This workspace was created by a newer version of Arbiter (layout version "
-                            + metadata.getWorkspaceVersion() + ", this build understands "
+                            + metadata.workspaceVersion() + ", this build understands "
                             + WorkspaceMetadata.CURRENT_WORKSPACE_VERSION
                             + "). Update Arbiter before opening it. The workspace has not been "
                             + "changed.");
@@ -141,9 +141,9 @@ public class WorkspaceService {
 
     private void writeMetadata(WorkspacePaths paths, WorkspaceMetadata metadata) throws IOException {
         Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put(VERSION_FIELD, metadata.getWorkspaceVersion());
-        fields.put(SCHEMA_FIELD, metadata.getSchemaVersion());
-        fields.put(CREATED_FIELD, metadata.getCreated().toString());
+        fields.put(VERSION_FIELD, metadata.workspaceVersion());
+        fields.put(SCHEMA_FIELD, metadata.schemaVersion());
+        fields.put(CREATED_FIELD, metadata.created().toString());
         Files.writeString(paths.metadataFile(), Json.write(fields), StandardCharsets.UTF_8);
     }
 
