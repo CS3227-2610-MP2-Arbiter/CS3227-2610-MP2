@@ -6,9 +6,6 @@ import java.util.Objects;
 /**
  * Resolves every path inside one workspace.
  *
- * <p>This is the only place the workspace layout is written down. Callers ask for a path rather than
- * joining names themselves, so the layout cannot drift between features.
- *
  * @param root the workspace folder, made absolute and normalised
  */
 public record WorkspacePaths(Path root) {

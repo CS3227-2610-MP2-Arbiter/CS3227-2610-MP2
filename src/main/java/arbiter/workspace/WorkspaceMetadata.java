@@ -5,11 +5,8 @@ import java.time.Instant;
 /**
  * The contents of {@code workspace.json}.
  *
- * <p>The two versions are deliberately separate. {@code workspaceVersion} covers the folder layout
- * and this file; {@code schemaVersion} covers the database and is written by whoever owns the schema.
- *
- * @param workspaceVersion the layout version
- * @param schemaVersion the database schema version
+ * @param workspaceVersion the version of the folder layout and of this file
+ * @param schemaVersion the version of the database schema
  * @param created when the workspace was created
  */
 public record WorkspaceMetadata(int workspaceVersion, int schemaVersion, Instant created) {

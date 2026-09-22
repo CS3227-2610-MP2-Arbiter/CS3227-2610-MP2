@@ -11,13 +11,7 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
-/**
- * Creates and opens workspaces.
- *
- * <p>A workspace is a folder holding the database, the imported media, the exports and the logs. On
- * first launch there is no workspace and one has to be made; on later launches the remembered one is
- * reopened.
- */
+/** Creates and opens workspaces. */
 public class WorkspaceService {
     // Unknown fields are ignored so that a newer workspace reaches the version check below.
     private static final JsonMapper JSON = JsonMapper.builder()

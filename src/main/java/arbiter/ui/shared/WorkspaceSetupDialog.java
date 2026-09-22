@@ -18,15 +18,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
 
-/**
- * The first-run wizard, which chooses and opens the folder a workspace lives in.
- *
- * <p>This is a thin adapter over {@link WorkspaceService}: every rule about workspaces is decided
- * there, so the acceptance criteria are covered by tests that need no JavaFX toolkit.
- *
- * <p>It lives in the shared layer because first-run behaviour belongs to the shell, not to either
- * role.
- */
+/** The first-run wizard, which chooses and opens the folder a workspace lives in. */
 public class WorkspaceSetupDialog {
     private final WorkspaceService service;
 

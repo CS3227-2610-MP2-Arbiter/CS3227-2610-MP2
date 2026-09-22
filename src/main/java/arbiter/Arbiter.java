@@ -19,8 +19,6 @@ public class Arbiter extends Application {
         stage.setScene(new Scene(new StackPane(new Label("Arbiter")), 800, 600));
         stage.show();
 
-        // First run asks where the workspace should live; later runs reopen the last one.
-        // This is deliberately minimal: the app shell owns this entry point.
         WorkspaceSetupDialog wizard = new WorkspaceSetupDialog(new WorkspaceService());
         Optional<WorkspacePaths> workspace = wizard.start(stage);
         if (workspace.isEmpty()) {
