@@ -72,7 +72,8 @@ public class WorkspaceService {
      *
      * @param folder the workspace folder
      * @return the paths of the opened workspace
-     * @throws WorkspaceException if the folder is not a workspace or its layout is incomplete
+     * @throws WorkspaceException if the folder is not a workspace, its layout is incomplete or it was
+     *     written by a newer version
      */
     public WorkspacePaths open(Path folder) {
         WorkspacePaths paths = new WorkspacePaths(folder);
@@ -125,17 +126,16 @@ public class WorkspaceService {
      *
      * @param paths the workspace
      * @return the metadata
-     * @throws WorkspaceMetadataException if the file is missing or malformed
+     * @throws WorkspaceException if the file cannot be read or is malformed
      */
     public WorkspaceMetadata readMetadata(WorkspacePaths paths) {
         try {
             String text = Files.readString(paths.metadataFile(), StandardCharsets.UTF_8);
             return JSON.readValue(text, WorkspaceMetadata.class);
         } catch (IOException e) {
-            throw new WorkspaceMetadataException(
-                    "Could not read " + WorkspacePaths.METADATA_FILE, e);
+            throw new WorkspaceException("Could not read " + WorkspacePaths.METADATA_FILE, e);
         } catch (JacksonException e) {
-            throw new WorkspaceMetadataException(
+            throw new WorkspaceException(
                     WorkspacePaths.METADATA_FILE + " is malformed: " + e.getOriginalMessage(), e);
         }
     }

@@ -1,6 +1,6 @@
 package arbiter.workspace;
 
-/** Thrown when a workspace cannot be created or opened. */
+/** Thrown for any workspace-related failure. */
 public class WorkspaceException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
