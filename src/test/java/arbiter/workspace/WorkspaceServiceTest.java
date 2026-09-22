@@ -1,7 +1,6 @@
 package arbiter.workspace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -9,28 +8,16 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Tests workspace creation, reopening, metadata and the version guard. */
+/** Tests workspace creation, opening, metadata and the version guard. */
 class WorkspaceServiceTest {
     @TempDir
     Path temporary;
 
-    private Path userHome;
-    private WorkspaceService service;
-
-    @BeforeEach
-    void setUp() throws IOException {
-        // A fake user home, so the tests never touch the real recent-workspaces file.
-        userHome = Files.createDirectories(temporary.resolve("home"));
-        service = new WorkspaceService(
-                new RecentWorkspaces(userHome.resolve(RecentWorkspaces.FILE_NAME)));
-    }
+    private final WorkspaceService service = new WorkspaceService();
 
     private Path workspaceFolder(String name) {
         return temporary.resolve(name);
@@ -70,40 +57,14 @@ class WorkspaceServiceTest {
     }
 
     @Test
-    void rememberedWorkspaceIsReopenedOnTheNextStart() {
+    void multipleWorkspacesCanBeCreatedAndOpened() {
         Path first = workspaceFolder("first");
         Path second = workspaceFolder("second");
         service.create(first);
         service.create(second);
 
-        // A fresh service, as if the app had been restarted.
-        WorkspaceService restarted = new WorkspaceService(
-                new RecentWorkspaces(userHome.resolve(RecentWorkspaces.FILE_NAME)));
-        Optional<WorkspacePaths> reopened = restarted.openRemembered();
-
-        assertTrue(reopened.isPresent(), "the last workspace should be remembered");
-        assertEquals(second.toAbsolutePath().normalize(), reopened.get().root());
-    }
-
-    @Test
-    void multipleWorkspacesStayOpenableAndLastOpenedWins() {
-        Path first = workspaceFolder("first");
-        Path second = workspaceFolder("second");
-        service.create(first);
-        service.create(second);
-
-        assertEquals(second.toAbsolutePath().normalize(), service.getRecent().lastOpened());
-        assertTrue(service.getRecent().getPaths().contains(first.toAbsolutePath().normalize()),
-                "the earlier workspace is still remembered");
-        assertEquals(first.toAbsolutePath().normalize(), service.open(first).root(),
-                "the earlier workspace still opens");
-        assertEquals(first.toAbsolutePath().normalize(), service.getRecent().lastOpened(),
-                "opening a workspace makes it the most recent");
-    }
-
-    @Test
-    void noWorkspaceRememberedGivesEmpty() {
-        assertTrue(service.openRemembered().isEmpty());
+        assertEquals(first.toAbsolutePath().normalize(), service.open(first).root());
+        assertEquals(second.toAbsolutePath().normalize(), service.open(second).root());
     }
 
     @Test
@@ -202,75 +163,5 @@ class WorkspaceServiceTest {
 
         assertTrue(paths.root().isAbsolute(), "the root should be absolute");
         assertEquals(paths.root(), paths.root(), "resolution should be stable");
-    }
-
-    @Test
-    void recentListKeepsNewestFirstAndIsBounded() {
-        RecentWorkspaces recent = new RecentWorkspaces(
-                userHome.resolve(RecentWorkspaces.FILE_NAME));
-        recent.load();
-
-        for (int i = 0; i < RecentWorkspaces.LIMIT + 4; i++) {
-            recent.remember(temporary.resolve("workspace-" + i));
-        }
-
-        List<Path> remembered = recent.getPaths();
-        assertEquals(RecentWorkspaces.LIMIT, remembered.size(), "the list should be bounded");
-        assertEquals(temporary.resolve("workspace-" + (RecentWorkspaces.LIMIT + 3)),
-                remembered.get(0),
-                "the newest entry should be first");
-    }
-
-    @Test
-    void rememberingAnExistingWorkspaceMovesItToTheFront() {
-        RecentWorkspaces recent = new RecentWorkspaces(
-                userHome.resolve(RecentWorkspaces.FILE_NAME));
-        recent.load();
-        Path alpha = temporary.resolve("alpha");
-        Path beta = temporary.resolve("beta");
-        recent.remember(alpha);
-        recent.remember(beta);
-        recent.remember(alpha);
-
-        assertEquals(alpha, recent.lastOpened());
-        assertEquals(2, recent.getPaths().size(), "no duplicate entry");
-    }
-
-    @Test
-    void recentListSurvivesARoundTripThroughDisk() {
-        Path file = userHome.resolve(RecentWorkspaces.FILE_NAME);
-        RecentWorkspaces written = new RecentWorkspaces(file);
-        written.load();
-        written.remember(temporary.resolve("alpha"));
-        written.remember(temporary.resolve("beta"));
-
-        RecentWorkspaces read = new RecentWorkspaces(file);
-        read.load();
-
-        assertEquals(written.getPaths(), read.getPaths());
-    }
-
-    @Test
-    void rememberedPathsAreStoredAbsoluteSoTheyResolveFromAnywhere() {
-        RecentWorkspaces recent = new RecentWorkspaces(
-                userHome.resolve(RecentWorkspaces.FILE_NAME));
-        recent.load();
-
-        recent.remember(Path.of("relative-workspace"));
-
-        assertTrue(recent.lastOpened().isAbsolute(),
-                "a relative path is resolved when it is remembered");
-    }
-
-    @Test
-    void aDamagedRecentListIsIgnoredRatherThanFatal() throws IOException {
-        Path file = Files.createDirectories(userHome).resolve(RecentWorkspaces.FILE_NAME);
-        Files.writeString(file, "{ this is not json", StandardCharsets.UTF_8);
-
-        RecentWorkspaces recent = new RecentWorkspaces(file);
-        recent.load(); // must not throw
-
-        assertTrue(recent.getPaths().isEmpty(), "a damaged list reads as empty");
-        assertFalse(Files.isDirectory(userHome.resolve("nonexistent")));
     }
 }

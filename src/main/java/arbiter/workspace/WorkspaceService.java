@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
@@ -19,18 +18,6 @@ public class WorkspaceService {
             .enable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)
             .enable(SerializationFeature.INDENT_OUTPUT)
             .build();
-
-    private final RecentWorkspaces recent;
-
-    /** Creates a service with a recent list to record workspaces in. */
-    public WorkspaceService(RecentWorkspaces recent) {
-        this.recent = recent;
-    }
-
-    /** Creates a service using the default recent list under the user's home folder. */
-    public WorkspaceService() {
-        this(RecentWorkspaces.atUserHome());
-    }
 
     /**
      * Creates a workspace folder and its layout.
@@ -56,8 +43,6 @@ public class WorkspaceService {
         } catch (IOException e) {
             throw new WorkspaceException("Could not create the workspace in " + paths.root(), e);
         }
-        recent.load();
-        recent.remember(paths.root());
         return paths;
     }
 
@@ -91,28 +76,7 @@ public class WorkspaceService {
         requireDirectory(paths.mediaDirectory());
         requireDirectory(paths.exportsDirectory());
         requireDirectory(paths.logsDirectory());
-        recent.load();
-        recent.remember(paths.root());
         return paths;
-    }
-
-    /**
-     * Opens the workspace opened last, if one is remembered and still readable.
-     *
-     * @return the paths of the remembered workspace, or empty when there is none
-     */
-    public Optional<WorkspacePaths> openRemembered() {
-        recent.load();
-        Path last = recent.lastOpened();
-        if (last == null || !Files.isRegularFile(new WorkspacePaths(last).metadataFile())) {
-            return Optional.empty();
-        }
-        return Optional.of(open(last));
-    }
-
-    /** Returns the recent workspace list. */
-    public RecentWorkspaces getRecent() {
-        return recent;
     }
 
     /**

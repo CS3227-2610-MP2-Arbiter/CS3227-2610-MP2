@@ -2,7 +2,6 @@ package arbiter.ui.shared;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
 
 import arbiter.workspace.WorkspaceException;
@@ -12,14 +11,16 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
 
-/** The first-run wizard, which chooses and opens the folder a workspace lives in. */
+/** The start-up wizard, which creates a workspace or opens one the user chooses. */
 public class WorkspaceSetupDialog {
+    private static final ButtonType CREATE = new ButtonType("Create a workspace");
+    private static final ButtonType OPEN = new ButtonType("Open a workspace");
+
     private final WorkspaceService service;
 
     /** Creates a wizard backed by a workspace service. */
@@ -28,43 +29,43 @@ public class WorkspaceSetupDialog {
     }
 
     /**
-     * Opens the remembered workspace, or asks for one when there is none.
-     *
-     * <p>This is the whole first-run step: on later launches the remembered workspace is reopened
-     * without asking anything.
+     * Asks the user to create or open a workspace, returning to that choice after a cancelled or failed
+     * step.
      *
      * @param owner the window the dialogs belong to
-     * @return the chosen workspace, or empty if the user cancelled
+     * @return the workspace, or empty if the user cancelled
      */
     public Optional<WorkspacePaths> start(Window owner) {
-        Optional<WorkspacePaths> remembered = service.openRemembered();
-        if (remembered.isPresent()) {
-            return remembered;
+        while (true) {
+            ButtonType action = chooseAction(owner);
+            if (action != CREATE && action != OPEN) {
+                return Optional.empty();
+            }
+            Path folder = chooseFolder(owner, action == CREATE
+                    ? "Choose a folder for the new workspace"
+                    : "Choose the workspace folder");
+            if (folder == null) {
+                continue;
+            }
+            Optional<WorkspacePaths> workspace = action == CREATE ? create(owner, folder) : open(owner, folder);
+            if (workspace.isPresent()) {
+                return workspace;
+            }
         }
-        List<Path> recent = service.getRecent().getPaths();
-        if (recent.isEmpty()) {
-            Path folder = chooseNewFolder(owner);
-            return folder == null ? Optional.empty() : create(owner, folder);
-        }
-        Path folder = chooseRemembered(owner, recent);
-        if (folder == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(open(owner, folder));
     }
 
-    private Path chooseRemembered(Window owner, List<Path> remembered) {
-        ChoiceDialog<Path> dialog = new ChoiceDialog<>(remembered.get(0), remembered);
-        dialog.initOwner(owner);
-        dialog.setTitle("Open a workspace");
-        dialog.setHeaderText("Choose the workspace to open");
-        dialog.setContentText("Workspace");
-        return dialog.showAndWait().orElse(null);
+    private ButtonType chooseAction(Window owner) {
+        Alert alert = new Alert(Alert.AlertType.NONE, "Create a new workspace, or open an existing one.",
+                CREATE, OPEN, ButtonType.CANCEL);
+        alert.initOwner(owner);
+        alert.setTitle("Arbiter");
+        alert.setHeaderText("Choose a workspace");
+        return alert.showAndWait().orElse(ButtonType.CANCEL);
     }
 
-    private Path chooseNewFolder(Window owner) {
+    private Path chooseFolder(Window owner, String title) {
         DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("Choose a folder for the workspace");
+        chooser.setTitle(title);
         File chosen = chooser.showDialog(owner);
         return chosen == null ? null : chosen.toPath();
     }
@@ -81,12 +82,12 @@ public class WorkspaceSetupDialog {
         }
     }
 
-    private WorkspacePaths open(Window owner, Path folder) {
+    private Optional<WorkspacePaths> open(Window owner, Path folder) {
         try {
-            return service.open(folder);
+            return Optional.of(service.open(folder));
         } catch (WorkspaceException e) {
             report(owner, "That workspace could not be opened", e.getMessage());
-            return null;
+            return Optional.empty();
         }
     }
 
