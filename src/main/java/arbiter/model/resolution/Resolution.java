@@ -5,6 +5,9 @@ import java.time.Instant;
 /**
  * How an item was settled: its final answer and how it was reached.
  *
+ * <p>A resolution exists only once its item is settled. An item with k valid answers and no resolution
+ * awaits the adjudicator, because automatic resolution runs as the kth answer is recorded (#27).
+ *
  * <p>A resolution carries at most one result: a {@code labelId} or {@code scaleValue} for
  * classification, or a {@code selectedAnnotationId} for detection. The setters switch between them,
  * and the getters reject a record loaded with more than one. A scale value is a {@code Double}
@@ -44,9 +47,6 @@ public class Resolution {
 
     /** When the item was resolved. */
     private Instant decidedAt;
-
-    /** True while the item is a dispute. */
-    private boolean disputed;
 
     /** Creates an empty Resolution. */
     public Resolution() {
@@ -155,13 +155,5 @@ public class Resolution {
 
     public void setDecidedAt(Instant decidedAt) {
         this.decidedAt = decidedAt;
-    }
-
-    public boolean isDisputed() {
-        return disputed;
-    }
-
-    public void setDisputed(boolean disputed) {
-        this.disputed = disputed;
     }
 }

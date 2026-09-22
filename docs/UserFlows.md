@@ -24,7 +24,7 @@ log in -> my splits -> open a split -> blind queue -> annotate one item -> next
 
 1. **Sign in and see my splits.** Each assignment shows its project, progress and status. [#12]
 2. **Work the blind queue.** One item at a time in saved order, moving only forward (rule 18). Closing the app restores the current draft. [#13]
-3. **Annotate the item.** A classification item takes a label from the taxonomy - single-select, or a numeric scale - plus an optional rationale. A detection item takes labelled boxes drawn on the image. [#14], [#15]
+3. **Annotate the item.** A classification item takes a label from the taxonomy - single-select, or a numeric scale. A detection item takes labelled boxes drawn on the image. Either can carry an optional rationale. [#14], [#15]
 4. **Flag bad source material.** Report unusable material with a reason and optional comment, alongside an answer or instead of one. [#16]
 5. **Save and submit.** The current draft autosaves until **Submit & next**, or **Flag & next** for a report-only outcome, permanently records it and advances (rule 18). [#17]
 6. **Track annotation progress and activity.** Per-split progress, session statistics and lifetime totals (rule 20). [#18], [#19]

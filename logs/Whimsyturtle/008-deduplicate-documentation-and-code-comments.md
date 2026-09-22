@@ -15,6 +15,7 @@ Status: Human verified.
 - After the agent explained each contradiction, the user decided them: one split per item; no label guideline; an optional rationale; "dispute" for a single-select conflict and "unresolved" for any item without a final answer; taxonomy kind fixed at creation; annotators see nothing about other annotators; best judgement, with flags only for source problems; several sentences per Markdown line; and Whimsyturtle builds the lock.
 - The user asked the agent to make the fixes and review them. The agent took "optional" as always optional and "fixed once created" as the taxonomy kind only, with labels editable until the first assignment, and told the user.
 - The user then asked for the per-annotator answer lookup to return one optional answer and for the UserGuide to cover text items as well as images.
+- Asked for a simpler answer to the dispute question, the user chose to drop the dispute flag, so a resolution exists only once an item is settled. They also chose an optional rationale for detection, to match classification.
 
 ## Agent responses and outcomes
 
@@ -34,13 +35,13 @@ Status: Human verified.
     - who owns services and the workspace lock.
   - Decisions: deduplicating issues, the redundant model fields, which file is home for the process, and whether to keep the plan.
 - `AGENTS.md` now has the one table of homes, with rules to link rather than restate, to raise contradictions and to leave counts out of documentation. `maintain-docs` step 3 now points to that table instead of keeping its own incomplete list.
-- Model: removed `Label.guideline` and `Project.rationaleRequired`, renamed `Resolution.unresolved` to `disputed` with its queries, and made `SplitItemRepository.findByItem` and `AnnotationRepository.findByItemAndAnnotator` return one optional record. The plan records each.
-- Edited #9, #13, #14, #24, #26, #28, #29, #33 and #35, and created #61 for the lock, assigned to Whimsyturtle.
-- Still open: whether a disputed item should have a `Resolution` record, which also decides how detection items awaiting selection are listed; whether detection answers get a rationale; #61's stale-lock and read-only questions; and who owns services.
+- Model: removed `Label.guideline` and `Project.rationaleRequired`, removed `Resolution.unresolved` and its queries, and made `SplitItemRepository.findByItem` and `AnnotationRepository.findByItemAndAnnotator` return one optional record. The plan records each.
+- Edited #6, #9, #13, #14, #15, #17, #24, #26, #27, #28, #29, #33 and #35, and created #61 for the lock, assigned to Whimsyturtle. #27 now resolves automatically as the *k*th answer is recorded, inside #17's submission step.
+- Still open: #61's stale-lock and read-only questions, and who owns services.
 
 ## Verification
 
 - `check shadowJar --no-daemon` succeeded with zero Checkstyle errors; tests are `NO-SOURCE`. `git diff --check` passed, and all links, anchors and reference definitions resolve.
 - For the `AGENTS.md` follow-up, `git diff --check` passed and the linked Developer Guide sections exist. Gradle was not rerun because only Markdown changed.
-- The user edited and approved the summary, both before and after the contradiction follow-up.
-- For the contradiction fixes, `check shadowJar --no-daemon` succeeded with zero Checkstyle errors, `git diff --check` passed and every issue reference in the edited docs has a definition. Each issue was checked against its live body before writing and read back.
+- The user approved the summary after each follow-up, editing it along the way.
+- For the contradiction fixes, `check shadowJar --no-daemon` succeeded with zero Checkstyle errors, `git diff --check` passed and every issue reference in the edited docs has a definition. Each issue was checked against its live body before writing and read back. The same checks passed after the dispute and detection-rationale changes.

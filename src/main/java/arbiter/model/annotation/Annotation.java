@@ -32,7 +32,7 @@ public class Annotation {
     /** Whole-number answer, for a taxonomy whose kind is SCALE. */
     private Integer scaleValue;
 
-    /** The annotator's explanation. */
+    /** The annotator's optional explanation. */
     private String rationale;
 
     /** When the draft was first saved. */

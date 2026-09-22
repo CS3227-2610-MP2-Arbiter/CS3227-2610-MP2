@@ -15,10 +15,4 @@ public interface ResolutionRepository {
 
     /** Returns the resolutions for a batch of items. */
     List<Resolution> listByItems(List<Long> itemIds);
-
-    /** Returns the disputes awaiting a decision. */
-    List<Resolution> listDisputedByProject(long projectId);
-
-    /** Counts the disputes awaiting a decision. */
-    long countDisputedByProject(long projectId);
 }
