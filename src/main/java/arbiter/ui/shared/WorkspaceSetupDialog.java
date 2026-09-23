@@ -4,6 +4,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import arbiter.data.json.JsonStore;
+import arbiter.data.json.JsonStoreException;
 import arbiter.workspace.WorkspaceException;
 import arbiter.workspace.WorkspacePaths;
 import arbiter.workspace.WorkspaceService;
@@ -75,8 +77,10 @@ public class WorkspaceSetupDialog {
             return Optional.empty();
         }
         try {
-            return Optional.of(service.create(folder));
-        } catch (WorkspaceException e) {
+            WorkspacePaths paths = service.create(folder);
+            JsonStore.initializeNew(paths);
+            return Optional.of(paths);
+        } catch (WorkspaceException | JsonStoreException e) {
             report(owner, "That workspace could not be created", e.getMessage());
             return Optional.empty();
         }
@@ -84,8 +88,10 @@ public class WorkspaceSetupDialog {
 
     private Optional<WorkspacePaths> open(Window owner, Path folder) {
         try {
-            return Optional.of(service.open(folder));
-        } catch (WorkspaceException e) {
+            WorkspacePaths paths = service.open(folder);
+            JsonStore.open(paths);
+            return Optional.of(paths);
+        } catch (WorkspaceException | JsonStoreException e) {
             report(owner, "That workspace could not be opened", e.getMessage());
             return Optional.empty();
         }
@@ -98,7 +104,7 @@ public class WorkspaceSetupDialog {
         alert.setHeaderText("Create an Arbiter workspace in this folder?");
         VBox content = new VBox(8,
                 new Label(folder.toString()),
-                new Label("Arbiter will add a database, and folders for media, exports and logs. "
+                new Label("Arbiter will add a data file and folders for media, exports and logs. "
                         + "Existing files are left alone."));
         content.setPadding(new Insets(8));
         alert.getDialogPane().setContent(content);
