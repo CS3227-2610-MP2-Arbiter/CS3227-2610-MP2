@@ -3,10 +3,12 @@ package arbiter.ui.shared;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.JsonStoreException;
 import arbiter.workspace.WorkspaceException;
+import arbiter.workspace.WorkspaceLock;
 import arbiter.workspace.WorkspacePaths;
 import arbiter.workspace.WorkspaceService;
 import javafx.geometry.Insets;
@@ -35,9 +37,9 @@ public class WorkspaceSetupDialog {
      * step.
      *
      * @param owner the window the dialogs belong to
-     * @return the workspace, or empty if the user cancelled
+     * @return the held workspace lock, or empty if the user cancelled
      */
-    public Optional<WorkspacePaths> start(Window owner) {
+    public Optional<WorkspaceLock> start(Window owner) {
         while (true) {
             ButtonType action = chooseAction(owner);
             if (action != CREATE && action != OPEN) {
@@ -49,7 +51,7 @@ public class WorkspaceSetupDialog {
             if (folder == null) {
                 continue;
             }
-            Optional<WorkspacePaths> workspace = action == CREATE ? create(owner, folder) : open(owner, folder);
+            Optional<WorkspaceLock> workspace = action == CREATE ? create(owner, folder) : open(owner, folder);
             if (workspace.isPresent()) {
                 return workspace;
             }
@@ -72,28 +74,41 @@ public class WorkspaceSetupDialog {
         return chosen == null ? null : chosen.toPath();
     }
 
-    private Optional<WorkspacePaths> create(Window owner, Path folder) {
+    private Optional<WorkspaceLock> create(Window owner, Path folder) {
         if (!confirm(owner, folder)) {
             return Optional.empty();
         }
         try {
             WorkspacePaths paths = service.create(folder);
-            JsonStore.initializeNew(paths);
-            return Optional.of(paths);
+            return lockAndCheck(paths, JsonStore::initializeNew);
         } catch (WorkspaceException | JsonStoreException e) {
             report(owner, "That workspace could not be created", e.getMessage());
             return Optional.empty();
         }
     }
 
-    private Optional<WorkspacePaths> open(Window owner, Path folder) {
+    private Optional<WorkspaceLock> open(Window owner, Path folder) {
         try {
             WorkspacePaths paths = service.open(folder);
-            JsonStore.open(paths);
-            return Optional.of(paths);
+            return lockAndCheck(paths, JsonStore::open);
         } catch (WorkspaceException | JsonStoreException e) {
             report(owner, "That workspace could not be opened", e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    private Optional<WorkspaceLock> lockAndCheck(WorkspacePaths paths, Consumer<WorkspaceLock> checkData) {
+        WorkspaceLock lock = WorkspaceLock.acquire(paths);
+        try {
+            checkData.accept(lock);
+            return Optional.of(lock);
+        } catch (RuntimeException e) {
+            try {
+                lock.close();
+            } catch (WorkspaceException closeFailure) {
+                e.addSuppressed(closeFailure);
+            }
+            throw e;
         }
     }
 

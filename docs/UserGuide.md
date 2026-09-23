@@ -13,6 +13,8 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 3. The adjudicator creates annotator accounts and gives each annotator their username and password.
 4. Sign in. Annotators see their assigned splits; the adjudicator sees the project list.
 
+If the workspace is already in use, close its other Arbiter instance and try again ([#61](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61)).
+
 ## Quick reference
 
 The accepted V1 behaviour behind each planned task is specified in [User Flows](UserFlows.md); the issue that implements it is linked below. This quick reference does not imply that every screen has been released yet.

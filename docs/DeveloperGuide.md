@@ -21,7 +21,7 @@ Arbiter runs locally. There is no server, no network service and no accounts dep
 
 Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to a small app with one data store. Jackson serializes the JSON snapshot behind the repository interfaces; no ORM or SQL layer is needed.
 
-The code-level rules that follow from this design, which the agent works from, are in [architecture context](../context/architecture.md).
+The code-level rules that follow from this design, which the agent works from, are in [architecture context](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md).
 
 ### Architecture
 
@@ -38,7 +38,7 @@ arbiter.ui.annotator      arbiter.ui.adjudicator      <-- role screens
           arbiter.data   +   arbiter.model           <-- repository interfaces + value objects
           arbiter.data.json                          <-- JSON snapshot and repository implementations
                         v
-                arbiter.workspace                    <-- paths, planned #61 lock, asset resolution
+                arbiter.workspace                    <-- paths, single-writer lock, asset resolution
 ```
 
 Dependencies point downward only, and neither role package imports the other - they meet in `arbiter.ui.shared` and `arbiter.service`. That rule does not exist to keep the roles independent; they are not. It exists so the shared code has one home and neither track can grow a private copy. Because `arbiter.ui.shared` is on both critical paths, [#4] (model and repository interfaces) and [#8] (UI kit and error handling) come before feature code.
@@ -64,15 +64,15 @@ This is stronger than package separation: it holds for code written later, by an
 ### Data and persistence
 
 - **Atomic submission.** Each completed logical action commits immediately. An unsubmitted choice is transient UI state, while **Submit & next** persists the answer and queue advance in one transaction (rule 18 in [User Flows](UserFlows.md#3-rules-both-tracks-share)).
-- **One Jackson snapshot.** [#6] stores the workspace's records and ID state in one versioned JSON snapshot behind the existing repository interfaces. Replacing one file can commit an action across repositories without a SQL transaction, at the cost of rewriting the snapshot for each commit. The enforcement points are in [the architecture context](../context/architecture.md#persistence).
-- **A single writer.** Atomic replacement alone does not coordinate separate app instances. The JSON store serializes actions within one process; [#61] will add the workspace lock across instances. That limits the shared workspace to one writer at a time.
+- **One Jackson snapshot.** [#6] stores the workspace's records and ID state in one versioned JSON snapshot behind the existing repository interfaces. Replacing one file can commit an action across repositories without a SQL transaction, at the cost of rewriting the snapshot for each commit. The enforcement points are in [the architecture context](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md#persistence).
+- **A single writer.** Atomic replacement alone does not coordinate separate app instances. The JSON store serializes actions within one process; [#61] supplies the workspace lock across instances. That limits the shared workspace to one writer at a time.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format, so formatting is written once, in `ExportService`.
 
 ### Design decisions and their costs
 
 | Decision | Alternative rejected | Cost accepted |
 | --- | --- | --- |
-| One shared JSON workspace with a planned writer lock ([#61]) | Package exchange with merge | Only one person can write at a time |
+| One shared JSON workspace with a writer lock ([#61]) | Package exchange with merge | Only one person can write at a time |
 | Jackson snapshot behind repository interfaces | SQL database with an ORM | Rewrites the snapshot for each commit |
 | Services in one shared package | Per-role service layers | Both tracks edit the same package |
 | Classification components shared by both roles | One editor per role | `ui.shared` is a shared dependency |

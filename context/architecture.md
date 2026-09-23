@@ -15,7 +15,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 | 4 | `arbiter.data` | Repository interfaces. Signatures only, no storage logic. | Shared ([#4]) |
 | 4 | `arbiter.data.json` | JSON snapshot access and repository implementations. | Whimsyturtle ([#6]) |
 | 4 | `arbiter.model` | Value objects and enums. No queries, no UI logic. | Shared ([#4]) |
-| 5 | `arbiter.workspace` | Workspace paths, planned single-writer lock, asset resolution. | Whimsyturtle (paths [#9], lock [#61]); zheng-jj (asset resolution [#10]) |
+| 5 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Whimsyturtle (paths [#9], lock [#61]); zheng-jj (asset resolution [#10]) |
 
 ## Rules
 
@@ -40,7 +40,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - `WorkspacePaths.DATA_FILE` names the shared snapshot in rule 11; `JsonStore` opens and validates its version and integrity.
 - Commit each completed logical action immediately (rule 2). Repository calls within one `JsonStore.write` action change a private snapshot; `JsonStore` publishes it with one atomic replacement.
 - Code against the repository interfaces in `arbiter.data`. Their implementations and storage-level validation live in `arbiter.data.json`; business rules remain in services.
-- `JsonStore` serializes actions within one process. [#61] adds the workspace lock across app instances for rule 11.
+- `WorkspaceSetupDialog` validates layout, acquires `WorkspaceLock`, and uses lock-aware `JsonStore` entry points; `Arbiter` closes the handle when the app closes (rule 11, [#61]).
 
 ### UI
 
@@ -68,7 +68,7 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 ## Services
 
 - `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
-- `WorkspaceService`: first-run setup and paths; [#61] adds the lock.
+- `WorkspaceService`: first-run setup and paths; `WorkspaceLock` owns the file lock ([#61]).
 - `ProjectService`, `CorpusService`: pre-assignment project deletion, import, splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
 - `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
