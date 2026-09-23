@@ -4,7 +4,7 @@
 
 **Branch:** `feat/owner-login`
 
-**Status:** Approved by the owner on 23 September 2026 and revised to require ASCII alphanumeric passwords during review. Local verification passed; human acceptance remains pending.
+**Status:** Approved by the owner on 23 September 2026 and revised to require ASCII alphanumeric passwords during review. [Draft PR #65](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/pull/65) is open; local verification and owner UI acceptance passed, while teammate review remains pending.
 
 ## Goal and boundary
 
@@ -45,8 +45,8 @@ Implement #7 on the merged JSON store from #6. This supplies the authentication 
 - Added one JDK-only PBKDF2 helper and a minimal shared owner setup/login/logout screen. The owner setup screen confirms the password because owner recovery is not available under #7.
 - Added focused auth and password tests, including same-process competing bootstrap calls, invalid owner state, case-insensitive login, disabled accounts, stale-session denial, password validation boundaries, and retry after an injected JSON publication failure.
 - JDK 25 `.\gradlew.bat check shadowJar --offline --no-daemon` passed on 23 September 2026: JUnit, both Checkstyle tasks, and the release jar. An earlier incremental compile failed to locate existing `SnapshotPublisher.java`; `clean compileJava` passed. The first full check found three formatting violations, which were corrected before the passing rerun.
-- Human acceptance remains: create a workspace and its owner, log out/in, reopen and log in again, and verify the visible error and retry for invalid setup credentials. The annotator UI login can be checked with a seeded account until #31 adds account creation.
-- During owner acceptance testing, the username validation error was truncated with an ellipsis. `AuthScreen` now wraps form labels so the full message remains visible; JDK 25 `.\gradlew.bat check shadowJar --offline --no-daemon` passed again. The owner still needs to confirm the visual retest.
+- The owner confirmed manual UI acceptance for owner creation, invalid setup retry, logout/login, reopen/login, and the full validation message. Annotator login is covered by service tests; a seeded account can be used for a visual check until #31 adds account creation.
+- During owner acceptance testing, the username validation error was truncated with an ellipsis. `AuthScreen` now wraps form labels so the full message remains visible; JDK 25 `.\gradlew.bat check shadowJar --offline --no-daemon` passed again, and the owner confirmed the visual retest.
 - The owner then restricted password input to printable ASCII. Setup and login now reject other characters, and the UI states the rule. The updated tests cover Unicode and control-character rejection, ASCII boundary cases, and generic login errors. `.\gradlew.bat check shadowJar --offline --no-daemon` passed after one test indentation correction.
 - After the owner refined disabled-login feedback, the focused auth tests passed and `.\gradlew.bat check shadowJar --offline --no-daemon` passed. The first full run found two Checkstyle line-wrap violations in the new assertions; both were corrected before the passing rerun.
 - The owner then chose ASCII letters and digits only for passwords. Validation uses one compiled pattern, and the setup screen states the new rule. Focused auth tests and `.\gradlew.bat check shadowJar --offline --no-daemon` passed.
