@@ -17,11 +17,11 @@ On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
 ## Design
 
-Arbiter runs locally. There is no server, no network and no accounts department: one SQLite file lives in the workspace folder both roles share, and JavaFX talks to it directly. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no retries, no eventual-consistency problems and no distributed state.
+Arbiter runs locally. There is no server, no network service and no accounts department: both roles use the shared JSON workspace in [rule 11](UserFlows.md#3-rules-both-tracks-share), and JavaFX calls services backed by its data store. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no background retries or eventual-consistency problems.
 
-Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to a small app with one database file. There is an ORM, because hand-mapping every table is exactly the kind of boilerplate it removes.
+Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to a small app with one data store. Jackson serializes the JSON snapshot behind the repository interfaces; no ORM or SQL layer is needed.
 
-The code-level rules that follow from this design, which the agent works from, are in [`context/architecture.md`](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md).
+The code-level rules that follow from this design, which the agent works from, are in [architecture context](../context/architecture.md).
 
 ### Architecture
 
@@ -36,9 +36,9 @@ arbiter.ui.annotator      arbiter.ui.adjudicator      <-- role screens
                 arbiter.service                      <-- all business rules
                         v
           arbiter.data   +   arbiter.model           <-- repository interfaces + value objects
-          arbiter.data.sqlite                        <-- ORM mappings, schema, migrations; the only SQL
+          arbiter.data.json                          <-- JSON snapshot and repository implementations
                         v
-                arbiter.workspace                    <-- paths, single-writer lock, asset resolution
+                arbiter.workspace                    <-- paths, planned #61 lock, asset resolution
 ```
 
 Dependencies point downward only, and neither role package imports the other - they meet in `arbiter.ui.shared` and `arbiter.service`. That rule does not exist to keep the roles independent; they are not. It exists so the shared code has one home and neither track can grow a private copy. Because `arbiter.ui.shared` is on both critical paths, [#4] (model and repository interfaces) and [#8] (UI kit and error handling) come before feature code.
@@ -64,20 +64,19 @@ This is stronger than package separation: it holds for code written later, by an
 ### Data and persistence
 
 - **Atomic submission.** Each completed logical action commits immediately. An unsubmitted choice is transient UI state, while **Submit & next** persists the answer and queue advance in one transaction (rule 18 in [User Flows](UserFlows.md#3-rules-both-tracks-share)).
-- **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand. Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not fit a desktop app with one connection. Complex queries still drop to raw SQL, inside the repository. ORMLite builds rows through a no-arg constructor and sets fields reflectively, so model fields cannot be `final`; settings fixed at creation are enforced in services instead.
-- **A single writer.** The database is shared over a shared drive, and SQLite is not safe against concurrent writers there, so `arbiter.workspace` takes an advisory lock. The failure is explicit rather than silent corruption.
+- **One Jackson snapshot.** [#6] stores the workspace's records and ID state in one versioned JSON snapshot behind the existing repository interfaces. Replacing one file can commit an action across repositories without a SQL transaction, at the cost of rewriting the snapshot for each commit. The enforcement points are in [the architecture context](../context/architecture.md#persistence).
+- **A single writer.** Atomic replacement alone does not coordinate separate app instances. The JSON store serializes actions within one process; [#61] will add the workspace lock across instances. That limits the shared workspace to one writer at a time.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format, so formatting is written once, in `ExportService`.
 
 ### Design decisions and their costs
 
 | Decision | Alternative rejected | Cost accepted |
 | --- | --- | --- |
-| One shared SQLite file with a workspace lock | Package exchange with merge | Only one person can write at a time |
-| Lightweight ORM (ORMLite) over JDBC | Hibernate | Complex queries still need raw SQL |
+| One shared JSON workspace with a planned writer lock ([#61]) | Package exchange with merge | Only one person can write at a time |
+| Jackson snapshot behind repository interfaces | SQL database with an ORM | Rewrites the snapshot for each commit |
 | Services in one shared package | Per-role service layers | Both tracks edit the same package |
 | Classification components shared by both roles | One editor per role | `ui.shared` is a shared dependency |
 | Blindness enforced in the service and a test | Enforced by package separation | Relies on discipline in the read path |
-| Single-writer lock | Optimistic concurrency | Cannot have two annotators open at once |
 
 The shared-components and blindness rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
 
@@ -107,14 +106,14 @@ Each skill declares its input, steps and completion criteria, and states what it
 
 **CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and pull request, since the deliverable is a desktop jar that must launch on all three. A second job catches the release jar failing to start on Apple Silicon. A separate workflow publishes the `docs/` folder to GitHub Pages.
 
-**Definition of done.** Behaviour implemented and reachable from the UI, `./gradlew check` passing (JUnit and Checkstyle), new logic unit-tested, database-touching code tested against the temp-DB harness, user-visible wording matching the shared rules in `docs/UserFlows.md`, and a PR reviewed by the other person.
+**Definition of done.** Behaviour implemented and reachable from the UI, `./gradlew check` passing (JUnit and Checkstyle), new logic unit-tested, data-store code tested against temporary JSON workspaces, user-visible wording matching the shared rules in `docs/UserFlows.md`, and a PR reviewed by the other person.
 
 ## Testing
 
 | Level | Where | What |
 | --- | --- | --- |
-| Unit | `src/test/java` | Services and model logic, no database |
-| Repository | `src/test/java` | Temp SQLite file per test, seeded by [#11] fixtures |
+| Unit | `src/test/java` | Services and model logic, no persistent store |
+| Repository | `src/test/java` | Temporary JSON workspace per test; [#11] adds shared fixtures |
 | Blindness | `src/test/java` | Fails if annotator code can reach another annotator's work |
 | Shared component | `src/test/java` | Classification editor modes, tested once where the component lives |
 | Acceptance | Manual | A human walks the agreed scenarios |
@@ -126,7 +125,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 - JavaFX is used under the [GPL v2 with the Classpath Exception](https://openjfx.io/).
 - JUnit 5 is used under the [Eclipse Public License 2.0](https://junit.org/junit5/).
 - Gradle and the Shadow plugin produce the release jar.
-- [ORMLite](https://ormlite.com/) provides the object-relational mapping over SQLite.
+- Jackson provides JSON serialization for the workspace snapshot.
 - The skill-and-workflow structure was developed by this team for this project; the per-task skills in `.codex/skills/` are our own.
 
 [Back to home](index.md)

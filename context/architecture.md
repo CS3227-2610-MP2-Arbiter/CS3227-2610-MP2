@@ -12,10 +12,10 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 | 1 | `arbiter.ui.adjudicator` | The adjudicator screens, using the shared components. | Whimsyturtle (adjudicator track) |
 | 2 | `arbiter.ui.shared` | Shell, navigation, routing, UI kit, error handling, and the annotation components. | zheng-jj ([#5], [#8]) |
 | 3 | `arbiter.service` | All business rules: assignment, resolution, export, access scoping. | Shared ([#4]) |
-| 4 | `arbiter.data` | Repository interfaces. Signatures only, no SQL. | Shared ([#4]) |
-| 4 | `arbiter.data.sqlite` | The ORM mappings, schema and migrations. | Whimsyturtle ([#6]) |
+| 4 | `arbiter.data` | Repository interfaces. Signatures only, no storage logic. | Shared ([#4]) |
+| 4 | `arbiter.data.json` | JSON snapshot access and repository implementations. | Whimsyturtle ([#6]) |
 | 4 | `arbiter.model` | Value objects and enums. No queries, no UI logic. | Shared ([#4]) |
-| 5 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Whimsyturtle (paths [#9], lock [#61]); zheng-jj (asset resolution [#10]) |
+| 5 | `arbiter.workspace` | Workspace paths, planned single-writer lock, asset resolution. | Whimsyturtle (paths [#9], lock [#61]); zheng-jj (asset resolution [#10]) |
 
 ## Rules
 
@@ -37,16 +37,16 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 ### Persistence
 
-- One SQLite file at `<workspace>/arbiter.db`, with migrations applied on open and foreign keys enabled.
-- Commit each completed logical action immediately (rule 2). Repository calls within one action share [#6]'s transaction and never commit on their own.
-- Code against the repository interfaces in `arbiter.data`. Their implementations in `arbiter.data.sqlite` map rows with ORMLite, not Hibernate, and are the only code with SQL.
-- Take the workspace lock before writing, and refuse to open a second writer (rule 11).
+- `WorkspacePaths.DATA_FILE` names the shared snapshot in rule 11; `JsonStore` opens and validates its version and integrity.
+- Commit each completed logical action immediately (rule 2). Repository calls within one `JsonStore.write` action change a private snapshot; `JsonStore` publishes it with one atomic replacement.
+- Code against the repository interfaces in `arbiter.data`. Their implementations and storage-level validation live in `arbiter.data.json`; business rules remain in services.
+- `JsonStore` serializes actions within one process. [#61] adds the workspace lock across app instances for rule 11.
 
 ### UI
 
 - JavaFX, with one `Stage` whose content area is swapped, routed by role after login ([#5]).
 - Report errors through the one convention in `arbiter.ui.shared` ([#8]).
-- Controllers call services and bind results to the view. They hold no business rules and no SQL.
+- Controllers call services and bind results to the view. They hold no business rules and do not access repositories directly.
 
 ### General
 
@@ -60,15 +60,15 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 Model classes are plain value objects in `arbiter.model`, grouped into subpackages by area (`user`, `project`, `annotation`, `resolution`) that mirror `arbiter.data`. What each class and field means is in its Javadoc.
 
-- No queries, no UI logic and no annotations. The ORM mapping is designed once in `arbiter.data.sqlite`, alongside the schema.
-- Tests must be able to construct every model class without a database.
+- No queries, no UI logic and no persistence annotations. JSON mapping belongs in `arbiter.data.json`.
+- Tests must be able to construct every model class without a data store.
 - Fields are not `final`. Settings fixed at creation (rule 4) are enforced in services.
 - A model class stores what was chosen and never decides. Defaults are applied by services: *k*'s by `AssignmentService`, so `Split.annotationsPerItem` is null until then.
 
 ## Services
 
 - `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
-- `WorkspaceService`: first-run setup, the lock, paths.
+- `WorkspaceService`: first-run setup and paths; [#61] adds the lock.
 - `ProjectService`, `CorpusService`: pre-assignment project deletion, import, splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
 - `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
