@@ -17,8 +17,8 @@ public interface ProjectRepository {
     List<Project> listAll();
 
     /**
-     * Removes an incomplete project and every database record it owns. Source files under media/ are
-     * never touched, and a completed project cannot be deleted (rules 5/9).
+     * Removes a project and every database record it owns before its first assignment. Source files
+     * under {@code media/} are never touched.
      */
     void deleteById(long id);
 }

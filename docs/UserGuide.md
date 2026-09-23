@@ -15,19 +15,18 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 
 ## Quick reference
 
-The behaviour behind each task is specified in [User Flows](UserFlows.md); the issue that implements it is linked below.
+The accepted V1 behaviour behind each planned task is specified in [User Flows](UserFlows.md); the issue that implements it is linked below. This quick reference does not imply that every screen has been released yet.
 
 | I want to... | Role | Issue |
 | --- | --- | --- |
-| Label items | Annotator | [#13], [#14], [#15] |
-| Report bad source material | Annotator | [#16] |
-| Track my split progress and lifetime valid annotations | Annotator | [#18], [#19] |
+| Label plain-text items | Annotator | [#13], [#14] |
+| Track my split progress | Annotator | [#18] |
 | Create or deactivate annotator accounts | Adjudicator | [#31] |
 | Replace an annotator's forgotten password | Adjudicator | [#23] |
 | Import a corpus | Adjudicator | [#25] |
 | Configure labels | Adjudicator | [#26] |
 | Assign annotators | Adjudicator | [#32] |
-| Monitor project progress and label agreement | Adjudicator | [#33] |
+| Monitor basic project progress | Adjudicator | [#33] |
 | Resolve disagreements | Adjudicator | [#27], [#34] |
 | Export the dataset | Adjudicator | [#37] |
 
@@ -37,10 +36,7 @@ Step-by-step instructions for each screen will be added as features are released
 
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
 [#14]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/14
-[#15]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/15
-[#16]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/16
 [#18]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/18
-[#19]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/19
 [#23]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/23
 [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26

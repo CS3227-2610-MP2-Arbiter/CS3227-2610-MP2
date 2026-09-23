@@ -19,6 +19,12 @@ public interface ItemRepository {
     /** Finds an item by content hash, so a re-import does not duplicate it. */
     Optional<Item> findByProjectAndHash(long projectId, String contentHash);
 
+    /**
+     * Removes an item and any split membership before the project's first assignment. The source
+     * file under {@code media/} is never touched.
+     */
+    void deleteById(long id);
+
     /** Counts a project's items. */
     long countByProject(long projectId);
 }

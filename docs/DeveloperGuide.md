@@ -29,7 +29,7 @@ The code-level rules that follow from this design, which the agent works from, a
 arbiter.ui.annotator      arbiter.ui.adjudicator      <-- role screens
         |          \            /           |
         |           v          v            |
-        |        arbiter.ui.shared          |   <-- shell, AnnotationEditor, BoxCanvas, ItemView
+        |        arbiter.ui.shared          |   <-- shell, AnnotationEditor, ItemView
         |               |                   |
         +---------------+-------------------+
                         v
@@ -45,13 +45,12 @@ Dependencies point downward only, and neither role package imports the other - t
 
 ### The two roles share one workflow
 
-The roles are two views on one workflow, not two applications. The annotator produces an annotation - a label, an optional rationale, optional boxes and a flag - and the adjudicator consumes it: compares it with others, resolves disagreements and exports the result. Three places make the coupling unavoidable:
+The roles are two views on one workflow, not two applications. The annotator submits a label or integer scale rating, and the adjudicator consumes those immutable answers to monitor work, settle label disputes and export the result. Two places make the coupling unavoidable:
 
-- **Manual resolution** ([#34]) shows submitted annotations side by side, so the adjudicator's read-only view must render every box and label exactly as the annotator made it.
-- **Box geometry** ([#15]) is hard: drawing, snapping, clamping, and coordinates that stay correct at any zoom level. Two implementations would drift.
+- **Manual resolution** ([#34]) shows submitted labels side by side, so the adjudicator's read-only view must render the same taxonomy choices the annotators used.
 - **Adjudicators pick labels too.** Supplying a classification label in [#34] uses the annotator's label picker, recorded as a separate decision rather than an edit.
 
-Building the roles as separate silos would duplicate the hardest UI code in the app, and a subtle disagreement between two coordinate transforms would hide there. So `AnnotationEditor`, `BoxCanvas` and `ItemView` live in `arbiter.ui.shared` and are used by both roles, with a role difference as a mode flag rather than a second implementation. Every rule about the data lives in `arbiter.service`, which both roles call, so no rule is implemented twice with two different answers.
+Building the roles as separate silos would duplicate the classification controls and risk showing or storing the same taxonomy differently. So `AnnotationEditor` and `ItemView` live in `arbiter.ui.shared` and are used by both roles, with a role difference as a mode flag rather than a second implementation. Every rule about the data lives in `arbiter.service`, which both roles call, so no rule is implemented twice with two different answers.
 
 ### How blindness is enforced
 
@@ -64,7 +63,7 @@ This is stronger than package separation: it holds for code written later, by an
 
 ### Data and persistence
 
-- **Write-through.** Every annotator action commits immediately, because a power cut must not lose work.
+- **Atomic submission.** Each completed logical action commits immediately. An unsubmitted choice is transient UI state, while **Submit & next** persists the answer and queue advance in one transaction (rule 18 in [User Flows](UserFlows.md#3-rules-both-tracks-share)).
 - **A lightweight ORM.** `arbiter.data.sqlite` maps rows with ORMLite over JDBC rather than by hand. Hibernate was rejected as too heavy: it wants a session lifecycle and lazy associations that do not fit a desktop app with one connection. Complex queries still drop to raw SQL, inside the repository. ORMLite builds rows through a no-arg constructor and sets fields reflectively, so model fields cannot be `final`; settings fixed at creation are enforced in services instead.
 - **A single writer.** The database is shared over a shared drive, and SQLite is not safe against concurrent writers there, so `arbiter.workspace` takes an advisory lock. The failure is explicit rather than silent corruption.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format, so formatting is written once, in `ExportService`.
@@ -76,7 +75,7 @@ This is stronger than package separation: it holds for code written later, by an
 | One shared SQLite file with a workspace lock | Package exchange with merge | Only one person can write at a time |
 | Lightweight ORM (ORMLite) over JDBC | Hibernate | Complex queries still need raw SQL |
 | Services in one shared package | Per-role service layers | Both tracks edit the same package |
-| Annotation components shared by both roles | One editor per role | `ui.shared` is a shared dependency |
+| Classification components shared by both roles | One editor per role | `ui.shared` is a shared dependency |
 | Blindness enforced in the service and a test | Enforced by package separation | Relies on discipline in the read path |
 | Single-writer lock | Optimistic concurrency | Cannot have two annotators open at once |
 
@@ -117,7 +116,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 | Unit | `src/test/java` | Services and model logic, no database |
 | Repository | `src/test/java` | Temp SQLite file per test, seeded by [#11] fixtures |
 | Blindness | `src/test/java` | Fails if annotator code can reach another annotator's work |
-| Shared component | `src/test/java` | Box geometry and editor modes, tested once where the component lives |
+| Shared component | `src/test/java` | Classification editor modes, tested once where the component lives |
 | Acceptance | Manual | A human walks the agreed scenarios |
 
 ## Acknowledgements
@@ -135,5 +134,4 @@ Each skill declares its input, steps and completion criteria, and states what it
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#8]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/8
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
-[#15]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/15
 [#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34

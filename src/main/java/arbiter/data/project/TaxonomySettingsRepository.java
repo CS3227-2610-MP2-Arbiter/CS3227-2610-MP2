@@ -19,6 +19,6 @@ public interface TaxonomySettingsRepository {
     /** Returns the settings for a project, if they have been set. */
     Optional<TaxonomySettings> findByProject(long projectId);
 
-    /** Removes a project's settings when that incomplete project is deleted. */
+    /** Removes a project's settings when that project is deleted before its first assignment. */
     void deleteByProject(long projectId);
 }
