@@ -2,6 +2,9 @@ package arbiter.data.json;
 
 import java.time.Instant;
 
+import arbiter.model.annotation.Annotation;
+import arbiter.model.project.Assignment;
+import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.Item;
 import arbiter.model.project.Label;
 import arbiter.model.project.OutputFormat;
@@ -10,6 +13,8 @@ import arbiter.model.project.Split;
 import arbiter.model.project.SplitItem;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.model.project.TaxonomySettings;
+import arbiter.model.resolution.Resolution;
+import arbiter.model.resolution.ResolutionMethod;
 import arbiter.model.user.AccountStatus;
 import arbiter.model.user.Role;
 import arbiter.model.user.User;
@@ -106,6 +111,34 @@ final class JsonStoreFixtures {
         value.setSplitId(splitId);
         value.setItemId(itemId);
         value.setSequence(sequence);
+        return value;
+    }
+
+    static Assignment assignment(long splitId, long annotatorId) {
+        Assignment value = new Assignment();
+        value.setSplitId(splitId);
+        value.setAnnotatorId(annotatorId);
+        value.setStatus(AssignmentStatus.SUBMITTED);
+        value.setAssignedAt(NOW);
+        return value;
+    }
+
+    static Annotation answer(long itemId, long assignmentId, long annotatorId, long labelId) {
+        Annotation value = new Annotation();
+        value.setItemId(itemId);
+        value.setAssignmentId(assignmentId);
+        value.setAnnotatorId(annotatorId);
+        value.setLabelId(labelId);
+        value.setSubmittedAt(NOW);
+        return value;
+    }
+
+    static Resolution resolution(long itemId, long labelId) {
+        Resolution value = new Resolution();
+        value.setItemId(itemId);
+        value.setLabelId(labelId);
+        value.setMethod(ResolutionMethod.MAJORITY);
+        value.setDecidedAt(NOW);
         return value;
     }
 }
