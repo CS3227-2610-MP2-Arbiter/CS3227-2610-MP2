@@ -4,7 +4,7 @@
 
 **Branch:** `feat/workspace-lock` (from `main`; now checked out in the primary working folder)
 
-**Status:** Approved by the owner on 23 September 2026. The earlier shared-disk retest and latest local verification passed; final cross-platform CI and human retest of the startup fix are pending.
+**Status:** Approved by the owner on 23 September 2026. The earlier shared-disk retest and latest local verification passed; final cross-platform CI passed; human retest of the startup fix is pending.
 
 ## Goal and boundary
 
@@ -40,7 +40,7 @@ Implement rule 11's single-writer workspace access for Arbiter instances. Keep w
 - Added the `WorkspaceLock` handle on required metadata. The startup wizard acquires the lock before opening or initializing the JSON snapshot, passes the live handle to `Arbiter`, and releases it after validation failure or application close.
 - Independent review found that closing a second channel after same-JVM contention could release the first lock on some systems. Added a canonical-root guard before opening the channel, and extended the subprocess test to check that the first process remains excluded.
 - The revised implementation passed focused workspace tests and `checkstyleTest`, then JDK 25 `.\gradlew.bat check shadowJar --offline --no-daemon --console=plain`: JUnit, both Checkstyle tasks, and the release jar. Tests cover cross-process contention, deletion of metadata while held, crash recovery, the metadata size boundary, and JSON initialization/open under the lock. The sandboxed Gradle wrapper could not write its redirected `C:\.gradle` cache, so verification used the existing cache with approved access.
-- Draft PR #66's first Ubuntu CI run exposed a test that reopened metadata while holding its lock. Independent review found the same problem in normal JSON-store startup. Lock-aware JSON-store entry points and subprocess probes now preserve the held lock through initialization and opening; the merged branch passes JDK 25 `check shadowJar` locally with 77 JUnit tests. Final CI is pending.
+- Draft PR #66's first Ubuntu CI run exposed a test that reopened metadata while holding its lock. Independent review found the same problem in normal JSON-store startup. Lock-aware JSON-store entry points and subprocess probes now preserve the held lock through initialization and opening; the merged branch passes JDK 25 `check shadowJar` locally with 77 JUnit tests. Final CI passed on Linux, macOS, Windows, and the Apple Silicon release-jar job.
 
 ## Acceptance correction
 
