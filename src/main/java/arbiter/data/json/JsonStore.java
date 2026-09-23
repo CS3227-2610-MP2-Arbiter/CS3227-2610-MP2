@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import arbiter.workspace.WorkspaceLock;
 import arbiter.workspace.WorkspaceMetadata;
 import arbiter.workspace.WorkspacePaths;
 import arbiter.workspace.WorkspaceService;
@@ -42,13 +43,24 @@ public final class JsonStore {
 
     /** Initializes the data file for a workspace just created by {@link WorkspaceService}. */
     public static JsonStore initializeNew(WorkspacePaths paths) {
+        return initializeNew(paths, true);
+    }
+
+    /** Initializes a new workspace after its layout was created and its lock acquired. */
+    public static JsonStore initializeNew(WorkspaceLock lock) {
+        return initializeNew(lock.paths(), false);
+    }
+
+    private static JsonStore initializeNew(WorkspacePaths paths, boolean validateWorkspace) {
         JsonStore store = new JsonStore(paths, JsonStore::publishAtomically);
         synchronized (store.pathState) {
-            WorkspaceService workspaces = new WorkspaceService();
-            workspaces.open(paths.root());
-            if (workspaces.readMetadata(paths).workspaceVersion()
-                    != WorkspaceMetadata.CURRENT_WORKSPACE_VERSION) {
-                throw new JsonStoreException("This is not a newly created workspace: " + paths.root());
+            if (validateWorkspace) {
+                WorkspaceService workspaces = new WorkspaceService();
+                workspaces.open(paths.root());
+                if (workspaces.readMetadata(paths).workspaceVersion()
+                        != WorkspaceMetadata.CURRENT_WORKSPACE_VERSION) {
+                    throw new JsonStoreException("This is not a newly created workspace: " + paths.root());
+                }
             }
             if (Files.exists(paths.dataFile())) {
                 throw new JsonStoreException("The workspace data file already exists: " + paths.dataFile());
@@ -64,11 +76,21 @@ public final class JsonStore {
         return open(paths, JsonStore::publishAtomically);
     }
 
+    /** Opens the snapshot for an already validated and locked workspace. */
+    public static JsonStore open(WorkspaceLock lock) {
+        return open(lock.paths(), JsonStore::publishAtomically, false);
+    }
+
     static JsonStore open(WorkspacePaths paths, SnapshotPublisher publisher) {
+        return open(paths, publisher, true);
+    }
+
+    private static JsonStore open(WorkspacePaths paths, SnapshotPublisher publisher, boolean validateWorkspace) {
         JsonStore store = new JsonStore(paths, publisher);
         synchronized (store.pathState) {
-            WorkspaceService workspaces = new WorkspaceService();
-            workspaces.open(paths.root());
+            if (validateWorkspace) {
+                new WorkspaceService().open(paths.root());
+            }
             if (!Files.isRegularFile(paths.dataFile())) {
                 throw new JsonStoreException("The workspace data file is missing: " + paths.dataFile());
             }

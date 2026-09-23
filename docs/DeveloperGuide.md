@@ -21,7 +21,7 @@ Arbiter runs locally. There is no server, no network service and no accounts dep
 
 Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to a small app with one data store. Jackson serializes the JSON snapshot behind the repository interfaces; no ORM or SQL layer is needed.
 
-The code-level rules that follow from this design, which the agent works from, are in [architecture context](../context/architecture.md).
+The code-level rules that follow from this design, which the agent works from, are in [architecture context](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md).
 
 ### Architecture
 
@@ -64,7 +64,7 @@ This is stronger than package separation: it holds for code written later, by an
 ### Data and persistence
 
 - **Atomic submission.** Each completed logical action commits immediately. An unsubmitted choice is transient UI state, while **Submit & next** persists the answer and queue advance in one transaction (rule 18 in [User Flows](UserFlows.md#3-rules-both-tracks-share)).
-- **One Jackson snapshot.** [#6] stores the workspace's records and ID state in one versioned JSON snapshot behind the existing repository interfaces. Replacing one file can commit an action across repositories without a SQL transaction, at the cost of rewriting the snapshot for each commit. The enforcement points are in [the architecture context](../context/architecture.md#persistence).
+- **One Jackson snapshot.** [#6] stores the workspace's records and ID state in one versioned JSON snapshot behind the existing repository interfaces. Replacing one file can commit an action across repositories without a SQL transaction, at the cost of rewriting the snapshot for each commit. The enforcement points are in [the architecture context](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md#persistence).
 - **A single writer.** Atomic replacement alone does not coordinate separate app instances. The JSON store serializes actions within one process; [#61] supplies the workspace lock across instances. That limits the shared workspace to one writer at a time.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format, so formatting is written once, in `ExportService`.
 

@@ -3,6 +3,7 @@ package arbiter.ui.shared;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.JsonStoreException;
@@ -79,7 +80,7 @@ public class WorkspaceSetupDialog {
         }
         try {
             WorkspacePaths paths = service.create(folder);
-            return lockAndCheck(paths, () -> JsonStore.initializeNew(paths));
+            return lockAndCheck(paths, JsonStore::initializeNew);
         } catch (WorkspaceException | JsonStoreException e) {
             report(owner, "That workspace could not be created", e.getMessage());
             return Optional.empty();
@@ -89,17 +90,17 @@ public class WorkspaceSetupDialog {
     private Optional<WorkspaceLock> open(Window owner, Path folder) {
         try {
             WorkspacePaths paths = service.open(folder);
-            return lockAndCheck(paths, () -> JsonStore.open(paths));
+            return lockAndCheck(paths, JsonStore::open);
         } catch (WorkspaceException | JsonStoreException e) {
             report(owner, "That workspace could not be opened", e.getMessage());
             return Optional.empty();
         }
     }
 
-    private Optional<WorkspaceLock> lockAndCheck(WorkspacePaths paths, Runnable checkData) {
+    private Optional<WorkspaceLock> lockAndCheck(WorkspacePaths paths, Consumer<WorkspaceLock> checkData) {
         WorkspaceLock lock = WorkspaceLock.acquire(paths);
         try {
-            checkData.run();
+            checkData.accept(lock);
             return Optional.of(lock);
         } catch (RuntimeException e) {
             try {

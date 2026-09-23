@@ -41,27 +41,22 @@ public class WorkspaceLockTest {
             assertTrue(failure.getMessage().contains("already in use"), failure.getMessage());
             assertEquals("untouched", Files.readString(paths.dataFile()));
 
-            Path result = temporary.resolve("probe-result");
-            Process probe = startChild(Probe.class, paths, result);
-            try {
-                assertTrue(probe.waitFor(5, TimeUnit.SECONDS), "Probe process timed out");
-                assertEquals(0, probe.exitValue(), new String(probe.getInputStream().readAllBytes()));
-                assertEquals("contended", Files.readString(result));
-            } finally {
-                probe.destroyForcibly();
-            }
+            assertChildContended(paths, "probe-result");
         }
         assertEquals(metadata, Files.readString(paths.metadataFile()));
         assertEquals(metadataSize, Files.size(paths.metadataFile()));
     }
 
     @Test
-    void acquire_heldMetadata_allowsDataInitializationAndOpen() {
+    void acquire_heldMetadata_allowsDataInitializationAndOpen() throws Exception {
         WorkspacePaths paths = workspace("workspace");
 
-        try (WorkspaceLock ignored = WorkspaceLock.acquire(paths)) {
-            JsonStore.initializeNew(paths);
-            assertTrue(JsonStore.open(paths).<Boolean>read(session -> session.users().listAll().isEmpty()));
+        try (WorkspaceLock lock = WorkspaceLock.acquire(paths)) {
+            JsonStore.initializeNew(lock);
+            assertChildContended(paths, "initialized-probe-result");
+
+            assertTrue(JsonStore.open(lock).<Boolean>read(session -> session.users().listAll().isEmpty()));
+            assertChildContended(paths, "opened-probe-result");
         }
     }
 
@@ -166,6 +161,18 @@ public class WorkspaceLockTest {
 
     private WorkspacePaths workspace(String name) {
         return new WorkspaceService().create(temporary.resolve(name));
+    }
+
+    private void assertChildContended(WorkspacePaths paths, String resultName) throws Exception {
+        Path result = temporary.resolve(resultName);
+        Process probe = startChild(Probe.class, paths, result);
+        try {
+            assertTrue(probe.waitFor(5, TimeUnit.SECONDS), "Probe process timed out");
+            assertEquals(0, probe.exitValue(), new String(probe.getInputStream().readAllBytes()));
+            assertEquals("contended", Files.readString(result));
+        } finally {
+            probe.destroyForcibly();
+        }
     }
 
     private static Process startHolder(WorkspacePaths paths, Path ready)

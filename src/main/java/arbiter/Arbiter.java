@@ -38,7 +38,7 @@ public class Arbiter extends Application {
         try {
             stage.setOnHidden(event -> closeWorkspace());
             stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
-            new AuthScreen(stage, new AuthService(JsonStore.open(workspace.paths()))).show();
+            new AuthScreen(stage, new AuthService(JsonStore.open(workspace))).show();
         } catch (AuthException | JsonStoreException e) {
             try {
                 Alert error = new Alert(Alert.AlertType.ERROR, e.getMessage());

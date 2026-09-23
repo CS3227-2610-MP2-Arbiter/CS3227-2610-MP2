@@ -40,7 +40,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - `WorkspacePaths.DATA_FILE` names the shared snapshot in rule 11; `JsonStore` opens and validates its version and integrity.
 - Commit each completed logical action immediately (rule 2). Repository calls within one `JsonStore.write` action change a private snapshot; `JsonStore` publishes it with one atomic replacement.
 - Code against the repository interfaces in `arbiter.data`. Their implementations and storage-level validation live in `arbiter.data.json`; business rules remain in services.
-- `WorkspaceSetupDialog` acquires `WorkspaceLock` before opening or initializing `JsonStore`; `Arbiter` closes the handle when the app closes (rule 11, [#61]).
+- `WorkspaceSetupDialog` validates layout, acquires `WorkspaceLock`, and uses lock-aware `JsonStore` entry points; `Arbiter` closes the handle when the app closes (rule 11, [#61]).
 
 ### UI
 
