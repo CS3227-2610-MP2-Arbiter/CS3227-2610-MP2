@@ -4,7 +4,7 @@
 
 **Branch:** `feat/workspace-lock` (from `main`; now checked out in the primary working folder)
 
-**Status:** Approved by the owner on 23 September 2026. The earlier shared-disk retest and latest local verification passed; final cross-platform CI passed; human retest of the startup fix is pending.
+**Status:** Approved by the owner on 23 September 2026. Local verification, final cross-platform CI, and the owner's final shared-disk retest passed. Teammate review and merge remain pending.
 
 ## Goal and boundary
 
@@ -32,7 +32,7 @@ Implement rule 11's single-writer workspace access for Arbiter instances. Keep w
 
 - The owner-login PR merged into `main` during draft-PR delivery. The task branch merged it and integrated lock lifetime with its login screen.
 - File-lock behavior on shared disks depends on the filesystem and OS. Fail clearly if a lock cannot be obtained; the owner tested two Arbiter processes against the same shared workspace on the intended disk.
-- The owner confirmed that two Arbiter instances passed the shared-disk retest after the metadata-lock revision. The later startup fix needs another human retest. Deliberate deletion followed by recreation of the required metadata file is outside the cooperative-lock guarantee.
+- The owner confirmed that two Arbiter instances passed on the intended shared disk after the metadata-lock revision and again after the startup fix. Deliberate deletion followed by recreation of the required metadata file is outside the cooperative-lock guarantee.
 - The owner approved the simple recovery and refusal policy and this plan.
 
 ## Implementation and verification
