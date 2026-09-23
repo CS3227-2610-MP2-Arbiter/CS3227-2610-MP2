@@ -1,5 +1,8 @@
 package arbiter.ui.shared;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
 import arbiter.data.json.JsonStoreException;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
@@ -15,17 +18,19 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-/** Minimal owner setup and login surface until the shared shell in #5 is built. */
+/** Owner setup and login surface for one workspace. */
 public final class AuthScreen {
     private static final String USERNAME_HINT = "1-64 ASCII letters, digits, dots, underscores or hyphens";
 
     private final Stage stage;
     private final AuthService auth;
+    private final Consumer<CurrentUser> onLogin;
 
-    /** Uses the existing application stage for one workspace. */
-    public AuthScreen(Stage stage, AuthService auth) {
-        this.stage = stage;
-        this.auth = auth;
+    /** Uses the existing application stage and hands successful login to the shell. */
+    public AuthScreen(Stage stage, AuthService auth, Consumer<CurrentUser> onLogin) {
+        this.stage = Objects.requireNonNull(stage, "stage");
+        this.auth = Objects.requireNonNull(auth, "auth");
+        this.onLogin = Objects.requireNonNull(onLogin, "onLogin");
     }
 
     /** Shows owner setup for a new workspace or login for an initialized one. */
@@ -77,23 +82,13 @@ public final class AuthScreen {
         login.setOnAction(event -> {
             try {
                 CurrentUser user = auth.login(username.getText(), password.getText());
-                showSignedIn(user);
+                onLogin.accept(user);
             } catch (AuthException e) {
                 password.clear();
                 error.setText(e.getMessage());
             }
         });
         showForm(new Label("Log in to Arbiter"), username, password, login, error);
-    }
-
-    private void showSignedIn(CurrentUser user) {
-        Button logout = new Button("Log out");
-        logout.setOnAction(event -> {
-            auth.logout();
-            showLogin();
-        });
-        showForm(new Label("Signed in as " + user.username()),
-                new Label("Role: " + user.role()), logout);
     }
 
     private void showForm(Node... controls) {
