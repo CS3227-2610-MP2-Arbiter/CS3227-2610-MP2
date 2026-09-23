@@ -21,7 +21,7 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Dispute** | An unresolved single-select item that has *k* submitted answers but no strict-majority label, so it awaits the adjudicator ([rule 10](UserFlows.md#3-rules-both-tracks-share)). |
 | **Resolution** | The record of how an item was settled: its final answer, how it was reached, and who decided when applicable. |
 | **Provenance** | The evidence exported with an item's current decision: its immutable submitted answers with annotator and submission time, plus the current resolution and its contributors. |
-| **Workspace** | The folder both roles use, holding one `arbiter.db` plus `media/`, `exports/` and `logs/`. |
+| **Workspace** | The folder both roles use for shared data and source files ([rule 11](UserFlows.md#3-rules-both-tracks-share)). |
 | **Registration in place** | Recording an existing source file's location and content hash as a project item, without copying, moving or editing the file. |
 
 *k* is the number of annotators who independently annotate each item in a split. It defaults to 2.

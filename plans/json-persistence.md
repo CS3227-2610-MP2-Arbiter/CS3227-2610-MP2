@@ -33,7 +33,7 @@ Replace the unimplemented SQLite design for #6 with a Jackson-backed workspace d
 - A separate file per repository cannot publish a cross-repository action atomically with simple renames; it requires a manifest or journal. The owner chose the single snapshot.
 - Java's `ATOMIC_MOVE` support and replacement behavior depend on the workspace filesystem. The approved policy is to fail clearly without a non-atomic fallback when replacement is unavailable. `FileChannel.force(true)` improves local durability, but the JDK does not promise the same power-loss durability for a remote drive. A workspace lock remains necessary for concurrent Arbiter instances.
 - The owner's follow-up removes compatibility with the previous database placeholder. This application has no production data to migrate; the JSON snapshot begins at schema version 1.
-- The historical ORMLite comment on #6 remains as context, with a superseding comment pointing to the updated issue body. Rule 11 in `docs/UserFlows.md`, `context/architecture.md`, and the design/testing text in `docs/DeveloperGuide.md` still describe SQLite. Revise the documentation when the implementation has been accepted, following `maintain-docs`.
+- The historical ORMLite comment on #6 remains as context, with a superseding comment pointing to the updated issue body. The owner later requested that the stale SQLite descriptions in the guides be updated to JSON; human review of those edits remains pending.
 
 ## Implementation and verification
 
@@ -41,4 +41,5 @@ Replace the unimplemented SQLite design for #6 with a Jackson-backed workspace d
 - `WorkspaceService` now writes layout version 1 metadata without a duplicate data schema version. The wizard initializes the JSON snapshot when creating a workspace and validates it when opening one.
 - Added temporary-workspace integration tests for repository contracts, failure and success across repositories, snapshot versioning, malformed and missing files, and orphan temporary files.
 - JDK 25 `.\gradlew.bat check shadowJar --offline --no-daemon` passed again after the review refactors: JUnit, both Checkstyle tasks, and the release jar. The sandboxed rerun could not create the Gradle cache lock, so the approved unsandboxed execution was used.
-- The owner authorized the GitHub issue updates; #6 has eight checked acceptance criteria and #9 has seven. Human acceptance remains: create and reopen a JSON workspace from the wizard, and check the visible error for a missing or malformed snapshot. Documentation remains pending under the owner's process.
+- The owner authorized the GitHub issue updates; #6 has eight checked acceptance criteria and #9 has seven. Human acceptance remains: create and reopen a JSON workspace from the wizard, and check the visible error for a missing or malformed snapshot. Documentation review remains pending under the owner's process.
+- At the owner's request, `docs/UserFlows.md`, `docs/Glossary.md`, `docs/DeveloperGuide.md`, and `context/architecture.md` were revised to describe the merged JSON store and distinguish its in-process serialization from the planned #61 lock.

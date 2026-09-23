@@ -57,6 +57,12 @@ public final class RepositorySession {
         active = false;
     }
 
+    /** Returns whether this workspace has never stored a record. */
+    public boolean isPristine() {
+        checkActive();
+        return nextId == 1;
+    }
+
     /** Returns account operations for this action. */
     public UserRepository users() {
         checkActive();
