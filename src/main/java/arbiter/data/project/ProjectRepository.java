@@ -17,7 +17,7 @@ public interface ProjectRepository {
     List<Project> listAll();
 
     /**
-     * Removes a project and every database record it owns before its first assignment. Source files
+     * Removes a project and every stored record it owns before its first assignment. Source files
      * under {@code media/} are never touched.
      */
     void deleteById(long id);

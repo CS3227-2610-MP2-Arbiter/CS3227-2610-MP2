@@ -8,7 +8,7 @@ import java.time.Instant;
  * <p>{@code outputFormat} is fixed at creation (rule 4).
  */
 public class Project {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Project name. */

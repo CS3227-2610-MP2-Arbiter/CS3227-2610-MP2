@@ -8,7 +8,7 @@ import java.time.Instant;
  * <p>Its items and their order are the {@code SplitItem} records that name them (rule 7).
  */
 public class Split {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Project this split belongs to. */

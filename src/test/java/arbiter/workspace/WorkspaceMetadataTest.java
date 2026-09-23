@@ -14,8 +14,8 @@ class WorkspaceMetadataTest {
         WorkspaceMetadata metadata = WorkspaceMetadata.createNow();
         Instant after = Instant.now();
 
+        assertEquals(1, WorkspaceMetadata.CURRENT_WORKSPACE_VERSION);
         assertEquals(WorkspaceMetadata.CURRENT_WORKSPACE_VERSION, metadata.workspaceVersion());
-        assertEquals(WorkspaceMetadata.CURRENT_SCHEMA_VERSION, metadata.schemaVersion());
         assertFalse(metadata.created().isBefore(before), "created before the call");
         assertFalse(metadata.created().isAfter(after), "created after the call");
     }

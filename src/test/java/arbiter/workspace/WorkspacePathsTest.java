@@ -38,7 +38,7 @@ class WorkspacePathsTest {
 
         assertEquals(root, paths.root());
         assertEquals(root.resolve("workspace.json"), paths.metadataFile());
-        assertEquals(root.resolve("arbiter.db"), paths.databaseFile());
+        assertEquals(root.resolve("arbiter.json"), paths.dataFile());
         assertEquals(root.resolve("media"), paths.mediaDirectory());
         assertEquals(root.resolve("exports"), paths.exportsDirectory());
         assertEquals(root.resolve("logs"), paths.logsDirectory());

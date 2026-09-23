@@ -1,6 +1,7 @@
 package arbiter.workspace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,13 +31,13 @@ class WorkspaceServiceTest {
     }
 
     @Test
-    void create_newFolder_currentVersionsRecorded() {
+    void create_newFolder_currentLayoutVersionRecorded() throws IOException {
         WorkspacePaths paths = service.create(temporary.resolve("workspace"));
 
         WorkspaceMetadata metadata = service.readMetadata(paths);
 
-        assertEquals(WorkspaceMetadata.CURRENT_WORKSPACE_VERSION, metadata.workspaceVersion());
-        assertEquals(WorkspaceMetadata.CURRENT_SCHEMA_VERSION, metadata.schemaVersion());
+        assertEquals(1, metadata.workspaceVersion());
+        assertFalse(Files.readString(paths.metadataFile()).contains("schemaVersion"));
     }
 
     @Test
@@ -63,12 +64,12 @@ class WorkspaceServiceTest {
     }
 
     @Test
-    void create_folderHoldsDatabase_databaseLeftAlone() throws IOException {
+    void create_folderHoldsSnapshot_snapshotLeftAlone() throws IOException {
         Path folder = Files.createDirectories(temporary.resolve("workspace"));
-        Path database = Files.writeString(folder.resolve("arbiter.db"), "existing data");
+        Path snapshot = Files.writeString(folder.resolve("arbiter.json"), "existing data");
 
         assertThrows(WorkspaceException.class, () -> service.create(folder));
-        assertEquals("existing data", Files.readString(database));
+        assertEquals("existing data", Files.readString(snapshot));
     }
 
     @Test
@@ -76,14 +77,6 @@ class WorkspaceServiceTest {
         Path file = Files.writeString(temporary.resolve("workspace"), "not a folder");
 
         assertThrows(WorkspaceException.class, () -> service.create(file));
-    }
-
-    @Test
-    void open_olderVersion_workspaceOpened() throws IOException {
-        WorkspacePaths paths = service.create(temporary.resolve("workspace"));
-        Files.writeString(paths.metadataFile(), metadataJson(WorkspaceMetadata.CURRENT_WORKSPACE_VERSION - 1, ""));
-
-        assertEquals(paths.root(), service.open(paths.root()).root());
     }
 
     @Test
@@ -109,6 +102,14 @@ class WorkspaceServiceTest {
 
         assertTrue(failure.getMessage().contains("newer"), failure.getMessage());
         assertEquals(newer, Files.readString(paths.metadataFile()));
+    }
+
+    @Test
+    void open_zeroVersion_exceptionThrown() throws IOException {
+        WorkspacePaths paths = service.create(temporary.resolve("workspace"));
+        Files.writeString(paths.metadataFile(), metadataJson(0, ""));
+
+        assertThrows(WorkspaceException.class, () -> service.open(paths.root()));
     }
 
     @Test
@@ -154,20 +155,19 @@ class WorkspaceServiceTest {
     }
 
     @Test
-    void open_databaseMissing_exceptionThrown() throws IOException {
+    void open_freshLayoutWithoutSnapshot_layoutOpened() {
         WorkspacePaths paths = service.create(temporary.resolve("workspace"));
-        Files.delete(paths.databaseFile());
 
-        assertThrows(WorkspaceException.class, () -> service.open(paths.root()));
+        assertEquals(paths, service.open(paths.root()));
     }
 
     @Test
     void readMetadata_validFile_metadataReturned() throws IOException {
         WorkspacePaths paths = new WorkspacePaths(temporary);
         Files.writeString(paths.metadataFile(),
-                "{\"workspaceVersion\": 3, \"schemaVersion\": 7, \"created\": \"2026-09-20T08:30:00Z\"}");
+                "{\"workspaceVersion\": 1, \"created\": \"2026-09-20T08:30:00Z\"}");
 
-        WorkspaceMetadata expected = new WorkspaceMetadata(3, 7, Instant.parse("2026-09-20T08:30:00Z"));
+        WorkspaceMetadata expected = new WorkspaceMetadata(1, Instant.parse("2026-09-20T08:30:00Z"));
         assertEquals(expected, service.readMetadata(paths));
     }
 
@@ -189,19 +189,19 @@ class WorkspaceServiceTest {
     @Test
     void readMetadata_fieldMissing_exceptionThrown() throws IOException {
         WorkspacePaths paths = new WorkspacePaths(temporary);
-        Files.writeString(paths.metadataFile(), "{\"schemaVersion\": 1, \"created\": \"2026-09-20T08:30:00Z\"}");
+        Files.writeString(paths.metadataFile(), "{\"created\": \"2026-09-20T08:30:00Z\"}");
 
         assertThrows(WorkspaceException.class, () -> service.readMetadata(paths));
     }
 
     private static String metadataJson(int workspaceVersion, String extraFields) {
-        return "{\"workspaceVersion\": " + workspaceVersion + ", \"schemaVersion\": 1, "
-                + "\"created\": \"2026-09-20T08:30:00Z\"" + extraFields + "}";
+        return "{\"workspaceVersion\": " + workspaceVersion
+                + ", \"created\": \"2026-09-20T08:30:00Z\"" + extraFields + "}";
     }
 
     private static void assertLayout(Path folder) {
         assertTrue(Files.isRegularFile(folder.resolve("workspace.json")), "workspace.json");
-        assertTrue(Files.isRegularFile(folder.resolve("arbiter.db")), "arbiter.db");
+        assertFalse(Files.exists(folder.resolve("arbiter.json")), "arbiter.json is initialized by the data store");
         assertTrue(Files.isDirectory(folder.resolve("media")), "media");
         assertTrue(Files.isDirectory(folder.resolve("exports")), "exports");
         assertTrue(Files.isDirectory(folder.resolve("logs")), "logs");

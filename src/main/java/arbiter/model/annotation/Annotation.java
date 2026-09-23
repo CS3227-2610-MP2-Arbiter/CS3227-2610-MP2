@@ -9,7 +9,7 @@ import java.time.Instant;
  * between them, and the getters reject a record loaded with both.
  */
 public class Annotation {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Item being annotated. */

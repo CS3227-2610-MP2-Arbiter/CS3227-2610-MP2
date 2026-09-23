@@ -34,10 +34,13 @@ public class WorkspaceService {
                 throw new WorkspaceException(
                         "That folder already holds an Arbiter workspace. Open it instead.");
             }
+            if (Files.exists(paths.dataFile())) {
+                throw new WorkspaceException(
+                        "That folder already holds Arbiter data. Open its workspace instead.");
+            }
             Files.createDirectories(paths.mediaDirectory());
             Files.createDirectories(paths.exportsDirectory());
             Files.createDirectories(paths.logsDirectory());
-            Files.createFile(paths.databaseFile());
             Files.writeString(paths.metadataFile(), JSON.writeValueAsString(WorkspaceMetadata.createNow()),
                     StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -73,7 +76,10 @@ public class WorkspaceService {
                             + "). Update Arbiter before opening it. The workspace has not been "
                             + "changed.");
         }
-        requireFile(paths.databaseFile());
+        if (metadata.workspaceVersion() < 1) {
+            throw new WorkspaceException("Unsupported workspace layout version "
+                    + metadata.workspaceVersion() + ". The workspace has not been changed.");
+        }
         requireDirectory(paths.mediaDirectory());
         requireDirectory(paths.exportsDirectory());
         requireDirectory(paths.logsDirectory());
@@ -96,12 +102,6 @@ public class WorkspaceService {
         } catch (JacksonException e) {
             throw new WorkspaceException(
                     WorkspacePaths.METADATA_FILE + " is malformed: " + e.getOriginalMessage(), e);
-        }
-    }
-
-    private static void requireFile(Path path) {
-        if (!Files.isRegularFile(path)) {
-            throw incomplete(path);
         }
     }
 

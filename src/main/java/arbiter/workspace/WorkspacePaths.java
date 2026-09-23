@@ -12,8 +12,8 @@ public record WorkspacePaths(Path root) {
     /** Name of the workspace metadata file. */
     public static final String METADATA_FILE = "workspace.json";
 
-    /** Name of the SQLite database file. */
-    public static final String DATABASE_FILE = "arbiter.db";
+    /** Name of the workspace data snapshot. */
+    public static final String DATA_FILE = "arbiter.json";
 
     /** Name of the folder holding imported media. */
     public static final String MEDIA_DIRECTORY = "media";
@@ -34,9 +34,9 @@ public record WorkspacePaths(Path root) {
         return root.resolve(METADATA_FILE);
     }
 
-    /** Returns the SQLite database file. */
-    public Path databaseFile() {
-        return root.resolve(DATABASE_FILE);
+    /** Returns the workspace data snapshot. */
+    public Path dataFile() {
+        return root.resolve(DATA_FILE);
     }
 
     /** Returns the folder holding imported media. */

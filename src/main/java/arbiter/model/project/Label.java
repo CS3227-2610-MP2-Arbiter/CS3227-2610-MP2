@@ -2,7 +2,7 @@ package arbiter.model.project;
 
 /** One answer an annotator can choose. A project's labels are its taxonomy. */
 public class Label {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Project this label belongs to. */
