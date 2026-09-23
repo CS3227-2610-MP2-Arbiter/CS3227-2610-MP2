@@ -4,7 +4,7 @@ import java.time.Instant;
 
 /** One annotatable plain-text document. */
 public class Item {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Project this item belongs to. */

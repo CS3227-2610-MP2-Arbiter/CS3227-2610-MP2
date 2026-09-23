@@ -20,7 +20,7 @@ import java.time.Instant;
  * #34). Relaxing any of these requires storing contributors instead.
  */
 public class Resolution {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Item being resolved. */

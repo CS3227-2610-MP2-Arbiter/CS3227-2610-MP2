@@ -7,7 +7,7 @@ package arbiter.model.project;
  * written once and never edited (rule 14), and an item has at most one (rule 7).
  */
 public class SplitItem {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Split the item belongs to. */

@@ -4,7 +4,7 @@ import java.time.Instant;
 
 /** The link between one split and one annotator. */
 public class Assignment {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Split being worked. */

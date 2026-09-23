@@ -4,7 +4,7 @@ import java.time.Instant;
 
 /** An account that can sign in. */
 public class User {
-    /** Database identifier. */
+    /** Persistent identifier. */
     private Long id;
 
     /** Login name. */
