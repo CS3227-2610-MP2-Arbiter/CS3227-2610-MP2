@@ -40,8 +40,6 @@ public class WorkspaceLockTest {
 
             assertTrue(failure.getMessage().contains("already in use"), failure.getMessage());
             assertEquals("untouched", Files.readString(paths.dataFile()));
-            assertEquals(metadata, Files.readString(paths.metadataFile()));
-            assertEquals(metadataSize, Files.size(paths.metadataFile()));
 
             Path result = temporary.resolve("probe-result");
             Process probe = startChild(Probe.class, paths, result);
@@ -53,6 +51,8 @@ public class WorkspaceLockTest {
                 probe.destroyForcibly();
             }
         }
+        assertEquals(metadata, Files.readString(paths.metadataFile()));
+        assertEquals(metadataSize, Files.size(paths.metadataFile()));
     }
 
     @Test

@@ -17,7 +17,7 @@ On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
 ## Design
 
-Arbiter runs locally. There is no server or network service: both roles use the shared JSON workspace in [rule 11](UserFlows.md#3-rules-both-tracks-share), and JavaFX calls services backed by its data store. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no background retries or eventual-consistency problems.
+Arbiter runs locally. There is no server, no network service and no accounts department: both roles use the shared JSON workspace in [rule 11](UserFlows.md#3-rules-both-tracks-share), and JavaFX calls services backed by its data store. Anything that assumes a backend - background jobs, webhooks, a message queue - is off the table. When the app is not running, nothing is happening, so there are no background retries or eventual-consistency problems.
 
 Beyond that, the choices are about keeping the code honest. There is no plugin system and no dependency-injection framework, because a container would add indirection to a small app with one data store. Jackson serializes the JSON snapshot behind the repository interfaces; no ORM or SQL layer is needed.
 

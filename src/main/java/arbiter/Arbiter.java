@@ -2,11 +2,17 @@ package arbiter;
 
 import java.util.Optional;
 
+import arbiter.data.json.JsonStore;
+import arbiter.data.json.JsonStoreException;
+import arbiter.service.AuthException;
+import arbiter.service.AuthService;
+import arbiter.ui.shared.AuthScreen;
 import arbiter.ui.shared.WorkspaceSetupDialog;
 import arbiter.workspace.WorkspaceLock;
 import arbiter.workspace.WorkspaceService;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -27,10 +33,22 @@ public class Arbiter extends Application {
             stage.close();
             return;
         }
+
         workspace = selected.get();
         try {
-            stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
             stage.setOnHidden(event -> closeWorkspace());
+            stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
+            new AuthScreen(stage, new AuthService(JsonStore.open(workspace.paths()))).show();
+        } catch (AuthException | JsonStoreException e) {
+            try {
+                Alert error = new Alert(Alert.AlertType.ERROR, e.getMessage());
+                error.initOwner(stage);
+                error.setHeaderText("That workspace cannot be used for login");
+                error.showAndWait();
+            } finally {
+                closeWorkspace();
+                stage.close();
+            }
         } catch (RuntimeException e) {
             closeWorkspace();
             throw e;

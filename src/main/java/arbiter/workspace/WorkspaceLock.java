@@ -9,7 +9,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
 
-/** Holds an operating-system byte-range lock on workspace metadata until the workspace closes. */
+/**
+ * Holds an operating-system byte-range lock on workspace metadata until the workspace closes.
+ * On some systems, closing another channel to the metadata in this JVM releases this lock.
+ */
 public final class WorkspaceLock implements AutoCloseable {
     // The workspace metadata is small; locking beyond its contents also permits reads on Windows.
     private static final long LOCK_BYTE = 1024L * 1024L;
