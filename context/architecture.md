@@ -30,6 +30,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or another annotator's work.
 - Do not rely on package separation for blindness.
 - The blindness test ([#11]) must cover every annotator-facing code path, including new ones.
+- `AnnotatorBlindnessTest` treats every class under `arbiter.ui` except `arbiter.ui.adjudicator` as annotator-facing, shared components included, and fails if their calls reach another annotator's answers, a resolved result, cross-annotator progress or an adjudicator screen. Service reads it trusts are listed in that test; adding one is a reviewed change, and its scoping must be tested by its feature.
 
 ### Source media (rule 21)
 
