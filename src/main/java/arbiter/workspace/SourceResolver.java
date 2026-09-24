@@ -30,10 +30,11 @@ import java.util.Objects;
  * regular plain-text file no larger than {@link #MAX_TEXT_BYTES}, checks the bytes against the hash
  * recorded at registration and decodes them as UTF-8.
  *
- * <p>A stored path is relative, uses {@code /} between segments, keeps the case it was registered
- * with, and starts with {@code media/}. Rejecting {@code \} and {@code :} keeps the form portable:
- * both are separators or drive syntax on Windows, and a path that resolved only on a
- * case-insensitive filesystem would fail on another. A malformed path is {@code INVALID_PATH}; a
+ * <p>A stored path is relative, uses {@code /} between segments, starts with {@code media/} and
+ * keeps the case it was registered with. Rejecting {@code \} and {@code :} keeps the form portable:
+ * both are separators or drive syntax on Windows. The case is checked against the file that was
+ * found, so a path that resolves only on a case-insensitive filesystem is refused there rather than
+ * working on one computer and failing on another. A malformed path is {@code INVALID_PATH}; a
  * well-formed path whose target has been replaced by a link is {@code OUTSIDE_MEDIA}.
  *
  * <p>{@link #resolve} reads a registered source, and {@link #resolveForImport} applies exactly the
@@ -187,7 +188,39 @@ public final class SourceResolver {
         Path file = resolveReal(storedPath, candidate, SourceFailure.MISSING,
                 "The recorded source file is missing: " + storedPath);
         requireInsideMedia(storedPath, file, mediaRoot);
+        requireRecordedCase(storedPath, file, mediaRoot);
         return file;
+    }
+
+    /**
+     * Refuses a path whose letter case does not match the file that was found.
+     *
+     * <p>Only the case is compared, and only when the two paths are otherwise the same, so a link
+     * recorded inside {@code media/} is left alone: its target has a different path, and the
+     * containment check above already decided whether following it is allowed.
+     */
+    private static void requireRecordedCase(String storedPath, Path file, Path mediaRoot) {
+        int mediaSegments = Path.of(WorkspacePaths.MEDIA_DIRECTORY).getNameCount();
+        Path recorded = Path.of(storedPath).subpath(mediaSegments, Path.of(storedPath).getNameCount());
+        Path found = mediaRoot.relativize(file);
+        if (recorded.equals(found) || !sameSegmentsIgnoringCase(recorded, found)) {
+            return;
+        }
+        throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
+                "The recorded source path differs in letter case from the file on disk: " + storedPath
+                        + " is stored but " + found + " was found. Register the name as the file spells it.");
+    }
+
+    private static boolean sameSegmentsIgnoringCase(Path first, Path second) {
+        if (first.getNameCount() != second.getNameCount()) {
+            return false;
+        }
+        for (int index = 0; index < first.getNameCount(); index++) {
+            if (!first.getName(index).toString().equalsIgnoreCase(second.getName(index).toString())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void requireInsideMedia(String storedPath, Path path, Path mediaRoot) {
