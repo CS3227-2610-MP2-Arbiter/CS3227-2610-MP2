@@ -1,6 +1,6 @@
 # Split reflections into one file per teammate
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -28,4 +28,4 @@ Status: Awaiting human verification.
 - `git status` showed a clean tree before branching, so the change contains only the intended files.
 - `./gradlew check shadowJar` was not run: this change touches Markdown and skill files only, with no application code.
 - Unverified: whether the two reflections match what each teammate would write for themselves. They were reconstructed from the logs rather than from each person's own account, and Whimsyturtle's in particular should be checked and rewritten in their own words before submission.
-- A human has not yet verified this summary.
+- The owner marked this summary human verified on 24 September 2026.

@@ -1,6 +1,6 @@
 # Workspace setup and file layout
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -32,7 +32,7 @@ Status: Awaiting human verification.
 - Tests use a temporary directory and an injected recent-list location, so they never read or write the real `~/.arbiter`.
 - Not verified: the JavaFX wizard itself. It needs a display and a toolkit, and it is a thin adapter over the tested service.
 - `./gradlew check` was run on Windows only. CI covers Linux, macOS and Apple Silicon.
-- A human has not yet verified this summary.
+- The owner marked this summary human verified on 24 September 2026.
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#6]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6

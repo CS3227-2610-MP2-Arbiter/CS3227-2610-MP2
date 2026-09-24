@@ -1,6 +1,6 @@
 ﻿# Unwrap hard-wrapped markdown prose
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -26,4 +26,4 @@ Status: Awaiting human verification.
 - `git diff --check` reported no whitespace errors.
 - Link and anchor check across `docs/`, `README.md` and `context/`: 0 broken links.
 - `./gradlew check` was not run because the change is documentation-only and touches no Java source.
-- A human has not yet verified this summary.
+- The owner marked this summary human verified on 24 September 2026.
