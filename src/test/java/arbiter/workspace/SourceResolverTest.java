@@ -561,48 +561,6 @@ class SourceResolverTest {
     }
 
     @Test
-    void resolve_caseDiffersFromTheFileOnDisk_exceptionThrown() throws IOException {
-        // On a case-insensitive filesystem the wrong case still finds the file, which would let a
-        // stored path work on one computer and fail on another. The recorded case is checked back.
-        byte[] bytes = "text".getBytes(StandardCharsets.UTF_8);
-        write("media/corpus/review.txt", bytes);
-        assumeTrue(Files.exists(paths.root().resolve("media/corpus/REVIEW.txt")),
-                "case-sensitive filesystem");
-
-        SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolve("media/corpus/REVIEW.txt", SourceResolver.hash(bytes)));
-
-        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
-        assertTrue(failure.getMessage().contains("letter case"), failure.getMessage());
-    }
-
-    @Test
-    void resolve_caseDiffersFromTheFileOnDisk_foundNameReported() throws IOException {
-        byte[] bytes = "text".getBytes(StandardCharsets.UTF_8);
-        write("media/corpus/review.txt", bytes);
-        assumeTrue(Files.exists(paths.root().resolve("media/CORPUS/review.txt")),
-                "case-sensitive filesystem");
-
-        SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolve("media/CORPUS/review.txt", SourceResolver.hash(bytes)));
-
-        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
-        // The message reports the found path with stored-path separators, so it reads the same here
-        // as on Windows.
-        assertTrue(failure.getMessage().contains("corpus/review.txt"), failure.getMessage());
-    }
-
-    @Test
-    void resolve_exactCaseDifferentDirectory_resolved() throws IOException {
-        // A different directory is a different path, not a case mismatch, so it is judged on its own.
-        byte[] bytes = "text".getBytes(StandardCharsets.UTF_8);
-        write("media/corpus/review.txt", bytes);
-
-        assertEquals("text",
-                resolver.resolve("media/corpus/review.txt", SourceResolver.hash(bytes)).text());
-    }
-
-    @Test
     void hash_knownInputs_expectedDigestReturned() {
         assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 SourceResolver.hash(new byte[0]));
