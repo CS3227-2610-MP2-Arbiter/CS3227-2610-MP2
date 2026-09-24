@@ -1,6 +1,6 @@
 # User flow and issue backlog
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -29,4 +29,4 @@ Status: Awaiting human verification.
 - The Gradle checks from the `review` skill (`./gradlew check shadowJar`) were not run because this change is documentation-only.
 - Unverified: the claim that all 45 issues exist under the GitHub **v1.0.0** milestone, and the hardcoded milestone link `.../milestone/7` in `docs/index.md`, since GitHub was not reachable from this environment.
 - GitHub Pages rendering was not previewed locally.
-- A human has not yet verified this summary.
+- The owner marked this summary human verified on 24 September 2026.

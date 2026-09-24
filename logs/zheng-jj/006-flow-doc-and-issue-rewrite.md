@@ -1,6 +1,6 @@
 ﻿# Rewrite the flow document and issues as context
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -38,4 +38,4 @@ Status: Awaiting human verification.
 - Cross-document anchor check: 0 broken links across `docs/`, `README.md`, `AGENTS.md` and `context/`, including the new glossary page.
 - After the review fixes: every reference-style issue link still resolves with no undefined or unused definitions, and no stale `B*`-style code remains in the current documentation.
 - `./gradlew check` was not run because the change is documentation-only and touches no Java source.
-- A human has not yet verified this summary.
+- The owner marked this summary human verified on 24 September 2026.

@@ -1,6 +1,6 @@
 # Restore lost flow-level rules
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -29,4 +29,4 @@ Status: Awaiting human verification.
 - All `rule N` references across `docs/` and `context/` were listed and checked against the restored numbering.
 - `./gradlew check shadowJar` was not run: documentation-only change with no application code.
 - Unverified: whether any rule wording was changed in meaning by the earlier damaged edit, beyond the three restored rules. The restoration was taken from history, so this is believed to be exact.
-- A human has not yet verified this summary.
+- The owner marked this summary human verified on 24 September 2026.
