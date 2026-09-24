@@ -1,6 +1,6 @@
 # Resolve text sources and detect source changes
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -27,7 +27,7 @@ Status: Awaiting human verification.
 - `SourceResolverSnapshotTest` passes: a failed resolve leaves `arbiter.json` byte-identical and the stored path and hash unchanged, and restoring the original bytes resolves again with no store change.
 - Two Checkstyle failures in the new tests were fixed before the final run: a wrapped lambda argument had to start on the previous line.
 - The submit gate (#17) and export gate (#37) are not covered here; they own those checks and #14/#17/#37 must call this boundary.
-- A human has not yet verified this summary.
+- The owner marked this summary human verified on 24 September 2026.
 
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#17]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/17
