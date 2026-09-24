@@ -44,7 +44,6 @@ class SourceResolverTest {
 
         assertEquals("The review was positive.", source.text());
         assertEquals(TEXT_PATH, source.storedPath());
-        assertEquals(paths.root().resolve(TEXT_PATH).toRealPath(), source.file());
         assertEquals(SourceResolver.hash(bytes), source.contentHash());
         assertEquals(bytes.length, source.size());
         assertNotNull(source.modifiedAt());
@@ -200,13 +199,16 @@ class SourceResolverTest {
     }
 
     @Test
-    void resolve_hashRecordedWithDifferentCase_resolved() throws IOException {
+    void resolve_hashRecordedWithDifferentCase_exceptionThrown() throws IOException {
+        // Registration stores one exact hash, as RepositorySession compares it, so a hash that
+        // differs only in case is not the recorded one.
         byte[] bytes = "text".getBytes(StandardCharsets.UTF_8);
         write(TEXT_PATH, bytes);
 
-        ResolvedSource source = resolver.resolve(TEXT_PATH, SourceResolver.hash(bytes).toUpperCase());
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve(TEXT_PATH, SourceResolver.hash(bytes).toUpperCase()));
 
-        assertEquals("text", source.text());
+        assertEquals(SourceFailure.HASH_MISMATCH, failure.reason());
     }
 
     @Test
@@ -300,6 +302,85 @@ class SourceResolverTest {
         SourceException failure = assertThrows(SourceException.class, () -> resolver.resolve(TEXT_PATH, "hash"));
 
         assertEquals(SourceFailure.UNREADABLE, failure.reason());
+    }
+
+    @Test
+    void resolve_fileAtSizeLimit_textReturned() throws IOException {
+        byte[] bytes = new byte[(int) SourceResolver.MAX_TEXT_BYTES];
+        java.util.Arrays.fill(bytes, (byte) 'a');
+        write(TEXT_PATH, bytes);
+
+        ResolvedSource source = resolver.resolve(TEXT_PATH, SourceResolver.hash(bytes));
+
+        assertEquals(bytes.length, source.text().length());
+        assertEquals(bytes.length, source.size());
+    }
+
+    @Test
+    void resolve_fileOneByteOverSizeLimit_exceptionThrown() throws IOException {
+        byte[] bytes = new byte[(int) SourceResolver.MAX_TEXT_BYTES + 1];
+        java.util.Arrays.fill(bytes, (byte) 'a');
+        write(TEXT_PATH, bytes);
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve(TEXT_PATH, SourceResolver.hash(bytes)));
+
+        assertEquals(SourceFailure.TOO_LARGE, failure.reason());
+        assertTrue(failure.getMessage().contains(TEXT_PATH), failure.getMessage());
+    }
+
+    @Test
+    void resolve_byteOrderMark_textReturnedWithoutIt() throws IOException {
+        // A UTF-8 file may open with a byte-order mark. It is hashed as written but not shown.
+        byte[] bytes = "\uFEFFThe review was positive.".getBytes(StandardCharsets.UTF_8);
+        write(TEXT_PATH, bytes);
+
+        ResolvedSource source = resolver.resolve(TEXT_PATH, SourceResolver.hash(bytes));
+
+        assertEquals("The review was positive.", source.text());
+        assertEquals(bytes.length, source.size());
+        assertEquals(SourceResolver.hash(bytes), source.contentHash());
+    }
+
+    @Test
+    void resolve_byteOrderMarkInsideText_textReturnedUnchanged() throws IOException {
+        byte[] bytes = "a\uFEFFb".getBytes(StandardCharsets.UTF_8);
+        write(TEXT_PATH, bytes);
+
+        assertEquals("a\uFEFFb", resolver.resolve(TEXT_PATH, SourceResolver.hash(bytes)).text());
+    }
+
+    @Test
+    void resolve_backslashTraversalOnWindows_exceptionThrown() throws IOException {
+        assumeTrue(java.io.File.separatorChar == '\\', "Windows-only path shape");
+        byte[] bytes = "secret".getBytes(StandardCharsets.UTF_8);
+        write("outside.txt", bytes);
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media\\..\\outside.txt", SourceResolver.hash(bytes)));
+
+        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+    }
+
+    @Test
+    void resolve_uncPathOnWindows_exceptionThrown() {
+        assumeTrue(java.io.File.separatorChar == '\\', "Windows-only path shape");
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("\\\\server\\share\\review.txt", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolve_absoluteWindowsPath_exceptionThrown() throws IOException {
+        assumeTrue(java.io.File.separatorChar == '\\', "Windows-only path shape");
+        write(TEXT_PATH, "text".getBytes(StandardCharsets.UTF_8));
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("C:\\outside\\review.txt", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
     }
 
     @Test

@@ -10,6 +10,8 @@ public enum SourceFailure {
     NOT_A_FILE,
     /** The recorded location is not a plain-text file. */
     NOT_TEXT,
+    /** The file is larger than the size this version reads. */
+    TOO_LARGE,
     /** The location resolves outside the workspace's media folder. */
     OUTSIDE_MEDIA,
     /** The file exists but cannot be read. */

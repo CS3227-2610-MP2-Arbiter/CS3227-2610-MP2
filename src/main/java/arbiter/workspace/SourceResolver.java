@@ -1,6 +1,7 @@
 package arbiter.workspace;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
@@ -23,10 +24,11 @@ import java.util.Objects;
 /**
  * Reads one registered source file and proves it is still the file that was registered.
  *
- * <p>This is the only place a stored item path becomes content (rule 21). It checks, in order, that
- * the stored path is a usable workspace-relative path, that a file exists there, that the resolved
- * location stays beneath the resolved {@code media} folder, that the file is a plain-text file, that
- * its bytes still match the hash recorded at registration and that those bytes are valid UTF-8.
+ * <p>This is the only place a stored item path becomes content (rule 21). It refuses, before it
+ * touches the disk, a stored path that would leave the workspace's {@code media} folder; then it
+ * requires a file to exist there, checks again on the resolved location so a link cannot escape,
+ * requires a regular plain-text file no larger than {@link #MAX_TEXT_BYTES}, checks that the bytes
+ * still match the hash recorded at registration and decodes them as UTF-8.
  *
  * <p>It only reads. It never writes, copies, moves, relinks or stores anything, and it never changes
  * the recorded path or hash, so a failure leaves every project record as it was and restoring the
@@ -35,11 +37,20 @@ import java.util.Objects;
  * <p>Nothing is cached, so each call sees the file as it is now.
  */
 public final class SourceResolver {
-    /** File extension, without the dot, of the plain-text sources this version accepts. */
+    /** File extension of the plain-text sources this version accepts, including the leading dot. */
     public static final String TEXT_EXTENSION = ".txt";
+
+    /**
+     * Largest source this version reads. The whole file is read, hashed and decoded in memory, so a
+     * much larger one would be refused rather than exhaust the heap.
+     */
+    public static final long MAX_TEXT_BYTES = 10L * 1024L * 1024L;
 
     /** Name of the hash algorithm recorded for each item at registration. */
     public static final String HASH_ALGORITHM = "SHA-256";
+
+    /** Byte-order mark a UTF-8 file may start with, which is not part of the text. */
+    private static final char BYTE_ORDER_MARK = '\uFEFF';
 
     private final WorkspacePaths paths;
 
@@ -68,10 +79,11 @@ public final class SourceResolver {
      *
      * @param storedPath the item's stored workspace-relative path, such as {@code media/corpus/review.txt}
      * @param contentHash the hash recorded for this item at registration
-     * @return the text and details of the file that was read
-     * @throws SourceException if the path is unusable, the file is missing or unreadable, it resolves
-     *     outside the workspace's {@code media} folder, it is not a plain-text file, its bytes no
-     *     longer match the recorded hash, or its bytes are not valid UTF-8
+     * @return the text that was read and the details of the file it came from
+     * @throws SourceException if the path is unusable, it leaves the workspace's {@code media} folder,
+     *     the file is missing or unreadable, it is not a plain-text file, it is larger than
+     *     {@link #MAX_TEXT_BYTES}, its bytes no longer match the recorded hash, or its bytes are not
+     *     valid UTF-8
      */
     public ResolvedSource resolve(String storedPath, String contentHash) {
         Path candidate = locate(storedPath);
@@ -91,13 +103,14 @@ public final class SourceResolver {
         }
         byte[] bytes = readAll(storedPath, file);
         String actualHash = hash(bytes);
-        if (!actualHash.equalsIgnoreCase(contentHash.trim())) {
+        if (!actualHash.equals(contentHash)) {
             throw new SourceException(storedPath, SourceFailure.HASH_MISMATCH,
                     "The source file has changed since it was registered: " + storedPath
                             + ". Restore the original file to use this item.");
         }
         String text = decode(storedPath, bytes);
-        return new ResolvedSource(storedPath, file, actualHash, text, bytes.length, lastModified(storedPath, file));
+        return new ResolvedSource(storedPath, actualHash, text, bytes.length,
+                lastModified(storedPath, file));
     }
 
     private Path locate(String storedPath) {
@@ -118,7 +131,12 @@ public final class SourceResolver {
                             + WorkspacePaths.MEDIA_DIRECTORY + "/, but this item records an absolute path: "
                             + storedPath);
         }
-        return paths.root().resolve(recorded).normalize();
+        Path candidate = paths.root().resolve(recorded).normalize();
+        // Containment is decided before the disk is touched, so a path that leaves media/ is reported
+        // as outside it whether or not anything exists at the far end. Links are checked again below,
+        // because only the real path can show where they point.
+        requireInsideMedia(storedPath, candidate, paths.mediaDirectory());
+        return candidate;
     }
 
     private Path resolvedInsideMedia(String storedPath, Path candidate) {
@@ -127,12 +145,16 @@ public final class SourceResolver {
                         + storedPath + " cannot be read.");
         Path file = resolveReal(storedPath, candidate, SourceFailure.MISSING,
                 "The recorded source file is missing: " + storedPath);
-        if (!file.startsWith(mediaRoot)) {
+        requireInsideMedia(storedPath, file, mediaRoot);
+        return file;
+    }
+
+    private static void requireInsideMedia(String storedPath, Path path, Path mediaRoot) {
+        if (!path.startsWith(mediaRoot)) {
             throw new SourceException(storedPath, SourceFailure.OUTSIDE_MEDIA,
                     "The recorded source points outside the workspace's " + WorkspacePaths.MEDIA_DIRECTORY
                             + "/ folder: " + storedPath);
         }
-        return file;
     }
 
     private static Path resolveReal(String storedPath, Path path, SourceFailure missingReason,
@@ -157,8 +179,15 @@ public final class SourceResolver {
     }
 
     private static byte[] readAll(String storedPath, Path file) {
-        try {
-            return Files.readAllBytes(file);
+        try (InputStream input = Files.newInputStream(file)) {
+            // Reading one byte past the limit keeps a file that grew since the size check bounded.
+            byte[] bytes = input.readNBytes(Math.toIntExact(MAX_TEXT_BYTES + 1));
+            if (bytes.length > MAX_TEXT_BYTES) {
+                throw new SourceException(storedPath, SourceFailure.TOO_LARGE,
+                        "The recorded source is larger than the " + MAX_TEXT_BYTES + "-byte limit: "
+                                + storedPath);
+            }
+            return bytes;
         } catch (IOException | SecurityException e) {
             throw new SourceException(storedPath, SourceFailure.UNREADABLE,
                     "The recorded source cannot be read: " + storedPath, e);
@@ -170,7 +199,10 @@ public final class SourceResolver {
                 .onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT);
         try {
-            return decoder.decode(ByteBuffer.wrap(bytes)).toString();
+            String text = decoder.decode(ByteBuffer.wrap(bytes)).toString();
+            // A byte-order mark is invisible, so showing it would put an unexplained character in
+            // front of the item. The hash is taken over the bytes, so the file must keep it.
+            return text.startsWith(String.valueOf(BYTE_ORDER_MARK)) ? text.substring(1) : text;
         } catch (CharacterCodingException e) {
             throw new SourceException(storedPath, SourceFailure.INVALID_TEXT,
                     "The recorded source is not valid UTF-8 text: " + storedPath, e);
