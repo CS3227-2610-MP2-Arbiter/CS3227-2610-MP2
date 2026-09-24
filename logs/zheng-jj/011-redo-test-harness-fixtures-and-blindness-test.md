@@ -11,11 +11,13 @@ Status: Awaiting human verification.
 - PR #69 had no review comments, so the agent had to decide what "poorly done" meant by reading it. It found four problems. It hashed source files itself instead of using [#10]'s resolver, which has since merged. Its blindness rule worked on whole classes, which breaks once a shared service holds both a scoped read and a read of every answer. Its plan described APIs it never built. Its log said "Human verified" although the owner had not verified it.
 - The main design lesson: blindness is about what flows back to the annotator, not about what service code touches internally. Submitting the *k*th answer must read every answer to resolve the item ([#27]). So a rule that forbids anything reachable from annotator code needs a named trust boundary. It walks method by method and stops at listed scoped entry points, and those entry points' signatures are still checked.
 - A rule that passes on a code base with no annotator screens proves nothing, so it was run against fixtures that each leak one way, and against a temporary shipped class that had to fail.
+- After asking what a resolution is for (v1 is text classification only), the owner approved the plan on 24 September 2026. They delegated the open question on shared UI, and the agent kept the strict rule: shared components never handle a `Resolution`. That is now stated in `context/architecture.md` rather than added to the later issues.
 - The fixture tests found a real defect in the first draft (see Verification). Writing the partition list before the tests also exposed two failures that would have left the workspace half-written.
 
 ## Agent responses and outcomes
 
-- Used `write-plan`, `implement-feature`, `write-test`, `review` and `log`; `clarify-requirements` was skipped because [#11]'s scope and criteria were already agreed. The plan is `plans/test-harness.md`, and neither the plan nor the acceptance has been approved yet.
+- Used `write-plan`, `implement-feature`, `write-test`, `review`, `log` and `create-pull-request`; `clarify-requirements` was skipped because [#11]'s scope and criteria were already agreed. The plan, `plans/test-harness.md`, was implemented before the owner approved it, because the owner had asked for the whole redo; approval followed.
+- Force-pushed the redone branch to PR #69, rewrote its description and kept Whimsyturtle as the requested reviewer.
 - Reset local `feat/test-harness` to `origin/main` (13b6c35). The two old commits stay reachable in PR #69's history.
 - Added under `src/test/java`:
   - `arbiter.testing.TestWorkspace`: one fresh workspace per test folder. `writeSource` registers files through `SourceResolver.resolveForImport`, and `signIn` returns a signed-in `AuthService`.
@@ -31,7 +33,8 @@ Status: Awaiting human verification.
 - A temporary `arbiter.ui.annotator.TempLeakScreen`, reading a resolution through a temporary `arbiter.service.TempResults`, made `annotatorBlindness_shippedCode_noViolations` fail with the full call path. Both classes were then deleted.
 - The first fixture run had 8 failures. They came from a fixture defect, not a test defect: `Integer k = ... ? annotationsPerItem : assignees.size()` unboxed a null. It was fixed by an explicit branch, and the tests were left unchanged.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 178 JUnit tests, 44 of them new (11 blindness, 5 workspace, 28 workflow), none skipped, both Checkstyle tasks, and the release jar.
-- Pending: human approval of the plan, especially the open decision on shared components and resolutions; human acceptance of the fixture API; teammate review; CI on the pushed revision.
+- CI on e891c02 passed on Linux, macOS, Windows and the Apple Silicon release-jar check.
+- Pending: human acceptance of the fixture API, and teammate review.
 
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11

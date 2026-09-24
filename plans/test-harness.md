@@ -2,7 +2,7 @@
 
 **Issue:** [#11] - Test harness, classification fixtures and blindness test
 **Branch:** `feat/test-harness`, restarted from `main` after [#10] merged; the first attempt (PR #69) was discarded.
-**Status:** Implemented and locally verified at the owner's request to redo [#11]. Plan approval and human acceptance are pending.
+**Status:** Plan approved by the owner on 24 September 2026. Implemented and verified locally and in CI; human acceptance of the fixtures and teammate review are pending.
 
 What the feature does is in [#11], and what each class means is in its Javadoc. This plan records what was decided and what is still open.
 
@@ -57,7 +57,7 @@ Non-goals, from [#11]: feature behaviour owned by later issues, and fixtures for
 
 ## Risks and open decisions
 
-- **All of `arbiter.ui` except the adjudicator package counts as annotator-facing, including shared components.** So a shared component may not load or accept a resolution even in adjudicator mode; the adjudicator's screen passes it plain values such as a `Label`. This matches the architecture rule that `AnnotationEditor` holds only the annotator's unsubmitted choice, but the adjudicator track ([#34]) should confirm it.
+- **Decided: shared UI never handles a resolution.** All of `arbiter.ui` except the adjudicator package counts as annotator-facing, so a shared component may not load or accept a `Resolution`, even in adjudicator mode. The adjudicator's screen ([#34]) unpacks it and passes plain values such as a `Label`. This matches the architecture rule that `AnnotationEditor` holds only the annotator's unsubmitted choice, and the owner delegated the decision on approving this plan.
 - **Per-annotator assignment reads (`findById`, `listByAnnotator`) are allowed**, because the annotator's home and queue ([#12], [#13]) need their own assignments. The static rule cannot see whose identifier is passed, so scoping those reads to the session user is tested behaviourally in those issues.
 - **Implementations inside `arbiter.ui.adjudicator` are not followed** when shared code calls an interface: they run only after routing to the adjudicator. A value built in `arbiter.Arbiter` wiring and handed to an annotator screen is also outside the walk. Both are limits of a static check; routing is covered by [#5].
 - **Reflection and reading `arbiter.json` directly** are not modelled. The architecture already keeps storage behind `arbiter.data.json`.
@@ -82,7 +82,6 @@ Non-goals, from [#11]: feature behaviour owned by later issues, and fixtures for
 
 ## Open questions
 
-- Should shared UI components be allowed to accept a resolution in adjudicator mode? (See risks; the answer would change the annotator-facing definition, not the walk.)
 - When [#31] lands, `TestAccounts` should give way to the service's annotator creation.
 
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
