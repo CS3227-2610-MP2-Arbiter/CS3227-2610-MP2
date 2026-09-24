@@ -195,32 +195,35 @@ public final class SourceResolver {
     /**
      * Refuses a path whose letter case does not match the file that was found.
      *
-     * <p>Only the case is compared, and only when the two paths are otherwise the same, so a link
+     * <p>Only the case is compared, and only when the two paths hold the same segments, so a link
      * recorded inside {@code media/} is left alone: its target has a different path, and the
      * containment check above already decided whether following it is allowed.
+     *
+     * <p>The segments are compared as strings, not as {@code Path}s: on Windows {@code Path.equals}
+     * ignores case, so it would call a case-only difference a match.
      */
     private static void requireRecordedCase(String storedPath, Path file, Path mediaRoot) {
-        int mediaSegments = Path.of(WorkspacePaths.MEDIA_DIRECTORY).getNameCount();
-        Path recorded = Path.of(storedPath).subpath(mediaSegments, Path.of(storedPath).getNameCount());
+        Path recordedPath = Path.of(storedPath);
+        Path recorded = recordedPath.subpath(Path.of(WorkspacePaths.MEDIA_DIRECTORY).getNameCount(),
+                recordedPath.getNameCount());
         Path found = mediaRoot.relativize(file);
-        if (recorded.equals(found) || !sameSegmentsIgnoringCase(recorded, found)) {
+        if (recorded.getNameCount() != found.getNameCount()) {
+            return;
+        }
+        boolean sameLetters = true;
+        boolean sameCase = true;
+        for (int index = 0; index < recorded.getNameCount(); index++) {
+            String recordedSegment = recorded.getName(index).toString();
+            String foundSegment = found.getName(index).toString();
+            sameLetters &= recordedSegment.equalsIgnoreCase(foundSegment);
+            sameCase &= recordedSegment.equals(foundSegment);
+        }
+        if (!sameLetters || sameCase) {
             return;
         }
         throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
                 "The recorded source path differs in letter case from the file on disk: " + storedPath
-                        + " is stored but " + found + " was found. Register the name as the file spells it.");
-    }
-
-    private static boolean sameSegmentsIgnoringCase(Path first, Path second) {
-        if (first.getNameCount() != second.getNameCount()) {
-            return false;
-        }
-        for (int index = 0; index < first.getNameCount(); index++) {
-            if (!first.getName(index).toString().equalsIgnoreCase(second.getName(index).toString())) {
-                return false;
-            }
-        }
-        return true;
+                        + " is recorded but " + found + " was found. Register the name as the file spells it.");
     }
 
     private static void requireInsideMedia(String storedPath, Path path, Path mediaRoot) {
