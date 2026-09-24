@@ -1,15 +1,15 @@
 package arbiter.data.json;
 
-import static arbiter.data.json.JsonStoreFixtures.answer;
-import static arbiter.data.json.JsonStoreFixtures.assignment;
-import static arbiter.data.json.JsonStoreFixtures.item;
-import static arbiter.data.json.JsonStoreFixtures.label;
-import static arbiter.data.json.JsonStoreFixtures.membership;
-import static arbiter.data.json.JsonStoreFixtures.project;
-import static arbiter.data.json.JsonStoreFixtures.resolution;
-import static arbiter.data.json.JsonStoreFixtures.settings;
-import static arbiter.data.json.JsonStoreFixtures.split;
-import static arbiter.data.json.JsonStoreFixtures.user;
+import static arbiter.testing.Records.answer;
+import static arbiter.testing.Records.assignment;
+import static arbiter.testing.Records.item;
+import static arbiter.testing.Records.label;
+import static arbiter.testing.Records.membership;
+import static arbiter.testing.Records.project;
+import static arbiter.testing.Records.resolution;
+import static arbiter.testing.Records.settings;
+import static arbiter.testing.Records.split;
+import static arbiter.testing.Records.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
