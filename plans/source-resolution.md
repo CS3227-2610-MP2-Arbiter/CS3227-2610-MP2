@@ -2,7 +2,7 @@
 
 **Issue:** [#10] - Resolve text sources and detect source changes
 **Branch:** `feat/source-resolution`
-**Status:** Implemented and locally verified; awaiting human review and acceptance.
+**Status:** Implemented, locally verified and accepted by the owner on 24 September 2026; teammate review pending.
 
 What the feature does is in [#10], and what each class means is in its Javadoc. This plan records what was decided along the way and what is still open.
 
