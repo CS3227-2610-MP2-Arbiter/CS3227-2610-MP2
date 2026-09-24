@@ -587,6 +587,8 @@ class SourceResolverTest {
                 resolver.resolve("media/CORPUS/review.txt", SourceResolver.hash(bytes)));
 
         assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+        // The message reports the found path with stored-path separators, so it reads the same here
+        // as on Windows.
         assertTrue(failure.getMessage().contains("corpus/review.txt"), failure.getMessage());
     }
 

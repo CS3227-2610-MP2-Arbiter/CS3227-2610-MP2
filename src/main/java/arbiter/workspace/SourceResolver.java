@@ -1,5 +1,6 @@
 package arbiter.workspace;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -221,9 +222,12 @@ public final class SourceResolver {
         if (!sameLetters || sameCase) {
             return;
         }
+        // Reported with the separators a stored path uses, so the message reads the same on any system.
+        String foundText = found.toString().replace(File.separatorChar, '/');
         throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
                 "The recorded source path differs in letter case from the file on disk: " + storedPath
-                        + " is recorded but " + found + " was found. Register the name as the file spells it.");
+                        + " is recorded but " + foundText + " was found. Register the name as the file "
+                        + "spells it.");
     }
 
     private static void requireInsideMedia(String storedPath, Path path, Path mediaRoot) {
