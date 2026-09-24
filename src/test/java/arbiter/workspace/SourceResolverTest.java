@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Instant;
@@ -84,8 +85,17 @@ class SourceResolverTest {
         SourceException failure = assertThrows(SourceException.class, () ->
                 resolver.resolve("media/../outside.txt", SourceResolver.hash(bytes)));
 
-        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
         assertTrue(failure.getMessage().contains("media/../outside.txt"), failure.getMessage());
+    }
+
+    @Test
+    void resolve_missingTargetTraversal_exceptionThrown() {
+        // The shape check runs before the disk, so this is refused even with nothing on disk.
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media/../missing.txt", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
     }
 
     @Test
@@ -96,7 +106,7 @@ class SourceResolverTest {
         SourceException failure = assertThrows(SourceException.class, () ->
                 resolver.resolve("media-lookalike/other.txt", SourceResolver.hash(bytes)));
 
-        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
         assertTrue(failure.getMessage().contains("media-lookalike/other.txt"), failure.getMessage());
     }
 
@@ -108,7 +118,55 @@ class SourceResolverTest {
         SourceException failure = assertThrows(SourceException.class, () ->
                 resolver.resolve("outside.txt", SourceResolver.hash(bytes)));
 
-        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolve_dotSegmentInPath_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media/./review.txt", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolve_doubleSlashInPath_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media//review.txt", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolve_trailingSlashInPath_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media/review.txt/", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolve_mediaSegmentOnly_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolve("media/", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolve_windowsSeparatorInPath_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media\\review.txt", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+        assertTrue(failure.getMessage().contains("Windows"), failure.getMessage());
+    }
+
+    @Test
+    void resolve_driveColonInPath_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media/C:review.txt", "hash"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
     }
 
     @Test
@@ -283,6 +341,32 @@ class SourceResolverTest {
     }
 
     @Test
+    void resolve_junctionLeavingMedia_exceptionThrown() throws IOException {
+        // A junction is a directory link. It is created and removed with the same commands a
+        // symbolic link uses on Windows, so the same escape is refused there as on POSIX.
+        byte[] bytes = "secret".getBytes(StandardCharsets.UTF_8);
+        write("outside/linked.txt", bytes);
+        Path link = paths.mediaDirectory().resolve("joined");
+        assumeTrue(createDirectoryLink(link, paths.root().resolve("outside")), "links unavailable");
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolve("media/joined/linked.txt", SourceResolver.hash(bytes)));
+
+        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+    }
+
+    @Test
+    void resolve_junctionInsideMedia_textReturned() throws IOException {
+        byte[] bytes = "linked".getBytes(StandardCharsets.UTF_8);
+        write("media/corpus/linked.txt", bytes);
+        Path link = paths.mediaDirectory().resolve("joined");
+        assumeTrue(createDirectoryLink(link, paths.mediaDirectory().resolve("corpus")), "links unavailable");
+
+        assertEquals("linked",
+                resolver.resolve("media/joined/linked.txt", SourceResolver.hash(bytes)).text());
+    }
+
+    @Test
     void resolve_symlinkInsideMedia_textReturned() throws IOException {
         byte[] bytes = "linked".getBytes(StandardCharsets.UTF_8);
         write(TEXT_PATH, bytes);
@@ -351,21 +435,20 @@ class SourceResolverTest {
     }
 
     @Test
-    void resolve_backslashTraversalOnWindows_exceptionThrown() throws IOException {
-        assumeTrue(java.io.File.separatorChar == '\\', "Windows-only path shape");
+    void resolve_backslashTraversal_exceptionThrown() throws IOException {
+        // The shape check rejects the backslash on every platform, so a path written for Windows
+        // cannot be stored and then resolve differently there.
         byte[] bytes = "secret".getBytes(StandardCharsets.UTF_8);
         write("outside.txt", bytes);
 
         SourceException failure = assertThrows(SourceException.class, () ->
                 resolver.resolve("media\\..\\outside.txt", SourceResolver.hash(bytes)));
 
-        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
     }
 
     @Test
-    void resolve_uncPathOnWindows_exceptionThrown() {
-        assumeTrue(java.io.File.separatorChar == '\\', "Windows-only path shape");
-
+    void resolve_uncPath_exceptionThrown() {
         SourceException failure = assertThrows(SourceException.class, () ->
                 resolver.resolve("\\\\server\\share\\review.txt", "hash"));
 
@@ -374,13 +457,107 @@ class SourceResolverTest {
 
     @Test
     void resolve_absoluteWindowsPath_exceptionThrown() throws IOException {
-        assumeTrue(java.io.File.separatorChar == '\\', "Windows-only path shape");
         write(TEXT_PATH, "text".getBytes(StandardCharsets.UTF_8));
 
         SourceException failure = assertThrows(SourceException.class, () ->
                 resolver.resolve("C:\\outside\\review.txt", "hash"));
 
         assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_validTextFile_hashToRecordReturned() throws IOException {
+        byte[] bytes = "Registered later".getBytes(StandardCharsets.UTF_8);
+        write(TEXT_PATH, bytes);
+
+        ResolvedSource source = resolver.resolveForImport(TEXT_PATH);
+
+        assertEquals("Registered later", source.text());
+        assertEquals(SourceResolver.hash(bytes), source.contentHash());
+        assertEquals(bytes.length, source.size());
+        assertEquals(TEXT_PATH, source.storedPath());
+    }
+
+    @Test
+    void resolveForImport_emptyFile_emptyHashToRecordReturned() {
+        writeQuietly(TEXT_PATH, new byte[0]);
+
+        ResolvedSource source = resolver.resolveForImport(TEXT_PATH);
+
+        assertEquals("", source.text());
+        assertEquals(SourceResolver.hash(new byte[0]), source.contentHash());
+    }
+
+    @Test
+    void resolveForImport_fileMissing_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolveForImport(TEXT_PATH));
+
+        assertEquals(SourceFailure.MISSING, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_pathEscapesMedia_exceptionThrown() {
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolveForImport("media/../outside.txt"));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_nonTextExtension_exceptionThrown() throws IOException {
+        write("media/review.pdf", "not text".getBytes(StandardCharsets.UTF_8));
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolveForImport("media/review.pdf"));
+
+        assertEquals(SourceFailure.NOT_TEXT, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_fileOverSizeLimit_exceptionThrown() throws IOException {
+        byte[] bytes = new byte[(int) SourceResolver.MAX_TEXT_BYTES + 1];
+        java.util.Arrays.fill(bytes, (byte) 'a');
+        write(TEXT_PATH, bytes);
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolveForImport(TEXT_PATH));
+
+        assertEquals(SourceFailure.TOO_LARGE, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_invalidUtf8_exceptionThrown() throws IOException {
+        byte[] bytes = {(byte) 0x80, 'a'};
+        write(TEXT_PATH, bytes);
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolveForImport(TEXT_PATH));
+
+        assertEquals(SourceFailure.INVALID_TEXT, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_directory_exceptionThrown() throws IOException {
+        Files.createDirectories(paths.root().resolve("media/folder.txt"));
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolveForImport("media/folder.txt"));
+
+        assertEquals(SourceFailure.NOT_A_FILE, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_thenResolve_acceptedFileReadsBack() throws IOException {
+        // What import accepts must be what a later read accepts: same file, same checks.
+        byte[] bytes = "Round trip".getBytes(StandardCharsets.UTF_8);
+        write(TEXT_PATH, bytes);
+        ResolvedSource imported = resolver.resolveForImport(TEXT_PATH);
+
+        ResolvedSource read = resolver.resolve(imported.storedPath(), imported.contentHash());
+
+        assertEquals("Round trip", read.text());
+        assertEquals(imported.contentHash(), read.contentHash());
     }
 
     @Test
@@ -424,6 +601,14 @@ class SourceResolverTest {
         assertEquals("text", Files.readString(filesInsideMedia.getFirst()));
     }
 
+    private void writeQuietly(String relativePath, byte[] bytes) {
+        try {
+            write(relativePath, bytes);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private Path write(String relativePath, byte[] bytes) throws IOException {
         Path file = paths.root().resolve(relativePath);
         Files.createDirectories(file.getParent());
@@ -438,5 +623,24 @@ class SourceResolverTest {
         } catch (IOException | UnsupportedOperationException e) {
             return false;
         }
+    }
+
+    /**
+     * Links a directory the way the platform does it: a junction on Windows, a directory symbolic
+     * link elsewhere. A junction needs no special privilege, so the Windows job really exercises one.
+     */
+    private static boolean createDirectoryLink(Path link, Path target) {
+        if (java.io.File.separatorChar == '\\') {
+            try {
+                Process process = new ProcessBuilder("cmd", "/c", "mklink", "/J",
+                        link.toString(), target.toString()).redirectErrorStream(true).start();
+                boolean finished = process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+                return finished && process.exitValue() == 0 && Files.exists(link, LinkOption.NOFOLLOW_LINKS);
+            } catch (IOException | InterruptedException | RuntimeException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return createSymlink(link, target);
     }
 }

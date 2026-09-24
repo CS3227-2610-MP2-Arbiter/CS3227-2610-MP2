@@ -26,11 +26,19 @@ Status: Human verified.
 - The seventh point was the Windows gap. Escape protection was only exercised on POSIX, so three Windows-only cases now cover a backslash traversal, a UNC path and a drive-absolute path. They skip on macOS and Linux and run in the Windows CI job.
 - The exact hash comparison is a behaviour change: a stored hash differing only in case is now a `HASH_MISMATCH` rather than accepted. This is what the reviewer asked for and matches how the store compares hashes.
 
+## Second review round
+
+- Whimsyturtle raised three more points, all structural. Stored paths now have one portable shape: relative, `/`-separated, starting with `media/`, with no empty, `.` or `..` segment, and `\` and `:` refused as `INVALID_PATH`. That replaced the platform-specific escape handling, so the Windows-only tests became cross-platform and nothing skips now.
+- `resolveForImport` was added so [#25] applies exactly the read checks at registration and only accepts a file it can read later. Its returned hash is the exact value to store, because registration and later reads compare hashes exactly.
+- Junction coverage was missing. A directory link is now created on every platform, with a real junction on Windows through `mklink /J`, and both the escaping and the staying-inside cases are tested.
+- The junction test initially failed because its target folder did not exist; that was a fixture error, fixed in the test rather than the resolver.
+
 ## Verification
 
 - Before the review follow-up: JDK 25 `./gradlew check shadowJar --no-daemon` passed with 103 JUnit tests, both Checkstyle tasks, and the release jar.
 - After the review follow-up: JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed with 113 JUnit tests, both Checkstyle tasks, and the release jar. Three Windows-only cases skip on macOS and run on Windows CI.
-- `SourceResolverTest` has 30 cases (three Windows-only) covering nested and non-ASCII text, a leading byte-order mark, the size limit and one byte over it, absolute and traversal paths, a `media-lookalike` sibling, symlinks leaving and staying inside `media/`, a dangling symlink, a directory, a non-`.txt` file, a missing media folder, an unreadable file, hash mismatch, restored bytes, lone continuation byte, truncated sequence and UTF-16.
+- After the second review round: JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed with 134 JUnit tests, none skipped, both Checkstyle tasks, and the release jar.
+- `SourceResolverTest` has 51 cases covering nested and non-ASCII text, a leading byte-order mark, the size limit and one byte over it, absolute and traversal paths, a `media-lookalike` sibling, symlinks leaving and staying inside `media/`, a dangling symlink, a directory, a non-`.txt` file, a missing media folder, an unreadable file, hash mismatch, restored bytes, lone continuation byte, truncated sequence and UTF-16.
 - `SourceResolverSnapshotTest` passes: a failed resolve leaves `arbiter.json` byte-identical and the stored path and hash unchanged, and restoring the original bytes resolves again with no store change.
 - Two Checkstyle failures in the new tests were fixed before the final run: a wrapped lambda argument had to start on the previous line.
 - The submit gate (#17) and export gate (#37) are not covered here; they own those checks and #14/#17/#37 must call this boundary.

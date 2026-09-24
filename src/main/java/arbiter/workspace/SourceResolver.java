@@ -22,19 +22,28 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Reads one registered source file and proves it is still the file that was registered.
+ * Reads one source file and proves it is the file that was registered.
  *
  * <p>This is the only place a stored item path becomes content (rule 21). It refuses, before it
- * touches the disk, a stored path that would leave the workspace's {@code media} folder; then it
- * requires a file to exist there, checks again on the resolved location so a link cannot escape,
- * requires a regular plain-text file no larger than {@link #MAX_TEXT_BYTES}, checks that the bytes
- * still match the hash recorded at registration and decodes them as UTF-8.
+ * touches the disk, any stored path outside the portable shape it accepts; then it requires a file
+ * to exist there, checks the resolved location so a link or junction cannot escape, requires a
+ * regular plain-text file no larger than {@link #MAX_TEXT_BYTES}, checks the bytes against the hash
+ * recorded at registration and decodes them as UTF-8.
  *
- * <p>It only reads. It never writes, copies, moves, relinks or stores anything, and it never changes
- * the recorded path or hash, so a failure leaves every project record as it was and restoring the
- * original bytes restores access.
+ * <p>A stored path is relative, uses {@code /} between segments, keeps the case it was registered
+ * with, and starts with {@code media/}. Rejecting {@code \} and {@code :} keeps the form portable:
+ * both are separators or drive syntax on Windows, and a path that resolved only on a
+ * case-insensitive filesystem would fail on another. A malformed path is {@code INVALID_PATH}; a
+ * well-formed path whose target has been replaced by a link is {@code OUTSIDE_MEDIA}.
+ *
+ * <p>{@link #resolve} reads a registered source, and {@link #resolveForImport} applies exactly the
+ * same checks to a file about to be registered, so [#25] cannot accept a file that could not be read
+ * afterwards. It only reads: nothing is written, copied, moved, relinked or stored, so a failure
+ * leaves every project record as it was and restoring the original bytes restores access.
  *
  * <p>Nothing is cached, so each call sees the file as it is now.
+ *
+ * [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
  */
 public final class SourceResolver {
     /** File extension of the plain-text sources this version accepts, including the leading dot. */
@@ -86,11 +95,34 @@ public final class SourceResolver {
      *     valid UTF-8
      */
     public ResolvedSource resolve(String storedPath, String contentHash) {
-        Path candidate = locate(storedPath);
         if (contentHash == null || contentHash.isBlank()) {
+            locate(storedPath);
             throw new SourceException(storedPath, SourceFailure.HASH_MISMATCH,
                     "No hash was recorded for " + storedPath + ", so its content cannot be trusted.");
         }
+        return read(storedPath, contentHash);
+    }
+
+    /**
+     * Checks a source file that is about to be registered, and returns what to record for it.
+     *
+     * <p>Registration ([#25]) calls this instead of reading the file itself, so a file it accepts is
+     * one this resolver can read later: the same path, existence, containment, plain-text, size and
+     * UTF-8 checks run here, and the checks that compare against a recorded hash are skipped because
+     * nothing has been recorded yet. The returned hash is the one to store, exactly as it is
+     * returned, because registration and later reads compare hashes exactly.
+     *
+     * @param storedPath the workspace-relative path to register, such as {@code media/corpus/review.txt}
+     * @return the file's text and the hash to record for it
+     * @throws SourceException for the same reasons as {@link #resolve}, except that no recorded hash
+     *     is needed
+     */
+    public ResolvedSource resolveForImport(String storedPath) {
+        return read(storedPath, null);
+    }
+
+    private ResolvedSource read(String storedPath, String expectedHash) {
+        Path candidate = locate(storedPath);
         Path file = resolvedInsideMedia(storedPath, candidate);
         if (!Files.isRegularFile(file)) {
             throw new SourceException(storedPath, SourceFailure.NOT_A_FILE,
@@ -103,7 +135,7 @@ public final class SourceResolver {
         }
         byte[] bytes = readAll(storedPath, file);
         String actualHash = hash(bytes);
-        if (!actualHash.equals(contentHash)) {
+        if (expectedHash != null && !actualHash.equals(expectedHash)) {
             throw new SourceException(storedPath, SourceFailure.HASH_MISMATCH,
                     "The source file has changed since it was registered: " + storedPath
                             + ". Restore the original file to use this item.");
@@ -114,29 +146,38 @@ public final class SourceResolver {
     }
 
     private Path locate(String storedPath) {
+        String shape = "A stored source path is relative, uses / between segments, keeps the case it was "
+                + "registered with, and starts with " + WorkspacePaths.MEDIA_DIRECTORY + "/.";
         if (storedPath == null || storedPath.isBlank()) {
             throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
-                    "This item has no recorded source path.");
+                    "This item has no recorded source path. " + shape);
         }
-        Path recorded;
+        if (storedPath.indexOf('\\') >= 0 || storedPath.indexOf(':') >= 0) {
+            throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
+                    "The recorded source path uses a Windows separator or drive: " + storedPath
+                            + ". " + shape);
+        }
+        String[] segments = storedPath.split("/", -1);
+        boolean startsWithMedia = segments.length > 1
+                && WorkspacePaths.MEDIA_DIRECTORY.equals(segments[0]);
+        for (String segment : segments) {
+            if (segment.isEmpty() || segment.equals(".") || segment.equals("..")) {
+                throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
+                        "The recorded source path has an empty or relative segment: " + storedPath
+                                + ". " + shape);
+            }
+        }
+        if (!startsWithMedia) {
+            throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
+                    "The recorded source path is not inside " + WorkspacePaths.MEDIA_DIRECTORY
+                            + "/: " + storedPath + ". " + shape);
+        }
         try {
-            recorded = Path.of(storedPath);
+            return paths.root().resolve(storedPath);
         } catch (InvalidPathException e) {
             throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
-                    "The recorded source path cannot be used: " + storedPath, e);
+                    "The recorded source path cannot be used: " + storedPath + ". " + shape, e);
         }
-        if (recorded.isAbsolute()) {
-            throw new SourceException(storedPath, SourceFailure.INVALID_PATH,
-                    "Sources are recorded as workspace-relative paths under "
-                            + WorkspacePaths.MEDIA_DIRECTORY + "/, but this item records an absolute path: "
-                            + storedPath);
-        }
-        Path candidate = paths.root().resolve(recorded).normalize();
-        // Containment is decided before the disk is touched, so a path that leaves media/ is reported
-        // as outside it whether or not anything exists at the far end. Links are checked again below,
-        // because only the real path can show where they point.
-        requireInsideMedia(storedPath, candidate, paths.mediaDirectory());
-        return candidate;
     }
 
     private Path resolvedInsideMedia(String storedPath, Path candidate) {
