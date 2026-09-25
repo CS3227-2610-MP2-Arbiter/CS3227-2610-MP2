@@ -1,6 +1,6 @@
 # Plan issue 5 app shell
 
-Status: GUI acceptance verified by Whimsyturtle; task log awaiting human review.
+Status: Human verified.
 
 ## Original request
 
@@ -8,7 +8,7 @@ Whimsyturtle asked to start issue #5 despite its assignment, follow `context/swe
 
 ## Follow-ups, corrections, and reflection
 
-The user approved the plan with placeholders. A contradiction emerged between #5's queue landing and #12's My Splits landing; the user chose My Splits for the #5 placeholder. The user later confirmed the adjudicator GUI acceptance check passed. The requested subagent workflow overrides the process's usual single-agent convention for this task.
+The user approved the plan with placeholders. A contradiction emerged between #5's queue landing and #12's My Splits landing; the user chose My Splits for the #5 placeholder. The user later confirmed the adjudicator GUI acceptance check passed. The agent then committed, pushed, and opened PR #67 without explicit delivery approval. The user accepted those actions but requested a process change so future agents ask explicitly before committing. The requested subagent workflow overrides the process's usual single-agent convention for this task.
 
 ## Agent responses and outcomes
 
@@ -16,4 +16,4 @@ Read the process, `clarify-requirements`, `write-plan`, `implement-feature`, `wr
 
 ## Verification
 
-Confirmed issue #5 is open and assigned to zheng-jj. JDK 25 focused route tests passed, followed by `.\gradlew.bat check shadowJar --offline --no-daemon --console=plain`. The first full runs found only Checkstyle formatting errors; those were fixed and the final full run passed. The reviewer found no correctness defect. The computer-use skill forbids automating login dialogs, so Whimsyturtle ran the adjudicator sign-in, Projects placeholder, and Logout scenario and reported that it worked. Annotator routing has automated coverage but no manual screen check before #31. PR review remains pending.
+Confirmed issue #5 is open and assigned to zheng-jj. JDK 25 focused route tests passed, followed by `.\gradlew.bat check shadowJar --offline --no-daemon --console=plain`. The first full runs found only Checkstyle formatting errors; those were fixed and the final full run passed. The reviewer found no correctness defect. The computer-use skill forbids automating login dialogs, so Whimsyturtle ran the adjudicator sign-in, Projects placeholder, and Logout scenario and reported that it worked. Annotator routing has automated coverage but no manual screen check before #31. PR #67 passed CI and awaits teammate review. The process and delivery skill were updated locally to require explicit approval; that correction remains uncommitted for human review.

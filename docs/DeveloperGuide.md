@@ -98,7 +98,7 @@ We run one AI agent with task-specific skills, and humans own requirements, desi
 
 Two skills do not fit the linear flow. `log` records each task into `logs/<user>/<NNN>-<name>.md` for human review, and `review` also handles standalone test-running requests.
 
-Each skill declares its input, steps and completion criteria, and states what it must not do: `create-pull-request` commits, pushes and publishes only with authorization, and `review` never weakens a test to make it pass.
+Each skill declares its input, steps and completion criteria, and states what it must not do: `create-pull-request` follows the explicit delivery approval rule in [`context/swe.md`](../context/swe.md), and `review` never weakens a test to make it pass.
 
 **Branching.** `write-plan` reuses or creates a descriptively named branch per task. Both of us work on `main` otherwise and keep the shared packages (`model`, `data`, `service`) agreed in [#4] before feature code starts, since that is where conflicts would come from.
 
