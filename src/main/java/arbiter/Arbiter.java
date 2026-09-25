@@ -1,5 +1,6 @@
 package arbiter;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import arbiter.data.json.JsonStore;
@@ -10,18 +11,19 @@ import arbiter.service.AuthService;
 import arbiter.service.CurrentUser;
 import arbiter.ui.shared.AppShell;
 import arbiter.ui.shared.AuthScreen;
+import arbiter.ui.shared.Components;
+import arbiter.ui.shared.DiagnosticLog;
+import arbiter.ui.shared.Dialogs;
 import arbiter.ui.shared.ScreenRegistry;
 import arbiter.ui.shared.ScreenRoute;
+import arbiter.ui.shared.Styles;
 import arbiter.ui.shared.WorkspaceSetupDialog;
 import arbiter.workspace.WorkspaceLock;
 import arbiter.workspace.WorkspaceService;
 import javafx.application.Application;
-import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /** Provides Arbiter's JavaFX interface. */
@@ -30,8 +32,13 @@ public class Arbiter extends Application {
 
     @Override
     public void start(Stage stage) {
+        Thread.setDefaultUncaughtExceptionHandler((thread, error) -> DiagnosticLog.record("Background work", error));
+        Thread.currentThread().setUncaughtExceptionHandler((thread, error) ->
+                Dialogs.showError(stage, "Something went wrong", error));
         stage.setTitle("Arbiter");
-        stage.setScene(new Scene(new StackPane(new Label("Arbiter")), 960, 640));
+        Scene scene = new Scene(new StackPane(new Label("Arbiter")), 960, 640);
+        Styles.apply(scene);
+        stage.setScene(scene);
         stage.setMinWidth(760);
         stage.setMinHeight(520);
         stage.show();
@@ -45,15 +52,18 @@ public class Arbiter extends Application {
 
         workspace = selected.get();
         try {
+            DiagnosticLog.attach(workspace.paths().logsDirectory());
+        } catch (IOException e) {
+            // The console still gets every record, so Arbiter carries on without the workspace log.
+            DiagnosticLog.record("Open the workspace log", e);
+        }
+        try {
             stage.setOnHidden(event -> closeWorkspace());
             stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
             showAuth(stage, new AuthService(JsonStore.open(workspace)));
         } catch (AuthException | JsonStoreException e) {
             try {
-                Alert error = new Alert(Alert.AlertType.ERROR, e.getMessage());
-                error.initOwner(stage);
-                error.setHeaderText("That workspace cannot be used for login");
-                error.showAndWait();
+                Dialogs.showError(stage, "That workspace cannot be used for login", e);
             } finally {
                 closeWorkspace();
                 stage.close();
@@ -71,19 +81,13 @@ public class Arbiter extends Application {
     private void showShell(Stage stage, AuthService auth, CurrentUser user) {
         ScreenRegistry screens = new ScreenRegistry();
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
-                placeholder("My splits", "Your assigned splits will appear here.")));
+                Components.emptyState("My splits", "Your assigned splits will appear here.")));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
-                placeholder("Projects", "Your projects will appear here.")));
+                Components.emptyState("Projects", "Your projects will appear here.")));
         new AppShell(stage, user, screens, () -> {
             auth.logout();
             showAuth(stage, auth);
         }).show();
-    }
-
-    private static VBox placeholder(String title, String message) {
-        VBox content = new VBox(12, new Label(title), new Label(message));
-        content.setPadding(new Insets(24));
-        return content;
     }
 
     @Override
@@ -95,6 +99,7 @@ public class Arbiter extends Application {
         if (workspace != null) {
             WorkspaceLock held = workspace;
             workspace = null;
+            DiagnosticLog.detach();
             held.close();
         }
     }

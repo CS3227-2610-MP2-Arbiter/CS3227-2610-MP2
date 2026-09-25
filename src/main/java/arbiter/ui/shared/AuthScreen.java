@@ -7,15 +7,11 @@ import arbiter.data.json.JsonStoreException;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
 import arbiter.service.CurrentUser;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /** Owner setup and login surface for one workspace. */
@@ -49,7 +45,7 @@ public final class AuthScreen {
         password.setPromptText("Password");
         PasswordField confirmation = new PasswordField();
         confirmation.setPromptText("Confirm password");
-        Label error = errorLabel();
+        Label error = Components.errorText();
         Button create = new Button("Create adjudicator account");
         create.setDefaultButton(true);
         create.setOnAction(event -> {
@@ -60,14 +56,16 @@ public final class AuthScreen {
             try {
                 auth.bootstrapOwner(username.getText(), password.getText());
                 showLogin();
-            } catch (AuthException | JsonStoreException e) {
-                error.setText(e.getMessage());
+            } catch (AuthException e) {
+                error.setText(ErrorMessages.of(e));
+            } catch (JsonStoreException e) {
+                Dialogs.showError(stage, "The adjudicator account could not be saved", e);
             }
         });
-        showForm(new Label("Create the workspace adjudicator"),
-                new Label("Keep this password safe; owner recovery is not available."),
-                new Label(USERNAME_HINT), username,
-                new Label("Password: at least 8 characters using only ASCII letters and digits"),
+        showForm(Components.pageTitle("Create the workspace adjudicator"),
+                Components.hint("Keep this password safe; owner recovery is not available."),
+                Components.hint(USERNAME_HINT), username,
+                Components.hint("Password: at least 8 characters using only ASCII letters and digits"),
                 password, confirmation, create, error);
     }
 
@@ -76,7 +74,7 @@ public final class AuthScreen {
         username.setPromptText("Username");
         PasswordField password = new PasswordField();
         password.setPromptText("Password");
-        Label error = errorLabel();
+        Label error = Components.errorText();
         Button login = new Button("Log in");
         login.setDefaultButton(true);
         login.setOnAction(event -> {
@@ -85,29 +83,15 @@ public final class AuthScreen {
                 onLogin.accept(user);
             } catch (AuthException e) {
                 password.clear();
-                error.setText(e.getMessage());
+                error.setText(ErrorMessages.of(e));
+            } catch (JsonStoreException e) {
+                Dialogs.showError(stage, "Arbiter could not read the accounts", e);
             }
         });
-        showForm(new Label("Log in to Arbiter"), username, password, login, error);
+        showForm(Components.pageTitle("Log in to Arbiter"), username, password, login, error);
     }
 
     private void showForm(Node... controls) {
-        for (Node control : controls) {
-            if (control instanceof Label label) {
-                label.setWrapText(true);
-                label.setMaxWidth(Double.MAX_VALUE);
-            }
-        }
-        VBox form = new VBox(12, controls);
-        form.setAlignment(Pos.CENTER_LEFT);
-        form.setPadding(new Insets(24));
-        form.setMaxWidth(420);
-        stage.getScene().setRoot(new StackPane(form));
-    }
-
-    private static Label errorLabel() {
-        Label error = new Label();
-        error.setStyle("-fx-text-fill: #b00020;");
-        return error;
+        stage.getScene().setRoot(Components.form(controls));
     }
 }
