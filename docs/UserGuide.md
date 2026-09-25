@@ -43,8 +43,11 @@ Projects is the adjudicator's home screen. It lists every [project](Glossary.md)
 
 - **Create a project.** Choose **New project**, enter a unique name and an optional description, and pick a [taxonomy kind and output format](Glossary.md#fixed-value-sets). Neither can be changed later ([rule 4](UserFlows.md#3-rules-both-tracks-share)).
 - **Delete a project.** Choose **Delete** on its row and confirm. You can delete a project only before its first assignment, and its source files in `media/` are kept ([rule 5](UserFlows.md#3-rules-both-tracks-share)).
+- **Open a project.** Choose **Open** on its row to see the files registered to it. **Back** returns to the list.
+- **Register files.** Put the `.txt` files in the workspace's `media/` folder, open the project, choose **Add files...** and select them. Arbiter records where each file is without copying or changing it ([rule 21](UserFlows.md#3-rules-both-tracks-share)). If any file is rejected, none are registered and the message names the file.
+- **Unregister a file.** On the project page, choose **Unregister** on its row and confirm. The file itself stays in `media/`.
 
-A project cannot be opened yet, so it stays empty until corpus import ([#25]) and taxonomy setup ([#26]) are released.
+You can register or unregister files only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)). Labels cannot be set up until taxonomy setup ([#26]) is released.
 
 [Back to home](index.md)
 
