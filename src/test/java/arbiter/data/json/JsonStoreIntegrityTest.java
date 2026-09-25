@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import arbiter.model.project.Item;
+import arbiter.model.project.TaxonomyKind;
 import arbiter.model.user.User;
 import arbiter.workspace.WorkspacePaths;
 import arbiter.workspace.WorkspaceService;
@@ -66,10 +67,37 @@ class JsonStoreIntegrityTest {
     }
 
     @Test
+    void write_projectWithoutTaxonomySettings_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+
+        assertThrows(JsonStoreException.class, () -> store.write(session -> session.projects()
+                .save(project("Unconfigured"))));
+
+        assertTrue(store.<Boolean>read(session -> session.projects().listAll().isEmpty()));
+    }
+
+    @Test
+    void write_secondTaxonomySettingsForProject_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long project = store.write(session -> {
+            long id = session.projects().save(project("Project")).getId();
+            session.taxonomySettings().save(settings(id));
+            return id;
+        });
+
+        assertThrows(JsonStoreException.class, () -> store.write(session -> session.taxonomySettings()
+                .save(settings(project))));
+
+        assertEquals(TaxonomyKind.SINGLE, store.read(session -> session.taxonomySettings().findByProject(project))
+                .orElseThrow().getKind());
+    }
+
+    @Test
     void delete_itemBeforeAssignment_membershipRemoved() {
         JsonStore store = newStore();
         long[] ids = store.write(session -> {
             long project = session.projects().save(project("Project")).getId();
+            session.taxonomySettings().save(settings(project));
             long item = session.items().save(item(project, "one")).getId();
             long split = session.splits().save(split(project, "Batch")).getId();
             session.splitItems().save(membership(split, item));
@@ -92,22 +120,20 @@ class JsonStoreIntegrityTest {
         JsonStore store = newStore();
         long[] ids = store.write(session -> {
             long project = session.projects().save(project("Project")).getId();
-            long taxonomy = session.taxonomySettings().save(settings(project)).getId();
+            session.taxonomySettings().save(settings(project));
             long label = session.labels().save(label(project)).getId();
             long split = session.splits().save(split(project, "Batch")).getId();
-            return new long[] {project, taxonomy, label, split};
+            return new long[] {project, label, split};
         });
 
         store.write(session -> {
-            session.labels().deleteById(ids[2]);
-            session.taxonomySettings().deleteByProject(ids[0]);
-            session.splits().deleteById(ids[3]);
+            session.labels().deleteById(ids[1]);
+            session.splits().deleteById(ids[2]);
             return null;
         });
 
-        assertTrue(store.<Boolean>read(session -> session.labels().findById(ids[2]).isEmpty()));
-        assertTrue(store.<Boolean>read(session -> session.taxonomySettings().findById(ids[1]).isEmpty()));
-        assertTrue(store.<Boolean>read(session -> session.splits().findById(ids[3]).isEmpty()));
+        assertTrue(store.<Boolean>read(session -> session.labels().findById(ids[1]).isEmpty()));
+        assertTrue(store.<Boolean>read(session -> session.splits().findById(ids[2]).isEmpty()));
         assertTrue(store.<Boolean>read(session -> session.projects().findById(ids[0]).isPresent()));
     }
 

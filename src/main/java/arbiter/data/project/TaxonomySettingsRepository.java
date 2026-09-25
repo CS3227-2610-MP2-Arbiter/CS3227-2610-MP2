@@ -7,7 +7,8 @@ import arbiter.model.project.TaxonomySettings;
 /**
  * Stores a project's taxonomy settings.
  *
- * <p>One row per project, so there is a single lookup rather than a list.
+ * <p>Every project has exactly one row, saved with the project and removed only by
+ * {@link ProjectRepository#deleteById}; a commit that breaks this is rejected.
  */
 public interface TaxonomySettingsRepository {
     /** Inserts or updates the settings and returns the stored copy. */
@@ -16,9 +17,6 @@ public interface TaxonomySettingsRepository {
     /** Returns the settings with this identifier, if any. */
     Optional<TaxonomySettings> findById(long id);
 
-    /** Returns the settings for a project, if they have been set. */
+    /** Returns a project's settings, or empty if there is no such project. */
     Optional<TaxonomySettings> findByProject(long projectId);
-
-    /** Removes a project's settings when that project is deleted before its first assignment. */
-    void deleteByProject(long projectId);
 }

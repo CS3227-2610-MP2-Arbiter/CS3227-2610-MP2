@@ -18,6 +18,7 @@ import arbiter.data.json.JsonStore;
 import arbiter.model.project.Item;
 import arbiter.model.project.OutputFormat;
 import arbiter.model.project.Project;
+import arbiter.testing.Records;
 
 /** Checks that reading a source never changes the stored project records. */
 class SourceResolverSnapshotTest {
@@ -45,7 +46,11 @@ class SourceResolverSnapshotTest {
         project.setName("Project");
         project.setOutputFormat(OutputFormat.JSON);
         project.setCreatedAt(Instant.parse("2026-09-20T08:30:00Z"));
-        long projectId = store.write(session -> session.projects().save(project).getId());
+        long projectId = store.write(session -> {
+            long id = session.projects().save(project).getId();
+            session.taxonomySettings().save(Records.settings(id));
+            return id;
+        });
         Item item = new Item();
         item.setProjectId(projectId);
         item.setPath(TEXT_PATH);

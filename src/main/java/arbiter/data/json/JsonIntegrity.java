@@ -86,9 +86,14 @@ final class JsonIntegrity {
     }
 
     private static void validateTaxonomies(List<TaxonomySettings> taxonomies, Set<Long> projects) {
+        Set<Long> configured = new HashSet<>();
         for (TaxonomySettings taxonomy : taxonomies) {
             reference(projects, taxonomy.getProjectId(), "taxonomy project");
             require(taxonomy.getKind(), "taxonomy kind");
+            requireUnique(configured, taxonomy.getProjectId(), "duplicate taxonomy settings for a project");
+        }
+        if (!configured.containsAll(projects)) {
+            throw invalid("missing taxonomy settings for a project");
         }
     }
 
