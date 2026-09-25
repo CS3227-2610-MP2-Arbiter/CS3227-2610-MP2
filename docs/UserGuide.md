@@ -30,6 +30,7 @@ The accepted V1 behaviour behind each planned task is specified in [User Flows](
 | Create or delete a project | Adjudicator | [#24], [#30] |
 | Import a corpus | Adjudicator | [#25] |
 | Configure labels | Adjudicator | [#26] |
+| Split the corpus into batches | Adjudicator | [#28] |
 | Assign annotators | Adjudicator | [#32] |
 | Monitor basic project progress | Adjudicator | [#33] |
 | Resolve disagreements | Adjudicator | [#27], [#34] |
@@ -43,11 +44,13 @@ Projects is the adjudicator's home screen. It lists every [project](Glossary.md)
 
 - **Create a project.** Choose **New project**, enter a unique name and an optional description, and pick a [taxonomy kind and output format](Glossary.md#fixed-value-sets). Neither can be changed later ([rule 4](UserFlows.md#3-rules-both-tracks-share)).
 - **Delete a project.** Choose **Delete** on its row and confirm. You can delete a project only before its first assignment, and its source files in `media/` are kept ([rule 5](UserFlows.md#3-rules-both-tracks-share)).
-- **Open a project.** Choose **Open** on its row to see the files registered to it. **Back** returns to the list.
+- **Open a project.** Choose **Open** on its row to see its files and splits. **Back** returns to the list.
 - **Register files.** Put the `.txt` files in the workspace's `media/` folder, open the project, choose **Add files...** and select them. Arbiter records where each file is without copying or changing it ([rule 21](UserFlows.md#3-rules-both-tracks-share)). If any file is rejected, none are registered and the message names the file.
-- **Unregister a file.** On the project page, choose **Unregister** on its row and confirm. The file itself stays in `media/`.
+- **Unregister a file.** On the project page, choose **Unregister** on its row and confirm. The file itself stays in `media/`, and a split left with no files is deleted.
+- **Generate splits.** On the project page, enter the number of files per split, choose **Generate splits** and confirm the sizes shown. Arbiter shuffles the files not yet in a split into new splits, and the **Split** column shows each file's split and position ([rule 7](UserFlows.md#3-rules-both-tracks-share)).
+- **Delete a split.** Choose **Delete** on its row and confirm. Its files return to those not yet in a split. You can delete a split only before its first assignment ([rule 14](UserFlows.md#3-rules-both-tracks-share)).
 
-You can register or unregister files only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)). Labels cannot be set up until taxonomy setup ([#26]) is released.
+You can register or unregister files only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)). Labels and assignments cannot be set up until taxonomy setup ([#26]) and assignment ([#32]) are released.
 
 [Back to home](index.md)
 
@@ -61,6 +64,7 @@ You can register or unregister files only before the project's first assignment 
 [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
+[#28]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/28
 [#30]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/30
 [#31]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/31
 [#32]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/32
