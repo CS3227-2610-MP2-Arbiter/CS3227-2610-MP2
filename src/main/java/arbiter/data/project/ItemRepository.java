@@ -20,8 +20,9 @@ public interface ItemRepository {
     Optional<Item> findByProjectAndHash(long projectId, String contentHash);
 
     /**
-     * Removes an item and any split membership before the project's first assignment. The source
-     * file under {@code media/} is never touched.
+     * Removes an item with its split membership, submitted answers and resolution. It does not check
+     * whether removal is allowed (rule 5), so callers must. The source file under {@code media/} is
+     * never touched.
      */
     void deleteById(long id);
 

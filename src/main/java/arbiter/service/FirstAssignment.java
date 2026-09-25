@@ -11,11 +11,20 @@ final class FirstAssignment {
     }
 
     /**
-     * Returns whether any of the project's splits has an assignment, whatever its status or its
-     * annotator's account status. Call it inside the write action it guards.
+     * Requires the project to exist and none of its splits to have an assignment, whatever its status
+     * or its annotator's account status. Call it inside the write action it guards.
+     *
+     * @param frozenMessage the message to show if the project has had its first assignment
+     * @throws ProjectException if no project has this identifier, or it has had its first assignment
      */
-    static boolean reached(RepositorySession session, long projectId) {
-        return session.splits().listByProject(projectId).stream()
+    static void requireNotReached(RepositorySession session, long projectId, String frozenMessage) {
+        if (session.projects().findById(projectId).isEmpty()) {
+            throw new ProjectException("This project no longer exists");
+        }
+        boolean reached = session.splits().listByProject(projectId).stream()
                 .anyMatch(split -> !session.assignments().listBySplit(split.getId()).isEmpty());
+        if (reached) {
+            throw new ProjectException(frozenMessage);
+        }
     }
 }

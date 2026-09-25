@@ -1,8 +1,16 @@
 package arbiter.ui.shared;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -44,6 +52,38 @@ public final class Components {
         VBox form = styled(new VBox(controls), Styles.FORM);
         form.setAlignment(Pos.CENTER_LEFT);
         return new StackPane(form);
+    }
+
+    /** Returns a table column titled {@code title} that shows {@code value} of each row. */
+    public static <T, V> TableColumn<T, V> column(String title, Function<T, V> value) {
+        TableColumn<T, V> column = new TableColumn<>(title);
+        column.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(value.apply(row.getValue())));
+        return column;
+    }
+
+    /**
+     * Returns a table column with one {@code text} button per row, which runs {@code action} on that row
+     * and is disabled for rows that {@code disabled} matches.
+     */
+    public static <T> TableColumn<T, T> buttonColumn(String text, Predicate<T> disabled, Consumer<T> action) {
+        TableColumn<T, T> column = new TableColumn<>();
+        column.setSortable(false);
+        column.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(row.getValue()));
+        column.setCellFactory(ignored -> new TableCell<>() {
+            @Override
+            protected void updateItem(T row, boolean empty) {
+                super.updateItem(row, empty);
+                if (empty || row == null) {
+                    setGraphic(null);
+                    return;
+                }
+                Button button = new Button(text);
+                button.setDisable(disabled.test(row));
+                button.setOnAction(event -> action.accept(row));
+                setGraphic(button);
+            }
+        });
+        return column;
     }
 
     private static Label wrapping(String text) {

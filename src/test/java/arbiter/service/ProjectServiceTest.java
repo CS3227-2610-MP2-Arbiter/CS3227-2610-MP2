@@ -1,5 +1,6 @@
 package arbiter.service;
 
+import static arbiter.service.ServiceAssertions.assertRejected;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -21,22 +22,16 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.RepositorySession;
-import arbiter.model.project.Assignment;
-import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.OutputFormat;
 import arbiter.model.project.Project;
-import arbiter.model.project.Split;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.model.project.TaxonomySettings;
 import arbiter.testing.ClassificationWorkflow;
-import arbiter.testing.Records;
 import arbiter.testing.TestWorkspace;
-import arbiter.workspace.ResolvedSource;
 
 /** Integration checks for creating, listing and deleting projects (#24, #30). */
 class ProjectServiceTest {
@@ -99,36 +94,36 @@ class ProjectServiceTest {
     @Test
     void create_nullEmptyOrWhitespaceName_rejectedAndNothingStored() {
         ProjectService service = ownerService();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         for (String name : new String[] {null, "", " \t "}) {
             assertRejected(() -> service.create(name, "Sentiment", TaxonomyKind.SINGLE, OutputFormat.CSV));
         }
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
     void create_name101CharactersAfterStripping_rejectedAndNothingStored() {
         ProjectService service = ownerService();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.create(" " + "n".repeat(101) + " ", null, TaxonomyKind.SINGLE,
                 OutputFormat.CSV));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
     void create_nameWithNonAsciiOrControlCharacter_rejectedAndNothingStored() {
         ProjectService service = ownerService();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         for (String name : new String[] {"Café reviews", "Tweets 😀", "Tweets\tv2"}) {
             assertRejected(() -> service.create(name, null, TaxonomyKind.SINGLE, OutputFormat.CSV));
         }
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
@@ -142,12 +137,12 @@ class ProjectServiceTest {
     void create_nameDuplicateIgnoringCase_rejectedAndNothingStored() {
         ProjectService service = ownerService();
         service.create("Film Reviews", null, TaxonomyKind.SINGLE, OutputFormat.CSV);
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.create("FILM reviews", null, TaxonomyKind.SCALE, OutputFormat.JSON));
         assertRejected(() -> service.create("  film reviews ", null, TaxonomyKind.SINGLE, OutputFormat.CSV));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
         assertEquals("Film Reviews 2",
                 service.create("Film Reviews 2", null, TaxonomyKind.SINGLE, OutputFormat.CSV).getName());
     }
@@ -167,21 +162,21 @@ class ProjectServiceTest {
     @Test
     void create_missingKind_rejectedAndNothingStored() {
         ProjectService service = ownerService();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.create("Tweets", null, null, OutputFormat.CSV));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
     void create_missingFormat_rejectedAndNothingStored() {
         ProjectService service = ownerService();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.create("Tweets", null, TaxonomyKind.SINGLE, null));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
@@ -230,7 +225,7 @@ class ProjectServiceTest {
                 .majority(1, "pos")
                 .seed(workspace);
         // A second split holds a fifth, unresolved item, assigned but not started.
-        assignNewSplit(first.projectId(), first.annotatorId("notStarted"));
+        workspace.assignNewSplit(first.projectId(), first.annotatorId("notStarted"));
         ClassificationWorkflow second = ClassificationWorkflow.scale(1, 5).items(2)
                 .assign("rater", 3, 4)
                 .assign("slowRater", 5)
@@ -252,6 +247,7 @@ class ProjectServiceTest {
         ClassificationWorkflow doomed = ClassificationWorkflow.single("pos", "neg").items(2)
                 .annotator("spare")
                 .seed(workspace);
+        // The kept project has an assignment, so deleting the doomed one also shows the freeze is per project.
         ClassificationWorkflow kept = ClassificationWorkflow.single("yes", "no")
                 .assign("annotator", "yes")
                 .majority(0, "yes")
@@ -290,11 +286,11 @@ class ProjectServiceTest {
     void delete_notStartedAssignment_rejectedAndNothingChanged() {
         ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2).assign("annotator").seed(workspace);
         ProjectService service = ownerService();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.delete(flow.projectId()));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
@@ -304,24 +300,24 @@ class ProjectServiceTest {
                 .disabled("annotator")
                 .seed(workspace);
         ProjectService service = ownerService();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.delete(flow.projectId()));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
     void delete_assignedProjectAfterRestart_rejectedAndNothingChanged() {
         ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2).assign("annotator").seed(workspace);
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
         JsonStore reopened = JsonStore.open(workspace.paths());
         AuthService auth = new AuthService(reopened);
         auth.login(TestWorkspace.OWNER, TestWorkspace.PASSWORD);
 
         assertRejected(() -> new ProjectService(reopened, auth).delete(flow.projectId()));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
@@ -332,12 +328,12 @@ class ProjectServiceTest {
         ProjectService service = ownerService();
         ProjectSummary stale = service.list().getFirst();
         assertEquals(0, stale.assignmentCount());
-        assignNewSplit(flow.projectId(), flow.annotatorId("annotator"));
-        byte[] before = dataFile();
+        workspace.assignNewSplit(flow.projectId(), flow.annotatorId("annotator"));
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.delete(stale.id()));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
@@ -346,12 +342,12 @@ class ProjectServiceTest {
         ProjectService service = ownerService();
         long deleted = service.create("Tweets", null, TaxonomyKind.SINGLE, OutputFormat.CSV).getId();
         service.delete(deleted);
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertRejected(() -> service.delete(deleted));
         assertRejected(() -> service.delete(deleted + 1_000));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
@@ -361,7 +357,7 @@ class ProjectServiceTest {
         ProjectService service = new ProjectService(workspace.store(), auth);
         service.list();
         auth.logout();
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertThrows(AuthException.class, () -> service.create("Tweets", null, TaxonomyKind.SINGLE,
                 OutputFormat.CSV));
@@ -369,52 +365,26 @@ class ProjectServiceTest {
         assertThrows(AuthException.class, () -> service.delete(flow.projectId()));
         assertThrows(AuthException.class, () -> service.delete(flow.projectId() + 1_000));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
     void allMethods_annotator_authExceptionAndNothingChanged() {
         ClassificationWorkflow flow = ClassificationWorkflow.single("pos").annotator("annotator").seed(workspace);
         ProjectService service = new ProjectService(workspace.store(), workspace.signIn("annotator"));
-        byte[] before = dataFile();
+        byte[] before = workspace.dataFileBytes();
 
         assertThrows(AuthException.class, () -> service.create("Tweets", null, TaxonomyKind.SINGLE,
                 OutputFormat.CSV));
         assertThrows(AuthException.class, service::list);
         assertThrows(AuthException.class, () -> service.delete(flow.projectId()));
 
-        assertArrayEquals(before, dataFile());
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
-    /** Returns a service for the owner, creating the owner first in a workspace that has none. */
+    /** Returns a service for the owner. */
     private ProjectService ownerService() {
-        AuthService setup = new AuthService(workspace.store());
-        if (setup.needsBootstrap()) {
-            setup.bootstrapOwner(TestWorkspace.OWNER, TestWorkspace.PASSWORD);
-        }
-        return new ProjectService(workspace.store(), workspace.signIn(TestWorkspace.OWNER));
-    }
-
-    /** Adds a split holding one new item to a project and assigns it to this annotator, not started. */
-    private void assignNewSplit(long projectId, long annotatorId) {
-        ResolvedSource source = workspace.writeSource("later/item.txt", "A later synthetic item");
-        workspace.store().write(session -> {
-            long itemId = session.items().save(Records.item(projectId, source)).getId();
-            Split split = Records.split(projectId, "Batch 2");
-            split.setAnnotationsPerItem(1);
-            split.setAssigned(true);
-            long splitId = session.splits().save(split).getId();
-            session.splitItems().save(Records.membership(splitId, itemId));
-            Assignment assignment = Records.assignment(splitId, annotatorId);
-            assignment.setStatus(AssignmentStatus.NOT_STARTED);
-            session.assignments().save(assignment);
-            return null;
-        });
-    }
-
-    private static void assertRejected(Executable call) {
-        ProjectException rejection = assertThrows(ProjectException.class, call);
-        assertFalse(rejection.getMessage() == null || rejection.getMessage().isBlank());
+        return new ProjectService(workspace.store(), workspace.signInOwner());
     }
 
     private static Project project(JsonStore store, long projectId) {
@@ -434,14 +404,6 @@ class ProjectServiceTest {
                 .map(user -> user.getId() + " " + user.getUsername() + " " + user.getRole() + " "
                         + user.getAccountStatus() + " " + user.getPasswordHash())
                 .toList());
-    }
-
-    private byte[] dataFile() {
-        try {
-            return Files.readAllBytes(workspace.paths().dataFile());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     private Map<Path, String> mediaFiles() {

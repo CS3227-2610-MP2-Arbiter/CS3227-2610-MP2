@@ -107,12 +107,8 @@ public final class ProjectService {
     public void delete(long projectId) {
         auth.requireAdjudicator();
         store.write(session -> {
-            if (session.projects().findById(projectId).isEmpty()) {
-                throw new ProjectException("This project no longer exists");
-            }
-            if (FirstAssignment.reached(session, projectId)) {
-                throw new ProjectException("A project cannot be deleted after its first assignment");
-            }
+            FirstAssignment.requireNotReached(session, projectId,
+                    "A project cannot be deleted after its first assignment");
             session.projects().deleteById(projectId);
             return null;
         });

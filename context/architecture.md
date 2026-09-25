@@ -35,6 +35,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 ### Source media (rule 21)
 
 - Every source read goes through the one resolver in `arbiter.workspace` ([#10]), which checks containment and content. Caches never bypass it.
+- Registration ([#25]) makes a stored path only through the resolver's `resolveForImport`, which also refuses a name spelled differently from the one on disk.
 
 ### Persistence
 
@@ -73,7 +74,7 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 - `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup and paths; `WorkspaceLock` owns the file lock ([#61]).
 - `ProjectService`: creating, listing and pre-assignment deletion of projects (rule 5). It has no way to change a project's kind or format (rule 4).
-- `CorpusService`: import, splits and taxonomy.
+- `CorpusService`: listing, registering and pre-assignment unregistering of a project's items (rules 3, 5), splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
 - `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
 - `ResolutionService`: automatic and manual classification resolution (rule 10).
@@ -86,4 +87,5 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 [#9]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
+[#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#61]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61

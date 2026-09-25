@@ -8,6 +8,7 @@ import arbiter.data.json.JsonStoreException;
 import arbiter.model.user.Role;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
+import arbiter.service.CorpusService;
 import arbiter.service.CurrentUser;
 import arbiter.service.ProjectService;
 import arbiter.ui.adjudicator.ProjectsScreen;
@@ -33,6 +34,7 @@ public class Arbiter extends Application {
     private WorkspaceLock workspace;
     private AuthService auth;
     private ProjectService projects;
+    private CorpusService corpus;
 
     @Override
     public void start(Stage stage) {
@@ -76,6 +78,7 @@ public class Arbiter extends Application {
         JsonStore store = JsonStore.open(workspace);
         auth = new AuthService(store);
         projects = new ProjectService(store, auth);
+        corpus = new CorpusService(store, auth, workspace.paths());
         showAuth(stage);
     }
 
@@ -98,7 +101,7 @@ public class Arbiter extends Application {
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
                 Components.emptyState("My splits", "Your assigned splits will appear here.")));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
-                new ProjectsScreen(stage, projects).content()));
+                new ProjectsScreen(stage, projects, corpus).content()));
         new AppShell(stage, user, screens, () -> {
             auth.logout();
             showAuth(stage);

@@ -3,27 +3,24 @@ package arbiter.ui.adjudicator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.project.OutputFormat;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.service.AuthException;
+import arbiter.service.CorpusService;
 import arbiter.service.ProjectException;
 import arbiter.service.ProjectService;
 import arbiter.service.ProjectSummary;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
 import arbiter.ui.shared.ErrorMessages;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
@@ -33,18 +30,23 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
-/** The adjudicator's project list, where projects are created, and deleted before their first assignment. */
+/**
+ * The adjudicator's project list, where projects are created, opened, and deleted before their first
+ * assignment.
+ */
 public final class ProjectsScreen {
     private static final String DELETE_FAILED = "The project could not be deleted";
 
     private final Window owner;
     private final ProjectService projects;
+    private final CorpusService corpus;
     private final StackPane content = new StackPane();
 
     /** Creates the screen, whose dialogs belong to {@code owner}. */
-    public ProjectsScreen(Window owner, ProjectService projects) {
+    public ProjectsScreen(Window owner, ProjectService projects, CorpusService corpus) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.projects = Objects.requireNonNull(projects, "projects");
+        this.corpus = Objects.requireNonNull(corpus, "corpus");
     }
 
     /** Returns the screen's content, showing the current project list. */
@@ -72,14 +74,15 @@ public final class ProjectsScreen {
         }
         TableView<ProjectSummary> table = new TableView<>(FXCollections.observableArrayList(summaries));
         table.getColumns().setAll(List.of(
-                column("Name", ProjectSummary::name),
-                column("Taxonomy kind", ProjectSummary::kind),
-                column("Output format", ProjectSummary::outputFormat),
-                column("Items", ProjectSummary::itemCount),
-                column("Splits", ProjectSummary::splitCount),
-                column("Assignments", ProjectSummary::assignmentCount),
-                column("Unresolved", ProjectSummary::unresolvedCount),
-                deleteColumn()));
+                Components.column("Name", ProjectSummary::name),
+                Components.column("Taxonomy kind", ProjectSummary::kind),
+                Components.column("Output format", ProjectSummary::outputFormat),
+                Components.column("Items", ProjectSummary::itemCount),
+                Components.column("Splits", ProjectSummary::splitCount),
+                Components.column("Assignments", ProjectSummary::assignmentCount),
+                Components.column("Unresolved", ProjectSummary::unresolvedCount),
+                Components.buttonColumn("Open", project -> false, this::open),
+                Components.buttonColumn("Delete", project -> project.assignmentCount() > 0, this::delete)));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(table, Priority.ALWAYS);
         content.getChildren().setAll(Components.page(Components.pageTitle("Projects"), create,
@@ -151,31 +154,8 @@ public final class ProjectsScreen {
         showList();
     }
 
-    private TableColumn<ProjectSummary, ProjectSummary> deleteColumn() {
-        TableColumn<ProjectSummary, ProjectSummary> column = new TableColumn<>();
-        column.setSortable(false);
-        column.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(row.getValue()));
-        column.setCellFactory(ignored -> new TableCell<>() {
-            @Override
-            protected void updateItem(ProjectSummary project, boolean empty) {
-                super.updateItem(project, empty);
-                if (empty || project == null) {
-                    setGraphic(null);
-                    return;
-                }
-                Button delete = new Button("Delete");
-                delete.setDisable(project.assignmentCount() > 0);
-                delete.setOnAction(event -> delete(project));
-                setGraphic(delete);
-            }
-        });
-        return column;
-    }
-
-    private static TableColumn<ProjectSummary, Object> column(String title, Function<ProjectSummary, Object> value) {
-        TableColumn<ProjectSummary, Object> column = new TableColumn<>(title);
-        column.setCellValueFactory(row -> new ReadOnlyObjectWrapper<>(value.apply(row.getValue())));
-        return column;
+    private void open(ProjectSummary project) {
+        content.getChildren().setAll(new ProjectPage(owner, corpus, project, this::showList).content());
     }
 
     private static RadioButton choice(ToggleGroup group, Enum<?> value) {

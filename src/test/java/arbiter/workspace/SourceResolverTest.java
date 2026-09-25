@@ -1,5 +1,7 @@
 package arbiter.workspace;
 
+import static arbiter.testing.FileLinks.createDirectoryLink;
+import static arbiter.testing.FileLinks.createSymlink;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -9,7 +11,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Instant;
@@ -466,11 +467,11 @@ class SourceResolverTest {
     }
 
     @Test
-    void resolveForImport_validTextFile_hashToRecordReturned() throws IOException {
+    void resolveForImport_nestedTextFile_slashStoredPathAndHashToRecordReturned() throws IOException {
         byte[] bytes = "Registered later".getBytes(StandardCharsets.UTF_8);
-        write(TEXT_PATH, bytes);
+        Path file = write(TEXT_PATH, bytes);
 
-        ResolvedSource source = resolver.resolveForImport(TEXT_PATH);
+        ResolvedSource source = resolver.resolveForImport(file);
 
         assertEquals("Registered later", source.text());
         assertEquals(SourceResolver.hash(bytes), source.contentHash());
@@ -482,34 +483,120 @@ class SourceResolverTest {
     void resolveForImport_emptyFile_emptyHashToRecordReturned() {
         writeQuietly(TEXT_PATH, new byte[0]);
 
-        ResolvedSource source = resolver.resolveForImport(TEXT_PATH);
+        ResolvedSource source = resolver.resolveForImport(paths.root().resolve(TEXT_PATH));
 
         assertEquals("", source.text());
         assertEquals(SourceResolver.hash(new byte[0]), source.contentHash());
     }
 
     @Test
+    void resolveForImport_nonNormalisedFile_storedPathNormalised() throws IOException {
+        write("media/review.txt", "text".getBytes(StandardCharsets.UTF_8));
+        Path file = paths.mediaDirectory().resolve("other").resolve("..").resolve(".").resolve("review.txt");
+
+        assertEquals("media/review.txt", resolver.resolveForImport(file).storedPath());
+    }
+
+    @Test
+    void resolveForImport_relativeFile_madeAbsoluteAgainstWorkingDirectory() {
+        // Nothing exists in this workspace, so the stored path is read from the failure.
+        Path root = Path.of("").toAbsolutePath().resolve("no-such-workspace");
+        SourceResolver elsewhere = new SourceResolver(new WorkspacePaths(root));
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                elsewhere.resolveForImport(Path.of("no-such-workspace", "media", "review.txt")));
+
+        assertEquals(SourceFailure.MISSING, failure.reason());
+        assertEquals("media/review.txt", failure.storedPath());
+    }
+
+    @Test
+    void resolveForImport_siblingWorkspaceWithSamePrefix_exceptionThrown() throws IOException {
+        Path file = temporary.resolve("workspace2").resolve("media").resolve("review.txt");
+        Files.createDirectories(file.getParent());
+        Files.write(file, "text".getBytes(StandardCharsets.UTF_8));
+
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(file));
+
+        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+    }
+
+    @Test
+    void resolveForImport_fileInWorkspaceOutsideMedia_exceptionNamesFile() throws IOException {
+        Path file = write("exports/review.txt", "text".getBytes(StandardCharsets.UTF_8));
+
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(file));
+
+        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+        assertTrue(failure.getMessage().contains(file.toString()), failure.getMessage());
+    }
+
+    @Test
+    void resolveForImport_traversalOutOfMedia_exceptionThrown() throws IOException {
+        write("outside.txt", "secret".getBytes(StandardCharsets.UTF_8));
+
+        SourceException failure = assertThrows(SourceException.class, () ->
+                resolver.resolveForImport(paths.mediaDirectory().resolve("..").resolve("outside.txt")));
+
+        assertEquals(SourceFailure.OUTSIDE_MEDIA, failure.reason());
+        assertTrue(failure.getMessage().contains("outside.txt"), failure.getMessage());
+    }
+
+    @Test
+    void resolveForImport_nameInAnotherCase_exceptionNamesNameOnDisk() throws IOException {
+        // A case-insensitive file system finds the file by either name, but a case-sensitive one
+        // would not find the other name later, so registration refuses it.
+        write("media/corpus/Review.txt", "text".getBytes(StandardCharsets.UTF_8));
+        Path chosen = paths.root().resolve("media/corpus/REVIEW.TXT");
+        assumeTrue(Files.exists(chosen), "case-sensitive file system");
+
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(chosen));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+        assertEquals("media/corpus/REVIEW.TXT", failure.storedPath());
+        assertTrue(failure.getMessage().contains("media/corpus/Review.txt"), failure.getMessage());
+    }
+
+    @Test
+    void resolveForImport_mediaFolderInAnotherCase_exceptionNamesNameOnDisk() throws IOException {
+        write(TEXT_PATH, "text".getBytes(StandardCharsets.UTF_8));
+        Path chosen = paths.root().resolve("MEDIA/corpus/review.txt");
+        assumeTrue(Files.exists(chosen), "case-sensitive file system");
+        // Where paths compare case, as on macOS, the file is not below media/ and fails as outside it.
+        assumeTrue(chosen.startsWith(paths.mediaDirectory()), "paths compare case");
+
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(chosen));
+
+        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
+        assertTrue(failure.getMessage().contains(TEXT_PATH), failure.getMessage());
+    }
+
+    @Test
+    void resolveForImport_junctionInsideMedia_storedByLinkName() throws IOException {
+        // Names are compared with the disk without following links, so a link keeps its own name.
+        write("media/corpus/linked.txt", "linked".getBytes(StandardCharsets.UTF_8));
+        Path link = paths.mediaDirectory().resolve("joined");
+        assumeTrue(createDirectoryLink(link, paths.mediaDirectory().resolve("corpus")), "links unavailable");
+
+        ResolvedSource source = resolver.resolveForImport(link.resolve("linked.txt"));
+
+        assertEquals("media/joined/linked.txt", source.storedPath());
+        assertEquals("linked", source.text());
+    }
+
+    @Test
     void resolveForImport_fileMissing_exceptionThrown() {
         SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolveForImport(TEXT_PATH));
+                resolver.resolveForImport(paths.root().resolve(TEXT_PATH)));
 
         assertEquals(SourceFailure.MISSING, failure.reason());
     }
 
     @Test
-    void resolveForImport_pathEscapesMedia_exceptionThrown() {
-        SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolveForImport("media/../outside.txt"));
-
-        assertEquals(SourceFailure.INVALID_PATH, failure.reason());
-    }
-
-    @Test
     void resolveForImport_nonTextExtension_exceptionThrown() throws IOException {
-        write("media/review.pdf", "not text".getBytes(StandardCharsets.UTF_8));
+        Path file = write("media/review.pdf", "not text".getBytes(StandardCharsets.UTF_8));
 
-        SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolveForImport("media/review.pdf"));
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(file));
 
         assertEquals(SourceFailure.NOT_TEXT, failure.reason());
     }
@@ -518,10 +605,9 @@ class SourceResolverTest {
     void resolveForImport_fileOverSizeLimit_exceptionThrown() throws IOException {
         byte[] bytes = new byte[(int) SourceResolver.MAX_TEXT_BYTES + 1];
         java.util.Arrays.fill(bytes, (byte) 'a');
-        write(TEXT_PATH, bytes);
+        Path file = write(TEXT_PATH, bytes);
 
-        SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolveForImport(TEXT_PATH));
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(file));
 
         assertEquals(SourceFailure.TOO_LARGE, failure.reason());
     }
@@ -529,20 +615,18 @@ class SourceResolverTest {
     @Test
     void resolveForImport_invalidUtf8_exceptionThrown() throws IOException {
         byte[] bytes = {(byte) 0x80, 'a'};
-        write(TEXT_PATH, bytes);
+        Path file = write(TEXT_PATH, bytes);
 
-        SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolveForImport(TEXT_PATH));
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(file));
 
         assertEquals(SourceFailure.INVALID_TEXT, failure.reason());
     }
 
     @Test
     void resolveForImport_directory_exceptionThrown() throws IOException {
-        Files.createDirectories(paths.root().resolve("media/folder.txt"));
+        Path folder = Files.createDirectories(paths.root().resolve("media/folder.txt"));
 
-        SourceException failure = assertThrows(SourceException.class, () ->
-                resolver.resolveForImport("media/folder.txt"));
+        SourceException failure = assertThrows(SourceException.class, () -> resolver.resolveForImport(folder));
 
         assertEquals(SourceFailure.NOT_A_FILE, failure.reason());
     }
@@ -551,8 +635,8 @@ class SourceResolverTest {
     void resolveForImport_thenResolve_acceptedFileReadsBack() throws IOException {
         // What import accepts must be what a later read accepts: same file, same checks.
         byte[] bytes = "Round trip".getBytes(StandardCharsets.UTF_8);
-        write(TEXT_PATH, bytes);
-        ResolvedSource imported = resolver.resolveForImport(TEXT_PATH);
+        Path file = write(TEXT_PATH, bytes);
+        ResolvedSource imported = resolver.resolveForImport(file);
 
         ResolvedSource read = resolver.resolve(imported.storedPath(), imported.contentHash());
 
@@ -614,33 +698,5 @@ class SourceResolverTest {
         Files.createDirectories(file.getParent());
         Files.write(file, bytes);
         return file;
-    }
-
-    private static boolean createSymlink(Path link, Path target) {
-        try {
-            Files.createSymbolicLink(link, target);
-            return true;
-        } catch (IOException | UnsupportedOperationException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Links a directory the way the platform does it: a junction on Windows, a directory symbolic
-     * link elsewhere. A junction needs no special privilege, so the Windows job really exercises one.
-     */
-    private static boolean createDirectoryLink(Path link, Path target) {
-        if (java.io.File.separatorChar == '\\') {
-            try {
-                Process process = new ProcessBuilder("cmd", "/c", "mklink", "/J",
-                        link.toString(), target.toString()).redirectErrorStream(true).start();
-                boolean finished = process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
-                return finished && process.exitValue() == 0 && Files.exists(link, LinkOption.NOFOLLOW_LINKS);
-            } catch (IOException | InterruptedException | RuntimeException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
-        }
-        return createSymlink(link, target);
     }
 }

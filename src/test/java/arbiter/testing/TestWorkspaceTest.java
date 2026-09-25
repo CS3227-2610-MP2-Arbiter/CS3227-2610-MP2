@@ -1,20 +1,30 @@
 package arbiter.testing;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.RepositorySession;
+import arbiter.model.project.Assignment;
+import arbiter.model.project.AssignmentStatus;
+import arbiter.model.project.Item;
+import arbiter.model.project.Split;
+import arbiter.model.project.SplitItem;
 import arbiter.model.user.Role;
 import arbiter.service.AuthException;
+import arbiter.service.CurrentUser;
 import arbiter.workspace.ResolvedSource;
 import arbiter.workspace.SourceResolver;
 
@@ -70,6 +80,53 @@ class TestWorkspaceTest {
         ClassificationWorkflow.single("positive").seed(workspace);
 
         assertThrows(AuthException.class, () -> workspace.signIn("nobody"));
+    }
+
+    @Test
+    void signInOwner_newWorkspace_ownerCreatedOnceAndSignedIn() {
+        TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
+
+        CurrentUser first = workspace.signInOwner().requireAdjudicator();
+        CurrentUser second = workspace.signInOwner().requireAdjudicator();
+
+        assertEquals(TestWorkspace.OWNER, first.username());
+        assertEquals(first, second);
+        assertEquals(1, workspace.store().<Integer>read(session -> session.users().listAll().size()));
+    }
+
+    @Test
+    void dataFileBytes_beforeAndAfterWrite_bytesOnDisk() throws IOException {
+        TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
+        byte[] before = workspace.dataFileBytes();
+
+        workspace.store().write(session -> session.users().save(Records.user("alice")));
+
+        assertFalse(Arrays.equals(before, workspace.dataFileBytes()));
+        assertArrayEquals(Files.readAllBytes(workspace.paths().dataFile()), workspace.dataFileBytes());
+    }
+
+    @Test
+    void assignNewSplit_seededProject_readableItemInSplitAssignedNotStarted() {
+        TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").annotator("alice").seed(workspace);
+
+        workspace.assignNewSplit(flow.projectId(), flow.annotatorId("alice"));
+
+        List<Split> splits = workspace.store().read(session -> session.splits().listByProject(flow.projectId()));
+        assertEquals(2, splits.size());
+        Split later = splits.stream().filter(split -> split.getId() != flow.splitId()).findFirst().orElseThrow();
+        assertTrue(later.isAssigned());
+        List<SplitItem> members = workspace.store().read(session -> session.splitItems().listBySplit(later.getId()));
+        assertEquals(1, members.size());
+        Item item = workspace.store().read(session -> session.items().findById(members.getFirst().getItemId()))
+                .orElseThrow();
+        assertEquals(flow.projectId(), item.getProjectId());
+        new SourceResolver(workspace.paths()).resolve(item.getPath(), item.getContentHash());
+        List<Assignment> assignments = workspace.store().read(session ->
+                session.assignments().listBySplit(later.getId()));
+        assertEquals(1, assignments.size());
+        assertEquals(flow.annotatorId("alice"), assignments.getFirst().getAnnotatorId());
+        assertEquals(AssignmentStatus.NOT_STARTED, assignments.getFirst().getStatus());
     }
 
     private static boolean isPristine(JsonStore store) {
