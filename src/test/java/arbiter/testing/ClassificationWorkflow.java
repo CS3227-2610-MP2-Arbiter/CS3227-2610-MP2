@@ -384,7 +384,6 @@ public final class ClassificationWorkflow {
             Split split = Records.split(projectId, "Batch 1");
             split.setAnnotationsPerItem(k);
             split.setRequestedBatchSize(itemCount);
-            split.setAssigned(!assignees.isEmpty());
             long splitId = session.splits().save(split).getId();
             for (int index = 0; index < itemIds.size(); index++) {
                 session.splitItems().save(Records.membership(splitId, itemIds.get(index), index + 1));

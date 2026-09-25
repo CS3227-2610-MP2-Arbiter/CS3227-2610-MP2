@@ -23,6 +23,7 @@ import arbiter.model.project.Item;
 import arbiter.model.project.Split;
 import arbiter.model.project.SplitItem;
 import arbiter.model.user.Role;
+import arbiter.model.user.User;
 import arbiter.service.AuthException;
 import arbiter.service.CurrentUser;
 import arbiter.workspace.ResolvedSource;
@@ -115,7 +116,6 @@ class TestWorkspaceTest {
         List<Split> splits = workspace.store().read(session -> session.splits().listByProject(flow.projectId()));
         assertEquals(2, splits.size());
         Split later = splits.stream().filter(split -> split.getId() != flow.splitId()).findFirst().orElseThrow();
-        assertTrue(later.isAssigned());
         List<SplitItem> members = workspace.store().read(session -> session.splitItems().listBySplit(later.getId()));
         assertEquals(1, members.size());
         Item item = workspace.store().read(session -> session.items().findById(members.getFirst().getItemId()))
@@ -127,6 +127,23 @@ class TestWorkspaceTest {
         assertEquals(1, assignments.size());
         assertEquals(flow.annotatorId("alice"), assignments.getFirst().getAnnotatorId());
         assertEquals(AssignmentStatus.NOT_STARTED, assignments.getFirst().getStatus());
+    }
+
+    @Test
+    void assignSplit_unassignedSplit_newAnnotatorAssignedNotStarted() {
+        TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").seed(workspace);
+
+        workspace.assignSplit(flow.splitId(), "alice");
+
+        List<Assignment> assignments = workspace.store().read(session ->
+                session.assignments().listBySplit(flow.splitId()));
+        assertEquals(1, assignments.size());
+        assertEquals(AssignmentStatus.NOT_STARTED, assignments.getFirst().getStatus());
+        User annotator = workspace.store().read(session ->
+                session.users().findById(assignments.getFirst().getAnnotatorId())).orElseThrow();
+        assertEquals("alice", annotator.getUsername());
+        assertEquals(Role.ANNOTATOR, annotator.getRole());
     }
 
     private static boolean isPristine(JsonStore store) {

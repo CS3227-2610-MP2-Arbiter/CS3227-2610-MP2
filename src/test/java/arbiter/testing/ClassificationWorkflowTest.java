@@ -1,7 +1,6 @@
 package arbiter.testing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,7 +61,6 @@ class ClassificationWorkflowTest {
         assertEquals(flow.labelId("negative"), labels.get(1).getId());
         assertEquals(1, flow.itemIds().size());
         assertEquals(flow.itemIds(), members.stream().map(SplitItem::getItemId).toList());
-        assertFalse(split.isAssigned());
         assertNull(split.getAnnotationsPerItem());
         assertEquals(List.of(), read(session -> session.assignments().listBySplit(flow.splitId())));
     }
@@ -122,7 +120,6 @@ class ClassificationWorkflowTest {
 
         Split split = read(session -> session.splits().findById(flow.splitId())).orElseThrow();
         assertEquals(2, split.getAnnotationsPerItem());
-        assertTrue(split.isAssigned());
     }
 
     @Test

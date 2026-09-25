@@ -6,6 +6,7 @@ import static arbiter.testing.Records.settings;
 import static arbiter.testing.Records.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -157,7 +158,7 @@ class JsonStoreTransactionTest {
 
         assertThrows(IllegalStateException.class, () -> store.write(session -> {
             Split split = session.splits().findById(ids[2]).orElseThrow();
-            split.setAssigned(true);
+            split.setAnnotationsPerItem(1);
             session.splits().save(split);
             Assignment assignment = new Assignment();
             assignment.setSplitId(ids[2]);
@@ -183,7 +184,7 @@ class JsonStoreTransactionTest {
 
         JsonStore reopened = JsonStore.open(paths);
         reopened.read(session -> {
-            assertFalse(session.splits().findById(ids[2]).orElseThrow().isAssigned());
+            assertNull(session.splits().findById(ids[2]).orElseThrow().getAnnotationsPerItem());
             assertTrue(session.assignments().listBySplit(ids[2]).isEmpty());
             assertTrue(session.annotations().listByItem(ids[1]).isEmpty());
             assertTrue(session.resolutions().findByItem(ids[1]).isEmpty());
