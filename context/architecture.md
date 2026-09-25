@@ -23,7 +23,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - `AnnotationEditor` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
 - `AnnotationEditor` holds only the annotator's current unsubmitted choice. Adjudicator screens reuse the label picker for resolution and never edit a submission (rule 13).
-- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check setup freezes and the pre-assignment deletion guard (rules 3, 5, 14) inside the write transaction; a disabled control is not enforcement. For a whole project (rules 3 and 5), they use `FirstAssignment` rather than their own check.
+- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check setup freezes and the pre-assignment deletion guard (rules 3, 5, 14) inside the write transaction; a disabled control is not enforcement. For a whole project (rules 3 and 5) or one split (rule 14), they use `FirstAssignment` rather than their own check.
 
 ### Blindness (rule 1)
 

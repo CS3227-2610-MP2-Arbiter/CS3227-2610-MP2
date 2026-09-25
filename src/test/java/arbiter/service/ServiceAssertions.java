@@ -10,9 +10,13 @@ final class ServiceAssertions {
     private ServiceAssertions() {
     }
 
-    /** Asserts that the call is rejected with a {@link ProjectException} whose message can be shown. */
-    static void assertRejected(Executable call) {
+    /**
+     * Asserts that the call is rejected with a {@link ProjectException} whose message can be shown, and
+     * returns it.
+     */
+    static ProjectException assertRejected(Executable call) {
         ProjectException rejection = assertThrows(ProjectException.class, call);
         assertFalse(rejection.getMessage() == null || rejection.getMessage().isBlank());
+        return rejection;
     }
 }

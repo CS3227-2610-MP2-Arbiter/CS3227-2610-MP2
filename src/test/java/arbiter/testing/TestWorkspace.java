@@ -105,13 +105,18 @@ public final class TestWorkspace {
             long itemId = session.items().save(Records.item(projectId, source)).getId();
             Split split = Records.split(projectId, "Batch 2");
             split.setAnnotationsPerItem(1);
-            split.setAssigned(true);
             long splitId = session.splits().save(split).getId();
             session.splitItems().save(Records.membership(splitId, itemId));
-            Assignment assignment = Records.assignment(splitId, annotatorId);
-            assignment.setStatus(AssignmentStatus.NOT_STARTED);
-            session.assignments().save(assignment);
+            session.assignments().save(notStarted(splitId, annotatorId));
             return null;
+        });
+    }
+
+    /** Assigns a split to a new annotator account with placeholder credentials, not started, as #32 will. */
+    public void assignSplit(long splitId, String username) {
+        store.write(session -> {
+            long annotatorId = session.users().save(Records.user(username)).getId();
+            return session.assignments().save(notStarted(splitId, annotatorId));
         });
     }
 
@@ -121,5 +126,11 @@ public final class TestWorkspace {
         if (setup.needsBootstrap()) {
             setup.bootstrapOwner(OWNER, PASSWORD);
         }
+    }
+
+    private static Assignment notStarted(long splitId, long annotatorId) {
+        Assignment assignment = Records.assignment(splitId, annotatorId);
+        assignment.setStatus(AssignmentStatus.NOT_STARTED);
+        return assignment;
     }
 }

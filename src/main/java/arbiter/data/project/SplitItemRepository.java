@@ -16,9 +16,6 @@ public interface SplitItemRepository {
     /** Returns an item's membership, if it is in a split (rule 7). */
     Optional<SplitItem> findByItem(long itemId);
 
-    /** Removes every membership of a never-assigned split that is being deleted. */
-    void deleteBySplit(long splitId);
-
     /** Counts a split's items. */
     long countBySplit(long splitId);
 }

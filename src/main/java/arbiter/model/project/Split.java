@@ -5,7 +5,8 @@ import java.time.Instant;
 /**
  * A batch of items cut from the corpus, which is what gets assigned.
  *
- * <p>Its items and their order are the {@code SplitItem} records that name them (rule 7).
+ * <p>Its items and their order are the {@code SplitItem} records that name them (rule 7). Its first
+ * {@code Assignment} locks it (rule 14).
  */
 public class Split {
     /** Persistent identifier. */
@@ -23,7 +24,7 @@ public class Split {
      */
     private Integer annotationsPerItem;
 
-    /** Seed the allocation's shuffle actually used, including one the app generated. */
+    /** Seed the app picked for the shuffle that allocated this split's items. */
     private Long seed;
 
     /**
@@ -31,9 +32,6 @@ public class Split {
      * batch of a generation can be smaller.
      */
     private Integer requestedBatchSize;
-
-    /** True once the split has been assigned, which locks it (rule 14). */
-    private boolean assigned;
 
     /** When the split was created. */
     private Instant createdAt;
@@ -88,14 +86,6 @@ public class Split {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public boolean isAssigned() {
-        return assigned;
-    }
-
-    public void setAssigned(boolean assigned) {
-        this.assigned = assigned;
     }
 
     public Instant getCreatedAt() {
