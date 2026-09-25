@@ -3,6 +3,7 @@ package arbiter.testing;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -34,8 +35,8 @@ import arbiter.workspace.ResolvedSource;
  *
  * <p>Build one with {@link #single} or {@link #scale}, describe the state a test starts from, and
  * {@link Builder#seed seed} it into a {@link TestWorkspace}. The fixture records only states the app
- * can reach, and it never decides a resolution itself: a test that needs one names it, because
- * deciding is automatic resolution's job ([#27]).
+ * can reach. A test names each resolution it needs, so the expected answer is visible in the test,
+ * and the fixture refuses one that does not follow from the answers under rule 10.
  */
 public final class ClassificationWorkflow {
     private final long ownerId;
@@ -204,17 +205,17 @@ public final class ClassificationWorkflow {
             return this;
         }
 
-        /** Records an automatic strict-majority resolution of an item to this label. */
+        /** Records an automatic resolution of an item to this label, which must hold a strict majority. */
         public Builder majority(int item, String label) {
             return resolve(item, ResolutionMethod.MAJORITY, label, null);
         }
 
-        /** Records the owner's manual resolution of an item to this label. */
+        /** Records the owner's resolution of a disputed item, one with no strict majority, to this label. */
         public Builder adjudicated(int item, String label) {
             return resolve(item, ResolutionMethod.ADJUDICATED, label, null);
         }
 
-        /** Records an automatic scale resolution of an item to this mean. */
+        /** Records an automatic scale resolution of an item to this mean, which must be its ratings' exact mean. */
         public Builder mean(int item, double mean) {
             return resolve(item, ResolutionMethod.AUTO_SCALE, null, mean);
         }
@@ -304,8 +305,33 @@ public final class ClassificationWorkflow {
                     throw new IllegalArgumentException("Item " + item + " has " + answered + " answers, not k = " + k
                             + ", so it cannot be resolved yet");
                 }
+                requireConsistent(resolution, k);
             }
             return k;
+        }
+
+        private void requireConsistent(PlannedResolution resolution, int k) {
+            int item = resolution.item();
+            List<Object> answers = assignees.values().stream().filter(given -> given.size() > item)
+                    .map(given -> (Object) given.get(item)).toList();
+            if (resolution.method() == ResolutionMethod.AUTO_SCALE) {
+                double mean = answers.stream().mapToInt(rating -> (Integer) rating).sum() / (double) k;
+                if (Double.compare(mean, resolution.mean()) != 0) {
+                    throw new IllegalArgumentException("Item " + item + "'s ratings " + answers + " average " + mean
+                            + ", not " + resolution.mean());
+                }
+                return;
+            }
+            boolean majority = answers.stream().anyMatch(label -> 2 * Collections.frequency(answers, label) > k);
+            if (resolution.method() == ResolutionMethod.ADJUDICATED && majority) {
+                throw new IllegalArgumentException("Item " + item + "'s answers " + answers
+                        + " have a strict majority, so it is not a dispute");
+            }
+            if (resolution.method() == ResolutionMethod.MAJORITY
+                    && 2 * Collections.frequency(answers, resolution.label()) <= k) {
+                throw new IllegalArgumentException(resolution.label() + " does not hold a strict majority of item "
+                        + item + "'s answers " + answers);
+            }
         }
 
         private Map<String, User> newAccounts(TestWorkspace workspace) {

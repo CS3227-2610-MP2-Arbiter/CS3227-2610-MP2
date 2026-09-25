@@ -11,9 +11,8 @@ public final class ResolvedLabelScreen {
         this.store = store;
     }
 
-    /** Shows an item's resolved label. */
-    public String show(long itemId) {
-        return store.read(session -> session.resolutions().findByItem(itemId)
-                .map(resolution -> String.valueOf(resolution.getLabelId())).orElse(""));
+    /** Shows whether an item has been resolved. */
+    public boolean show(long itemId) {
+        return store.read(session -> session.resolutions().findByItem(itemId)).isPresent();
     }
 }

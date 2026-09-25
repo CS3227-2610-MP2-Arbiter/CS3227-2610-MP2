@@ -22,8 +22,10 @@ import arbiter.blindness.fixture.ui.annotator.BlindScreen;
 import arbiter.blindness.fixture.ui.annotator.InterfaceScreen;
 import arbiter.blindness.fixture.ui.annotator.ReferenceScreen;
 import arbiter.blindness.fixture.ui.annotator.ResolvedLabelScreen;
+import arbiter.blindness.fixture.ui.annotator.TaskScreen;
 import arbiter.blindness.fixture.ui.annotator.TeamProgressScreen;
 import arbiter.blindness.fixture.ui.annotator.TrustedResultScreen;
+import arbiter.blindness.fixture.ui.annotator.UserDataScreen;
 import arbiter.blindness.fixture.ui.queue.QueueScreen;
 import arbiter.blindness.fixture.ui.shared.ResolvedViewModel;
 
@@ -125,7 +127,21 @@ class AnnotatorBlindnessTest {
     }
 
     @Test
-    void blindnessRule_trustedReadsAndSafeSiblingMethods_notReported() {
+    void blindnessRule_resolutionReadFromUntypedValue_reported() {
+        assertReported(UserDataScreen.class, Hidden.RESOLVED_RESULT,
+                "arbiter.model.resolution.Resolution.getLabelId()");
+    }
+
+    @Test
+    void blindnessRule_frameworkCallbackOfConstructedTask_reported() {
+        Violation violation = assertReported(TaskScreen.class, Hidden.ANOTHER_ANNOTATORS_ANSWERS,
+                "arbiter.data.annotation.AnnotationRepository.listByItem(long)");
+
+        assertEquals(FIXTURE + ".service.LoadAnswersTask.call()", violation.path().get(1));
+    }
+
+    @Test
+    void blindnessRule_trustedReadsAndSafeMethodsOfConstructedService_notReported() {
         assertEquals(List.of(), violationsFrom(BlindScreen.class));
     }
 
@@ -137,7 +153,8 @@ class AnnotatorBlindnessTest {
         assertEquals(Set.of(QueueScreen.class.getName(), ResolvedLabelScreen.class.getName(),
                 TeamProgressScreen.class.getName(), ReferenceScreen.class.getName(),
                 InterfaceScreen.class.getName(), AdjudicatorLinkScreen.class.getName(),
-                TrustedResultScreen.class.getName(), ResolvedViewModel.class.getName()), reported);
+                TrustedResultScreen.class.getName(), ResolvedViewModel.class.getName(),
+                UserDataScreen.class.getName(), TaskScreen.class.getName()), reported);
     }
 
     private static Violation assertReported(Class<?> leaking, Hidden hidden, String target) {

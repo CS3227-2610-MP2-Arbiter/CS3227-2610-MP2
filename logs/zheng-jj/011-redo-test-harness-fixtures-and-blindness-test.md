@@ -12,6 +12,10 @@ Status: Awaiting human verification.
 - The main design lesson: blindness is about what flows back to the annotator, not about what service code touches internally. Submitting the *k*th answer must read every answer to resolve the item ([#27]). So a rule that forbids anything reachable from annotator code needs a named trust boundary. It walks method by method and stops at listed scoped entry points, and those entry points' signatures are still checked.
 - A rule that passes on a code base with no annotator screens proves nothing, so it was run against fixtures that each leak one way, and against a temporary shipped class that had to fail.
 - After asking what a resolution is for (v1 is text classification only), the owner approved the plan on 24 September 2026. They delegated the open question on shared UI, and the agent kept the strict rule: shared components never handle a `Resolution`. That is now stated in `context/architecture.md` rather than added to the later issues.
+- Whimsyturtle's review raised three gaps, and all three were valid:
+  - A `Resolution` was only caught through a repository call or a signature. Any use of the type now counts, so a value handed over untyped, such as JavaFX user data, is caught when it is read.
+  - Framework callbacks such as a JavaFX `Task.call`, which the JDK rather than the screen invokes, were not followed. Constructing an application class now reaches its JDK or JavaFX overrides, but not its other methods, so constructing a service still does not reach its adjudicator-only reads.
+  - The fixture checked only how many answers a resolution had, not whether it matched them. It now checks the named resolution against the answers under rule 10. The lesson: a fixture that accepts impossible states lets a later test pass for the wrong reason.
 - The fixture tests found a real defect in the first draft (see Verification). Writing the partition list before the tests also exposed two failures that would have left the workspace half-written.
 
 ## Agent responses and outcomes
@@ -33,6 +37,7 @@ Status: Awaiting human verification.
 - A temporary `arbiter.ui.annotator.TempLeakScreen`, reading a resolution through a temporary `arbiter.service.TempResults`, made `annotatorBlindness_shippedCode_noViolations` fail with the full call path. Both classes were then deleted.
 - The first fixture run had 8 failures. They came from a fixture defect, not a test defect: `Integer k = ... ? annotationsPerItem : assignees.size()` unboxed a null. It was fixed by an explicit branch, and the tests were left unchanged.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 178 JUnit tests, 44 of them new (11 blindness, 5 workspace, 28 workflow), none skipped, both Checkstyle tasks, and the release jar.
+- After the review fixes: 185 JUnit tests, 51 new (13 blindness, 5 workspace, 33 workflow), none skipped. Removing each fix temporarily made its new tests fail (3 blindness tests, 4 workflow tests), and the code was then restored.
 - CI on e891c02 passed on Linux, macOS, Windows and the Apple Silicon release-jar check.
 - Pending: human acceptance of the fixture API, and teammate review.
 

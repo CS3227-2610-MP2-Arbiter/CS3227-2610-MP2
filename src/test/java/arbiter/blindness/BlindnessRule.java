@@ -10,11 +10,14 @@ import java.util.Map;
 import java.util.Set;
 
 import com.tngtech.archunit.core.domain.AccessTarget.CodeUnitAccessTarget;
+import com.tngtech.archunit.core.domain.AccessTarget.FieldAccessTarget;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaCodeUnitAccess;
 import com.tngtech.archunit.core.domain.JavaConstructor;
+import com.tngtech.archunit.core.domain.JavaFieldAccess;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.domain.JavaType;
 
@@ -26,9 +29,15 @@ import com.tngtech.archunit.core.domain.JavaType;
  * of those classes' methods and follows calls, constructor calls, method references and lambda
  * bodies into other application code, including every implementation of an interface or
  * overridable method it calls, except implementations in the adjudicator's package, which run only
- * after routing to that role. It stops at the repository interfaces, the model and the workspace
+ * after routing to that role. Constructing an application class also reaches its methods that
+ * override a JDK or JavaFX method, such as {@code Task.call}, because the framework calls those
+ * rather than the application. It stops at the repository interfaces, the model and the workspace
  * layer, and at the trusted scoped entry points, whose scoping their own features test; their
  * signatures are still checked.
+ *
+ * <p>Any use of a resolution type is a violation, whether in a signature, a call, a constructor or
+ * a field access, so a resolution handed over untyped (as JavaFX's {@code getUserData} returns one)
+ * is still caught when it is read.
  *
  * <p>A violation is reported once, along the first path found to it.
  */
@@ -96,12 +105,22 @@ final class BlindnessRule {
                     target.resolveMember().ifPresent(trusted ->
                             checkSignature(unit, List.of(trusted.getFullName()), trusted, caller, violations));
                 } else if (isEntered(target.getOwner())) {
-                    for (JavaCodeUnit next : implementations(target)) {
+                    List<JavaCodeUnit> reached = implementations(target);
+                    if (target.getName().equals(JavaConstructor.CONSTRUCTOR_NAME)) {
+                        reached.addAll(frameworkCallbacks(target.getOwner()));
+                    }
+                    for (JavaCodeUnit next : reached) {
                         if (!caller.containsKey(next)) {
                             caller.put(next, unit);
                             pending.add(next);
                         }
                     }
+                }
+            }
+            for (JavaFieldAccess access : unit.getFieldAccesses()) {
+                FieldAccessTarget field = access.getTarget();
+                if (inPackage(field.getOwner(), RESOLUTION_MODEL) || inPackage(field.getRawType(), RESOLUTION_MODEL)) {
+                    violations.add(violation(unit, List.of(field.getFullName()), Hidden.RESOLVED_RESULT, caller));
                 }
             }
         }
@@ -112,6 +131,9 @@ final class BlindnessRule {
         JavaClass owner = target.getOwner();
         if (inPackage(owner, adjudicatorPackage)) {
             return Hidden.ADJUDICATOR_SCREEN;
+        }
+        if (inPackage(owner, RESOLUTION_MODEL)) {
+            return Hidden.RESOLVED_RESULT;
         }
         if (owner.isAssignableTo(ANSWERS) && !target.getName().equals("insert")) {
             return Hidden.ANOTHER_ANNOTATORS_ANSWERS;
@@ -160,6 +182,27 @@ final class BlindnessRule {
             }
         }
         return found;
+    }
+
+    private List<JavaCodeUnit> frameworkCallbacks(JavaClass constructed) {
+        List<JavaClass> hierarchy = new ArrayList<>(List.of(constructed));
+        constructed.getAllRawSuperclasses().stream().filter(this::isEntered).forEach(hierarchy::add);
+        List<JavaClass> framework = new ArrayList<>(constructed.getAllRawSuperclasses());
+        framework.addAll(constructed.getAllRawInterfaces());
+        framework.removeIf(type -> inPackage(type, "arbiter"));
+        List<JavaCodeUnit> callbacks = new ArrayList<>();
+        for (JavaClass type : hierarchy) {
+            for (JavaMethod method : type.getMethods()) {
+                String[] parameters = method.getRawParameterTypes().stream().map(JavaClass::getName)
+                        .toArray(String[]::new);
+                boolean overridesFramework = framework.stream()
+                        .anyMatch(supertype -> supertype.tryGetMethod(method.getName(), parameters).isPresent());
+                if (overridesFramework && !method.getModifiers().contains(JavaModifier.STATIC)) {
+                    callbacks.add(method);
+                }
+            }
+        }
+        return callbacks;
     }
 
     private Violation violation(JavaCodeUnit reached, List<String> tail, Hidden hidden,

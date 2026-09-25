@@ -4,15 +4,15 @@ import arbiter.model.resolution.Resolution;
 
 /** Leaks from shared UI: a view model that accepts a resolved result, whichever role hands it one. */
 public final class ResolvedViewModel {
-    private String label = "";
+    private boolean shown;
 
-    /** Shows a resolution's label. */
+    /** Shows a resolution. */
     public void show(Resolution resolution) {
-        label = String.valueOf(resolution.getLabelId());
+        shown = resolution != null;
     }
 
-    /** Returns the label shown. */
-    public String label() {
-        return label;
+    /** Returns whether a resolution is shown. */
+    public boolean isShown() {
+        return shown;
     }
 }

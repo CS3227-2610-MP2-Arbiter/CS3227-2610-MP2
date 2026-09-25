@@ -275,6 +275,52 @@ class ClassificationWorkflowTest {
     }
 
     @Test
+    void seed_majorityJustAboveHalf_recorded() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative")
+                .assign("alice", "positive").assign("bob", "positive").assign("carol", "negative")
+                .majority(0, "positive").seed(workspace);
+
+        assertEquals(flow.labelId("positive"), resolutionOf(flow.itemId(0)).getLabelId());
+    }
+
+    @Test
+    void seed_majorityOnTie_exceptionThrownAndNothingWritten() {
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative")
+                .assign("alice", "positive").assign("bob", "negative").majority(0, "positive");
+
+        assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
+        assertUntouched();
+    }
+
+    @Test
+    void seed_majorityForMinorityLabel_exceptionThrown() {
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative")
+                .assign("alice", "positive").assign("bob", "positive").assign("carol", "negative")
+                .majority(0, "negative");
+
+        assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
+    }
+
+    @Test
+    void seed_adjudicatedWithStrictMajority_exceptionThrown() {
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative")
+                .assign("alice", "positive").assign("bob", "positive").adjudicated(0, "negative");
+
+        assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
+    }
+
+    @Test
+    void seed_meanOfRatings_mustBeExact() {
+        ClassificationWorkflow.Builder wrong = ClassificationWorkflow.scale(1, 5).assign("alice", 2)
+                .assign("bob", 3).mean(0, 2.4);
+        ClassificationWorkflow repeating = ClassificationWorkflow.scale(1, 5).assign("alice", 1)
+                .assign("bob", 2).assign("carol", 2).mean(0, 5.0 / 3).seed(workspace);
+
+        assertThrows(IllegalArgumentException.class, () -> wrong.seed(workspace));
+        assertEquals(5.0 / 3, resolutionOf(repeating.itemId(0)).getScaleValue());
+    }
+
+    @Test
     void seed_resolutionWithFewerThanKAnswers_exceptionThrownAndNothingWritten() {
         ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive").annotationsPerItem(2)
                 .assign("alice", "positive").assign("bob").majority(0, "positive");
