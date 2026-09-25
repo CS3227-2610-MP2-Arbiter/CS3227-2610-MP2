@@ -184,6 +184,26 @@ class CorpusServiceTest {
     }
 
     @Test
+    void register_nameDifferingOnlyInCaseFromRegisteredOne_acceptedAndEachReadsItsOwnFile() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        Path lower = source("reviews/test.txt", "The lower-case review");
+        assumeTrue(!Files.exists(lower.resolveSibling("TEST.txt")), "case-insensitive file system");
+        Path upper = source("reviews/TEST.txt", "The upper-case review");
+        service.register(projectId, List.of(lower));
+
+        service.register(projectId, List.of(upper));
+
+        List<Item> stored = service.list(projectId);
+        assertEquals(List.of("media/reviews/test.txt", "media/reviews/TEST.txt"), storedPaths(stored));
+        SourceResolver resolver = new SourceResolver(workspace.paths());
+        assertEquals("The lower-case review", resolver.resolve(stored.get(0).getPath(),
+                stored.get(0).getContentHash()).text());
+        assertEquals("The upper-case review", resolver.resolve(stored.get(1).getPath(),
+                stored.get(1).getContentHash()).text());
+    }
+
+    @Test
     void register_lastFileOutsideWorkspace_sourceExceptionAndNothingStored() {
         Path outside = file(temporary.resolve("elsewhere/outside.txt"), text("An outside review"));
 
@@ -304,6 +324,23 @@ class CorpusServiceTest {
                 service.register(projectId, List.of(review, review)));
 
         assertEquals("media/review.txt is selected more than once", rejection.getMessage());
+        assertArrayEquals(before, workspace.dataFileBytes());
+    }
+
+    @Test
+    void register_identicalFilesWithNamesDifferingOnlyInCase_rejectedAndNothingStored() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        Path lower = source("test.txt", "A repeated review");
+        assumeTrue(!Files.exists(lower.resolveSibling("TEST.txt")), "case-insensitive file system");
+        Path upper = source("TEST.txt", "A repeated review");
+        byte[] before = workspace.dataFileBytes();
+
+        ProjectException rejection = assertThrows(ProjectException.class, () ->
+                service.register(projectId, List.of(lower, upper)));
+
+        assertEquals("media/TEST.txt has the same content as media/test.txt, which is also selected",
+                rejection.getMessage());
         assertArrayEquals(before, workspace.dataFileBytes());
     }
 
