@@ -1,6 +1,6 @@
 # Redo test harness, classification fixtures and blindness test
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -39,7 +39,8 @@ Status: Awaiting human verification.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 178 JUnit tests, 44 of them new (11 blindness, 5 workspace, 28 workflow), none skipped, both Checkstyle tasks, and the release jar.
 - After the review fixes: 185 JUnit tests, 51 new (13 blindness, 5 workspace, 33 workflow), none skipped. Removing each fix temporarily made its new tests fail (3 blindness tests, 4 workflow tests), and the code was then restored.
 - CI on e891c02 passed on Linux, macOS, Windows and the Apple Silicon release-jar check.
-- Pending: human acceptance of the fixture API, and teammate review.
+- Whimsyturtle approved PR #69, and it merged on 25 September 2026. Human acceptance of the fixture API was not recorded separately.
+- The owner marked this summary human verified on 25 September 2026.
 
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
