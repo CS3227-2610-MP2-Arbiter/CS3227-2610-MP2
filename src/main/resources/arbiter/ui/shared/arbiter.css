@@ -1,0 +1,47 @@
+/* Arbiter's one stylesheet. Style class names are declared in arbiter.ui.shared.Styles. */
+
+.root {
+    -fx-font-size: 13px;
+    -fx-background-color: #ffffff;
+}
+
+.top-bar {
+    -fx-background-color: #f2f4f7;
+    -fx-padding: 12 16 12 16;
+    -fx-spacing: 12;
+}
+
+.app-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.navigation {
+    -fx-padding: 16;
+    -fx-spacing: 8;
+    -fx-pref-width: 180;
+}
+
+.page-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.hint {
+    -fx-text-fill: #52606d;
+}
+
+.error-text {
+    -fx-text-fill: #b00020;
+}
+
+.form {
+    -fx-padding: 24;
+    -fx-spacing: 12;
+    -fx-max-width: 420;
+}
+
+.empty-state {
+    -fx-padding: 24;
+    -fx-spacing: 12;
+}

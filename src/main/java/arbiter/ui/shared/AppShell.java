@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Objects;
 
 import arbiter.service.CurrentUser;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -53,23 +52,21 @@ public final class AppShell {
 
     private HBox topBar() {
         Label title = new Label("Arbiter");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        title.getStyleClass().add(Styles.APP_TITLE);
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         Label account = new Label(user.username());
         Button logout = new Button("Log out");
         logout.setOnAction(event -> onLogout.run());
-        HBox bar = new HBox(12, title, spacer, account, logout);
+        HBox bar = new HBox(title, spacer, account, logout);
         bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setPadding(new Insets(12, 16, 12, 16));
-        bar.setStyle("-fx-background-color: #f2f4f7;");
+        bar.getStyleClass().add(Styles.TOP_BAR);
         return bar;
     }
 
     private VBox navigation(List<ScreenRoute> destinations) {
-        VBox navigation = new VBox(8);
-        navigation.setPadding(new Insets(16));
-        navigation.setPrefWidth(180);
+        VBox navigation = new VBox();
+        navigation.getStyleClass().add(Styles.NAVIGATION);
         for (ScreenRoute route : destinations) {
             Button destination = new Button(route.title());
             destination.setMaxWidth(Double.MAX_VALUE);
