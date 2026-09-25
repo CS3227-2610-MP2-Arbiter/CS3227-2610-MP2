@@ -17,8 +17,9 @@ public interface ProjectRepository {
     List<Project> listAll();
 
     /**
-     * Removes a project and every stored record it owns before its first assignment. Source files
-     * under {@code media/} are never touched.
+     * Removes a project and every stored record it owns, assignments included. It does not check
+     * whether deletion is allowed (rule 5), so callers must. Source files under {@code media/} are
+     * never touched.
      */
     void deleteById(long id);
 }

@@ -100,8 +100,8 @@ public final class ProjectService {
      * <p>Both checks run inside that action, so a stale project list cannot bypass them (#24).
      *
      * @throws AuthException if the caller is not the signed-in adjudicator
-     * @throws ProjectException if no project has this identifier, or any of its splits has an assignment,
-     *     whatever its status or its annotator's account status; nothing is changed
+     * @throws ProjectException if no project has this identifier, or it has had its first assignment
+     *     ({@link FirstAssignment}); nothing is changed
      */
     public void delete(long projectId) {
         auth.requireAdjudicator();
@@ -109,7 +109,7 @@ public final class ProjectService {
             if (session.projects().findById(projectId).isEmpty()) {
                 throw new ProjectException("This project no longer exists");
             }
-            if (assignmentCount(session, session.splits().listByProject(projectId)) > 0) {
+            if (FirstAssignment.reached(session, projectId)) {
                 throw new ProjectException("A project cannot be deleted after its first assignment");
             }
             session.projects().deleteById(projectId);
