@@ -1,0 +1,135 @@
+package arbiter.service;
+
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
+import arbiter.data.json.JsonStore;
+import arbiter.data.json.RepositorySession;
+import arbiter.model.project.Item;
+import arbiter.model.project.OutputFormat;
+import arbiter.model.project.Project;
+import arbiter.model.project.Split;
+import arbiter.model.project.TaxonomyKind;
+import arbiter.model.project.TaxonomySettings;
+
+/**
+ * Creates, lists and deletes projects (#24, #30).
+ *
+ * <p>Every method first requires the signed-in adjudicator through {@link AuthService#requireAdjudicator},
+ * so anyone else gets its {@link AuthException}. Nothing here changes a project's taxonomy kind or output
+ * format, which are fixed at creation (rule 4).
+ */
+public final class ProjectService {
+    private static final int MAX_NAME_LENGTH = 100;
+
+    private final JsonStore store;
+    private final AuthService auth;
+
+    /** Manages one workspace's projects on behalf of whoever is signed in to {@code auth}. */
+    public ProjectService(JsonStore store, AuthService auth) {
+        this.store = Objects.requireNonNull(store, "store");
+        this.auth = Objects.requireNonNull(auth, "auth");
+    }
+
+    /**
+     * Creates a project and its taxonomy settings in one committed action, stamped with the current time.
+     *
+     * <p>The name is stripped of surrounding whitespace and must then meet #24's length and uniqueness rule. A
+     * null or blank description is stored as null, and any other description is stored stripped.
+     *
+     * @return the stored project
+     * @throws AuthException if the caller is not the signed-in adjudicator
+     * @throws ProjectException if the name is too short, too long or already used, or the kind or format
+     *     is null; nothing is stored
+     */
+    public Project create(String name, String description, TaxonomyKind kind, OutputFormat outputFormat) {
+        auth.requireAdjudicator();
+        String stripped = name == null ? "" : name.strip();
+        if (stripped.isEmpty() || stripped.length() > MAX_NAME_LENGTH) {
+            throw new ProjectException("Project name must be 1 to " + MAX_NAME_LENGTH + " characters");
+        }
+        if (kind == null) {
+            throw new ProjectException("Choose a taxonomy kind");
+        }
+        if (outputFormat == null) {
+            throw new ProjectException("Choose an output format");
+        }
+        return store.write(session -> {
+            boolean taken = session.projects().listAll().stream()
+                    .anyMatch(project -> project.getName().equalsIgnoreCase(stripped));
+            if (taken) {
+                throw new ProjectException("A project with this name already exists");
+            }
+            Project project = new Project();
+            project.setName(stripped);
+            project.setDescription(description == null || description.isBlank() ? null : description.strip());
+            project.setOutputFormat(outputFormat);
+            project.setCreatedAt(Instant.now());
+            Project stored = session.projects().save(project);
+
+            TaxonomySettings settings = new TaxonomySettings();
+            settings.setProjectId(stored.getId());
+            settings.setKind(kind);
+            session.taxonomySettings().save(settings);
+            return stored;
+        });
+    }
+
+    /**
+     * Returns every project in creation order with its taxonomy kind and counts, read from one snapshot.
+     *
+     * <p>The counts cover every annotator's assignments and the resolutions, so only adjudicator screens
+     * may call this (rule 1).
+     *
+     * @throws AuthException if the caller is not the signed-in adjudicator
+     */
+    public List<ProjectSummary> list() {
+        auth.requireAdjudicator();
+        return store.read(session -> session.projects().listAll().stream()
+                .sorted(Comparator.comparing(Project::getId))
+                .map(project -> summarize(session, project))
+                .toList());
+    }
+
+    /**
+     * Deletes a project and every stored record it owns in one committed action, leaving its source files
+     * and every account untouched (rule 5).
+     *
+     * <p>Both checks run inside that action, so a stale project list cannot bypass them (#24).
+     *
+     * @throws AuthException if the caller is not the signed-in adjudicator
+     * @throws ProjectException if no project has this identifier, or any of its splits has an assignment,
+     *     whatever its status or its annotator's account status; nothing is changed
+     */
+    public void delete(long projectId) {
+        auth.requireAdjudicator();
+        store.write(session -> {
+            if (session.projects().findById(projectId).isEmpty()) {
+                throw new ProjectException("This project no longer exists");
+            }
+            if (assignmentCount(session, session.splits().listByProject(projectId)) > 0) {
+                throw new ProjectException("A project cannot be deleted after its first assignment");
+            }
+            session.projects().deleteById(projectId);
+            return null;
+        });
+    }
+
+    private static ProjectSummary summarize(RepositorySession session, Project project) {
+        long id = project.getId();
+        TaxonomyKind kind = session.taxonomySettings().findByProject(id).orElseThrow().getKind();
+        List<Item> items = session.items().listByProject(id);
+        List<Split> splits = session.splits().listByProject(id);
+        long unresolved = items.stream()
+                .filter(item -> session.resolutions().findByItem(item.getId()).isEmpty())
+                .count();
+        return new ProjectSummary(id, project.getName(), kind, project.getOutputFormat(), items.size(),
+                splits.size(), assignmentCount(session, splits), unresolved);
+    }
+
+    private static long assignmentCount(RepositorySession session, List<Split> splits) {
+        return splits.stream().mapToLong(split -> session.assignments().listBySplit(split.getId()).size()).sum();
+    }
+}
