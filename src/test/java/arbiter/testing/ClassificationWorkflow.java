@@ -25,7 +25,6 @@ import arbiter.model.resolution.ResolutionMethod;
 import arbiter.model.user.AccountStatus;
 import arbiter.model.user.Role;
 import arbiter.model.user.User;
-import arbiter.service.AuthService;
 import arbiter.service.TestAccounts;
 import arbiter.workspace.ResolvedSource;
 
@@ -223,8 +222,8 @@ public final class ClassificationWorkflow {
         /**
          * Seeds the described state into a workspace and returns its identifiers.
          *
-         * <p>The owner is created through {@link AuthService} if the workspace has none. An annotator
-         * whose username already exists is reused. Every check runs before anything is written.
+         * <p>The owner is created if the workspace has none. An annotator whose username already
+         * exists is reused. Every check runs before anything is written.
          *
          * @throws IllegalArgumentException if the description is a state the app cannot reach
          */
@@ -232,10 +231,7 @@ public final class ClassificationWorkflow {
             Objects.requireNonNull(workspace, "workspace");
             Integer k = validate();
             Map<String, User> newAccounts = newAccounts(workspace);
-            AuthService auth = new AuthService(workspace.store());
-            if (auth.needsBootstrap()) {
-                auth.bootstrapOwner(TestWorkspace.OWNER, TestWorkspace.PASSWORD);
-            }
+            workspace.ensureOwner();
             List<ResolvedSource> sources = writeCorpus(workspace);
             return workspace.store().write(session -> save(session, k, newAccounts, sources));
         }

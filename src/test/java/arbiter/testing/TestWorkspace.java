@@ -8,6 +8,9 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import arbiter.data.json.JsonStore;
+import arbiter.model.project.Assignment;
+import arbiter.model.project.AssignmentStatus;
+import arbiter.model.project.Split;
 import arbiter.service.AuthService;
 import arbiter.workspace.ResolvedSource;
 import arbiter.workspace.SourceResolver;
@@ -78,5 +81,45 @@ public final class TestWorkspace {
         AuthService auth = new AuthService(store);
         auth.login(username, PASSWORD);
         return auth;
+    }
+
+    /** Returns a new authentication session signed in as the owner, creating the owner first if there is none. */
+    public AuthService signInOwner() {
+        ensureOwner();
+        return signIn(OWNER);
+    }
+
+    /** Returns the bytes of the workspace's data file, to check that a rejected write changed nothing. */
+    public byte[] dataFileBytes() {
+        try {
+            return Files.readAllBytes(paths.dataFile());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not read the data file", e);
+        }
+    }
+
+    /** Adds a split holding one new item to a project and assigns it to this annotator, not started. */
+    public void assignNewSplit(long projectId, long annotatorId) {
+        ResolvedSource source = writeSource("later/item.txt", "A later synthetic item");
+        store.write(session -> {
+            long itemId = session.items().save(Records.item(projectId, source)).getId();
+            Split split = Records.split(projectId, "Batch 2");
+            split.setAnnotationsPerItem(1);
+            split.setAssigned(true);
+            long splitId = session.splits().save(split).getId();
+            session.splitItems().save(Records.membership(splitId, itemId));
+            Assignment assignment = Records.assignment(splitId, annotatorId);
+            assignment.setStatus(AssignmentStatus.NOT_STARTED);
+            session.assignments().save(assignment);
+            return null;
+        });
+    }
+
+    /** Creates the owner through {@link AuthService} if the workspace has none. */
+    void ensureOwner() {
+        AuthService setup = new AuthService(store);
+        if (setup.needsBootstrap()) {
+            setup.bootstrapOwner(OWNER, PASSWORD);
+        }
     }
 }
