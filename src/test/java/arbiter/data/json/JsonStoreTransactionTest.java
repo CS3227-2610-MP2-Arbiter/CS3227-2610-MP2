@@ -1,8 +1,8 @@
 package arbiter.data.json;
 
-import static arbiter.data.json.JsonStoreFixtures.NOW;
-import static arbiter.data.json.JsonStoreFixtures.project;
-import static arbiter.data.json.JsonStoreFixtures.user;
+import static arbiter.testing.Records.NOW;
+import static arbiter.testing.Records.project;
+import static arbiter.testing.Records.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
