@@ -1,6 +1,6 @@
 # Register plain-text corpus files
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -18,6 +18,7 @@ Status: Awaiting human verification.
 - The human asked for this log before acceptance testing.
 - The human then asked for a thorough review of edge cases, tests, duplication, naming and abstractions. It found no data-integrity bugs and ten lesser findings, of which the human chose seven to fix, including rejecting a chosen name in the wrong case, which reverses the earlier acceptance of that risk.
 - The human asked what documentation was still missing, then asked for it to be updated.
+- The human asked whether `test.txt` and `TEST.txt` were handled, then asked for tests of it.
 
 ## Agent responses and outcomes
 
@@ -28,10 +29,12 @@ Status: Awaiting human verification.
 - After the second review, the source resolver makes a chosen file's stored path and rejects files outside `media/` or named in the wrong case. One shared check guards the first-assignment freeze, table helpers are shared UI components, and copied test helpers became shared fixtures.
 - The project page's stale frozen state, false rejections through linked or mapped paths and a redundant scan were left unfixed.
 - The User Guide now says how to open a project and register or unregister files. `plans/source-resolution.md` records the case check and drops the two open questions this task answered. The Developer Guide needed no change.
+- Two tests cover names differing only in case: with different content both register, and with the same content the second is rejected.
 
 ## Verification
 
 - `CorpusServiceTest` adds 32 tests and five stored-path tests; all pass and found no production defects.
 - `.\gradlew.bat check shadowJar` passed on JDK 25 after the message fix. The only skips are four existing `SourceResolverTest` cases that Windows cannot run without symlink privileges.
-- The second review's first check reused cached results, so later checks used `--rerun-tasks`. After its fixes, 279 tests passed with the same four skips. The case test is unverified on macOS.
-- Human acceptance of the project page and the User Guide, and the pull request, remain. The disabled controls on an assigned project are covered only by tests until #28 and #32.
+- The second review's first check reused cached results, so later checks used `--rerun-tasks`. After its fixes, 279 tests passed with the same four skips.
+- CI passed on Linux, macOS and Windows for PR #74. The new case tests passed on Linux and were skipped elsewhere, and the resolver's wrong-case refusal passed on macOS.
+- The human passed every acceptance scenario by hand. The disabled controls on an assigned project are covered only by tests until #28 and #32.

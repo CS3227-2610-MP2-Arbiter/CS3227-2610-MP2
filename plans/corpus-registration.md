@@ -2,7 +2,7 @@
 
 **Issue:** [#25] - Register plain-text corpus files
 **Branch:** `feat/corpus-registration` (from `main` after [#24] merged)
-**Status:** Plan approved by the owner on 25 September 2026. Implemented with `CorpusServiceTest` and reviewed; acceptance remains.
+**Status:** Implemented with `CorpusServiceTest`, reviewed and accepted by the owner on 25 September 2026; teammate review pending.
 
 What the feature does is in [#25], and the rules it relies on are rules 3, 5, 14 and 21 in [UserFlows](../docs/UserFlows.md#3-rules-both-tracks-share). This plan records how the code will meet them and what is decided.
 
