@@ -31,6 +31,8 @@ import javafx.stage.Stage;
 /** Provides Arbiter's JavaFX interface. */
 public class Arbiter extends Application {
     private WorkspaceLock workspace;
+    private AuthService auth;
+    private ProjectService projects;
 
     @Override
     public void start(Stage stage) {
@@ -72,8 +74,9 @@ public class Arbiter extends Application {
         stage.setOnHidden(event -> closeWorkspace());
         stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
         JsonStore store = JsonStore.open(workspace);
-        AuthService auth = new AuthService(store);
-        showAuth(stage, auth, new ProjectService(store, auth));
+        auth = new AuthService(store);
+        projects = new ProjectService(store, auth);
+        showAuth(stage);
     }
 
     private void failToStart(Stage stage, String heading, RuntimeException error) {
@@ -86,11 +89,11 @@ public class Arbiter extends Application {
         }
     }
 
-    private void showAuth(Stage stage, AuthService auth, ProjectService projects) {
-        new AuthScreen(stage, auth, user -> showShell(stage, auth, projects, user)).show();
+    private void showAuth(Stage stage) {
+        new AuthScreen(stage, auth, user -> showShell(stage, user)).show();
     }
 
-    private void showShell(Stage stage, AuthService auth, ProjectService projects, CurrentUser user) {
+    private void showShell(Stage stage, CurrentUser user) {
         ScreenRegistry screens = new ScreenRegistry();
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
                 Components.emptyState("My splits", "Your assigned splits will appear here.")));
@@ -98,7 +101,7 @@ public class Arbiter extends Application {
                 new ProjectsScreen(stage, projects).content()));
         new AppShell(stage, user, screens, () -> {
             auth.logout();
-            showAuth(stage, auth, projects);
+            showAuth(stage);
         }).show();
     }
 

@@ -35,6 +35,8 @@ import javafx.stage.Window;
 
 /** The adjudicator's project list, where projects are created, and deleted before their first assignment. */
 public final class ProjectsScreen {
+    private static final String DELETE_FAILED = "The project could not be deleted";
+
     private final Window owner;
     private final ProjectService projects;
     private final StackPane content = new StackPane();
@@ -96,6 +98,7 @@ public final class ProjectsScreen {
         Button create = new Button("Create project");
         create.setDefaultButton(true);
         create.setOnAction(event -> {
+            error.setText("");
             try {
                 projects.create(name.getText(), description.getText(), selected(kinds, TaxonomyKind.class),
                         selected(formats, OutputFormat.class));
@@ -137,8 +140,13 @@ public final class ProjectsScreen {
         }
         try {
             projects.delete(project.id());
-        } catch (ProjectException | AuthException | JsonStoreException e) {
-            Dialogs.showError(owner, "The project could not be deleted", e);
+        } catch (ProjectException e) {
+            // The list was out of date, so the reload below shows why.
+            Dialogs.showError(owner, DELETE_FAILED, e);
+        } catch (AuthException | JsonStoreException e) {
+            // Nothing changed, so the list is still current, and reloading would likely report this again.
+            Dialogs.showError(owner, DELETE_FAILED, e);
+            return;
         }
         showList();
     }
