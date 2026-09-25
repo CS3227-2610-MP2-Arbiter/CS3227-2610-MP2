@@ -77,6 +77,11 @@ All new code is in `arbiter.ui.shared`, which both roles already use ([#5]).
 - Added `ErrorMessagesTest`, `DiagnosticLogTest`, `StylesheetTest` and `UiConventionTest` (18 tests). A mutation run proved each one bites. A temporary class that set an inline style, built an `Alert`, printed to `System.out` and used `java.util.logging` failed all four convention rules. A stray `.stray` stylesheet rule failed the stylesheet check. A login message temporarily including the password failed the password check. All three changes were then reverted.
 - Documentation: "Errors and logging" in `docs/DeveloperGuide.md` (plus a decisions-table row), the UI rules in `context/architecture.md`, and one line in `docs/UserGuide.md` saying where the log is.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 208 JUnit tests, none skipped, both Checkstyle tasks, and the release jar, which contains `arbiter/ui/shared/arbiter.css`.
+- Whimsyturtle's review of PR #71 found two defects and one documentation problem:
+  - An uncaught exception during layout or animation showed no dialog, because JavaFX forbids `showAndWait` there. `Dialogs.showUncaught` now records the failure at once and opens the dialog through `Platform.runLater`. Both uncaught-exception handlers use it, so a failure on a background thread is shown too.
+  - A startup failure closed the app with no dialog and no workspace log, because `Arbiter.start` released the workspace and rethrew to the JavaFX launcher. It now shows and logs the failure before releasing the workspace, then closes.
+  - "Errors and logging" restated what `ErrorMessages` and `DiagnosticLog` guarantee, as did an `architecture.md` bullet. The guide now keeps only the rationale, and the exception-message rule moved into the `ErrorMessages` Javadoc.
+- `DialogsTest` covers the uncaught path without JavaFX: the failure is recorded before any dialog is attempted. Moving the recording after the dialog call made it fail. 209 JUnit tests now pass, none skipped.
 - Not run: the GUI. The dialogs, stylesheet look and log file in a real session need the human acceptance checks below.
 
 ### Human acceptance checks
@@ -88,6 +93,7 @@ All new code is in `arbiter.ui.shared`, which both roles already use ([#5]).
 5. Log in with a wrong password: red inline message. The password does not appear in `logs/arbiter.0.log`.
 6. Shell: a grey top bar with a bold "Arbiter", and the placeholder shows a heading and grey hint text.
 7. Close the app: `logs/` holds no `.lck` file.
+8. Make startup fail, for example by making a workspace's `arbiter.json` unreadable: an error dialog appears before the app closes, and the failure is in that workspace's `logs/arbiter.0.log`.
 
 ## Open questions
 

@@ -70,13 +70,9 @@ This is stronger than package separation: it holds for code written later, by an
 
 ### Errors and logging
 
-Both roles report problems the same way, through the UI kit in `arbiter.ui.shared` ([#8]). What a user reads depends on who wrote the exception. An exception declared in Arbiter's own packages, such as a failed login or an unreadable workspace, already carries a message written for the user, so it is shown as it is. Anything else is a programming error, so the user sees a generic message and the details go to the log. A new service's exception is covered automatically, with no list to maintain.
+Both roles report problems through one UI kit in `arbiter.ui.shared` ([#8]), so a failure looks the same on every screen and nothing fails silently. Whether a user reads a failure's own message is decided in one place, `ErrorMessages`, by where the exception is declared rather than by a list of types, so a new service's exceptions need no registration. Diagnostics go to the workspace's own `logs/` folder, beside the data they concern.
 
-A screen catches only the failures of the action it runs. It shows a failed action in an error dialog, which also logs it, or shows a problem the user can fix on the same form inline, such as a wrong password. Anything it does not catch reaches one handler that logs it and tells the user, so nothing fails silently.
-
-The log never takes field values, only a fixed action name and the exception, so a password or source text can reach it only through an exception message, and the convention forbids that. While a workspace is open, the log is written to its `logs/` folder, beside the data it concerns.
-
-The rules agents follow, and the test that enforces them, are in [the architecture context](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md#ui).
+What each class guarantees is in its Javadoc. The rules agents follow, and the test that enforces them, are in [the architecture context](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md#ui).
 
 ### Design decisions and their costs
 

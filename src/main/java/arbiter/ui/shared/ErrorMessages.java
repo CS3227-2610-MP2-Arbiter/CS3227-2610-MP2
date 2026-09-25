@@ -4,7 +4,8 @@ package arbiter.ui.shared;
  * Decides what a user reads about a failure.
  *
  * <p>An exception declared in an {@code arbiter} package carries a message written for the user, so
- * it is shown as it is. Any other exception is a programming error, so the user gets a generic
+ * it is shown as it is. Such a message is also logged, so it must never hold a credential, password
+ * hash, salt or source text. Any other exception is a programming error, so the user gets a generic
  * message and the details go to {@link DiagnosticLog}.
  */
 public final class ErrorMessages {

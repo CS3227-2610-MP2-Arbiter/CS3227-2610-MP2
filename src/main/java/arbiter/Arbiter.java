@@ -32,9 +32,19 @@ public class Arbiter extends Application {
 
     @Override
     public void start(Stage stage) {
-        Thread.setDefaultUncaughtExceptionHandler((thread, error) -> DiagnosticLog.record("Background work", error));
-        Thread.currentThread().setUncaughtExceptionHandler((thread, error) ->
-                Dialogs.showError(stage, "Something went wrong", error));
+        Thread.UncaughtExceptionHandler report = (thread, error) -> Dialogs.showUncaught(stage, error);
+        Thread.setDefaultUncaughtExceptionHandler(report);
+        Thread.currentThread().setUncaughtExceptionHandler(report);
+        try {
+            open(stage);
+        } catch (AuthException | JsonStoreException e) {
+            failToStart(stage, "That workspace cannot be used for login", e);
+        } catch (RuntimeException e) {
+            failToStart(stage, "Arbiter could not start", e);
+        }
+    }
+
+    private void open(Stage stage) {
         stage.setTitle("Arbiter");
         Scene scene = new Scene(new StackPane(new Label("Arbiter")), 960, 640);
         Styles.apply(scene);
@@ -57,20 +67,18 @@ public class Arbiter extends Application {
             // The console still gets every record, so Arbiter carries on without the workspace log.
             DiagnosticLog.record("Open the workspace log", e);
         }
+        stage.setOnHidden(event -> closeWorkspace());
+        stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
+        showAuth(stage, new AuthService(JsonStore.open(workspace)));
+    }
+
+    private void failToStart(Stage stage, String heading, RuntimeException error) {
+        // Shown, and so logged, before the workspace is released, so the failure reaches its log.
         try {
-            stage.setOnHidden(event -> closeWorkspace());
-            stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
-            showAuth(stage, new AuthService(JsonStore.open(workspace)));
-        } catch (AuthException | JsonStoreException e) {
-            try {
-                Dialogs.showError(stage, "That workspace cannot be used for login", e);
-            } finally {
-                closeWorkspace();
-                stage.close();
-            }
-        } catch (RuntimeException e) {
+            Dialogs.showError(stage, heading, error);
+        } finally {
             closeWorkspace();
-            throw e;
+            stage.close();
         }
     }
 

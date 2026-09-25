@@ -13,6 +13,8 @@ Status: Awaiting human verification.
 - Two findings shaped the design. The workspace already creates a `logs/` folder described as holding application logs, which nothing wrote to. And CI's Linux runner has no display, so the logic lives in plain classes testable without JavaFX, while the JavaFX pieces are held to the convention by ArchUnit rules.
 - Deciding which exceptions reach the user by package (declared in `arbiter.*`) rather than by a list, or a new base class, means future service exceptions need no registration and existing exception hierarchies stay untouched.
 
+- Whimsyturtle's review of PR #71 raised four points, all valid. Two were defects: an uncaught error during layout or animation showed no dialog, because JavaFX forbids `showAndWait` there, and a startup failure exited with no dialog and no workspace log. Two were one-home violations: the Developer Guide restated what `ErrorMessages` and `DiagnosticLog` guarantee. The lesson: a handler that reports errors needs its own failure modes checked, and the design doc should explain why, not restate what the Javadoc already says.
+
 ## Agent responses and outcomes
 
 - Used `write-plan`, `implement-feature`, `write-test`, `review`, `maintain-docs` and `log`. `clarify-requirements` was skipped because #8's criteria were already agreed. `create-pull-request` waited at a draft until the owner approved delivery.
@@ -29,6 +31,9 @@ Status: Awaiting human verification.
   - A stray stylesheet rule failed the stylesheet check.
   - A login message temporarily including the password failed the password check.
 - Not verified: the GUI. The seven human acceptance checks are listed in the plan.
-- Pending: human acceptance, teammate review and CI.
+- After the review fixes: 209 JUnit tests, 19 new, none skipped. A mutation that recorded the uncaught failure only after the dialog call failed `DialogsTest`.
+- CI on the first revision (0efebea) passed on every platform.
+- The owner approved delivery of the fix on 25 September 2026.
+- Pending: human acceptance, teammate re-review and CI on the fix.
 
 [#8]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/8

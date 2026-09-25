@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -17,6 +18,7 @@ import javafx.stage.Window;
  */
 public final class Dialogs {
     private static final String TITLE = "Arbiter";
+    private static final String UNCAUGHT = "Something went wrong";
 
     private Dialogs() {
     }
@@ -30,6 +32,21 @@ public final class Dialogs {
     public static void showError(Window owner, String heading, Throwable error) {
         DiagnosticLog.record(heading, error);
         alert(Alert.AlertType.ERROR, owner, heading, ErrorMessages.of(error)).showAndWait();
+    }
+
+    /**
+     * Reports a failure nothing else caught. It is recorded at once, and the user is told once JavaFX
+     * can open a dialog: never during layout or animation, where opening one throws, and always on the
+     * JavaFX thread, whichever thread failed.
+     */
+    public static void showUncaught(Window owner, Throwable error) {
+        DiagnosticLog.record(UNCAUGHT, error);
+        try {
+            String message = ErrorMessages.of(error);
+            Platform.runLater(() -> alert(Alert.AlertType.ERROR, owner, UNCAUGHT, message).showAndWait());
+        } catch (IllegalStateException toolkitStopped) {
+            // JavaFX is not running, so there is no window to tell; the failure is already recorded.
+        }
     }
 
     /** Tells the user an action succeeded. */
