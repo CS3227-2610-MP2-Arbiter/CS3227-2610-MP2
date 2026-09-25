@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -17,10 +18,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +36,8 @@ import arbiter.data.json.JsonStore;
 import arbiter.data.json.RepositorySession;
 import arbiter.model.project.Item;
 import arbiter.model.project.OutputFormat;
+import arbiter.model.project.Split;
+import arbiter.model.project.SplitItem;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.testing.ClassificationWorkflow;
 import arbiter.testing.TestWorkspace;
@@ -38,12 +45,16 @@ import arbiter.workspace.SourceException;
 import arbiter.workspace.SourceFailure;
 import arbiter.workspace.SourceResolver;
 
-/** Integration checks for listing, registering and unregistering a project's items (#25). */
+/**
+ * Integration checks for listing, registering and unregistering a project's items (#25), and for generating,
+ * listing and deleting its splits (#28).
+ */
 class CorpusServiceTest {
     @TempDir
     Path temporary;
 
     private TestWorkspace workspace;
+    private int sourceCount;
 
     @BeforeEach
     void createWorkspace() {
@@ -413,18 +424,6 @@ class CorpusServiceTest {
     }
 
     @Test
-    void unregister_onlyItemOfSplit_splitKeptEmpty() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("pos").seed(workspace);
-        CorpusService service = ownerService();
-
-        service.unregister(flow.itemId(0));
-
-        assertEquals(List.of(), service.list(flow.projectId()));
-        assertEquals(List.of(), memberships(flow.splitId()));
-        assertTrue(this.<Boolean>read(session -> session.splits().findById(flow.splitId()).isPresent()));
-    }
-
-    @Test
     void unregister_itemAlreadyRemovedOrUnknown_rejectedAndNothingChanged() {
         ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2).seed(workspace);
         CorpusService service = ownerService();
@@ -463,6 +462,7 @@ class CorpusServiceTest {
 
         assertRejected(() -> service.register(flow.projectId(), List.of(added)));
         assertRejected(() -> service.unregister(flow.itemId(0)));
+        assertRejected(() -> service.deleteSplit(flow.splitId()));
 
         assertArrayEquals(before, workspace.dataFileBytes());
     }
@@ -479,6 +479,7 @@ class CorpusServiceTest {
 
         assertRejected(() -> service.register(flow.projectId(), List.of(added)));
         assertRejected(() -> service.unregister(flow.itemId(1)));
+        assertRejected(() -> service.deleteSplit(flow.splitId()));
 
         assertArrayEquals(before, workspace.dataFileBytes());
     }
@@ -492,6 +493,7 @@ class CorpusServiceTest {
 
         assertRejected(() -> service.register(flow.projectId(), List.of(added)));
         assertRejected(() -> service.unregister(flow.itemId(0)));
+        assertRejected(() -> service.deleteSplit(flow.splitId()));
 
         assertArrayEquals(before, workspace.dataFileBytes());
     }
@@ -533,6 +535,306 @@ class CorpusServiceTest {
     }
 
     @Test
+    void allocate_sameIdsCountAndSeed_sameShuffledSplits() {
+        List<Long> ids = LongStream.rangeClosed(1, 20).boxed().toList();
+
+        List<List<Long>> splits = CorpusService.allocate(ids, 6, 42);
+
+        assertEquals(splits, CorpusService.allocate(ids, 6, 42));
+        assertEquals(List.of(6, 6, 6, 2), splits.stream().map(List::size).toList());
+        List<Long> order = splits.stream().flatMap(List::stream).toList();
+        assertEquals(ids, order.stream().sorted().toList());
+        assertNotEquals(ids, order);
+        assertNotEquals(splits, CorpusService.allocate(ids, 6, 43));
+    }
+
+    @Test
+    void previewSplits_validCounts_sizesInOrderAndNothingStored() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 5);
+        Map<String, List<Integer>> expected = Map.of(
+                "1", List.of(1, 1, 1, 1, 1),
+                "2", List.of(2, 2, 1),
+                "4", List.of(4, 1),
+                "5", List.of(5),
+                " 3 ", List.of(3, 2),
+                "03", List.of(3, 2),
+                "000000000000000000003", List.of(3, 2));
+        byte[] before = workspace.dataFileBytes();
+
+        expected.forEach((count, sizes) -> assertEquals(sizes, service.previewSplits(projectId, count), count));
+
+        assertArrayEquals(before, workspace.dataFileBytes());
+        assertEquals(List.of(), service.listSplits(projectId));
+    }
+
+    @Test
+    void previewAndGenerate_invalidCount_rejectedAndNothingStored() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 3);
+        // U+0663 is the Arabic-Indic digit three.
+        List<String> counts = Arrays.asList(null, "", "   ", "0", "-1", "2.5", "abc", "٣");
+        byte[] before = workspace.dataFileBytes();
+
+        for (String count : counts) {
+            assertMessageNames(assertRejected(() -> service.previewSplits(projectId, count)),
+                    "positive whole number");
+            assertMessageNames(assertRejected(() -> service.generateSplits(projectId, count, List.of(3))),
+                    "positive whole number");
+        }
+
+        assertArrayEquals(before, workspace.dataFileBytes());
+        assertEquals(List.of(), service.listSplits(projectId));
+    }
+
+    @Test
+    void previewAndGenerate_countAboveAvailableItems_rejectedAndNothingStored() {
+        long projectId = newProject("Tweets");
+        long singleId = newProject("Single");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 2);
+        generate(service, projectId, "2");
+        registerItems(service, projectId, 3);
+        registerItems(service, singleId, 1);
+        byte[] before = workspace.dataFileBytes();
+
+        // 4 is more than the 3 available items but not the 5 registered ones.
+        for (String count : List.of("4", "2147483647", "2147483648", "99999999999999999999")) {
+            assertMessageNames(assertRejected(() -> service.previewSplits(projectId, count)),
+                    "Only 3 files are available");
+            assertMessageNames(assertRejected(() -> service.generateSplits(projectId, count, List.of(3))),
+                    "Only 3 files are available");
+        }
+        assertMessageNames(assertRejected(() -> service.previewSplits(singleId, "2")), "Only 1 file is available");
+        assertMessageNames(assertRejected(() -> service.generateSplits(singleId, "2", List.of(1))),
+                "Only 1 file is available");
+
+        assertArrayEquals(before, workspace.dataFileBytes());
+    }
+
+    @Test
+    void previewAndGenerate_missingProjectOrNoAvailableItems_rejectedAndNothingStored() {
+        long deleted = newProject("Deleted");
+        projectService().delete(deleted);
+        long empty = newProject("Empty");
+        ClassificationWorkflow allInSplit = ClassificationWorkflow.single("pos").items(2).seed(workspace);
+        CorpusService service = ownerService();
+        Map<Long, String> reasons = Map.of(
+                deleted, "no longer exists",
+                deleted + 1_000, "no longer exists",
+                empty, "no registered files outside a split",
+                allInSplit.projectId(), "no registered files outside a split");
+        byte[] before = workspace.dataFileBytes();
+
+        reasons.forEach((projectId, reason) -> {
+            assertMessageNames(assertRejected(() -> service.previewSplits(projectId, "1")), reason);
+            assertMessageNames(assertRejected(() -> service.generateSplits(projectId, "1", List.of())), reason);
+        });
+
+        assertArrayEquals(before, workspace.dataFileBytes());
+        assertEquals(List.of(), service.listSplits(empty));
+    }
+
+    @Test
+    void generateSplits_count50On120Items_splitsOf50And50And20HoldingEachItemOnce() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        List<Long> itemIds = registerItems(service, projectId, 120);
+        List<Integer> preview = service.previewSplits(projectId, "50");
+        Instant before = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+
+        List<Split> generated = service.generateSplits(projectId, "50", preview);
+
+        Instant after = Instant.now();
+        assertEquals(List.of(50, 50, 20), preview);
+        List<SplitSummary> splits = service.listSplits(projectId);
+        assertEquals(splitIds(generated), splits.stream().map(SplitSummary::id).toList());
+        assertEquals(List.of("Split 1", "Split 2", "Split 3"), splits.stream().map(SplitSummary::name).toList());
+        assertEquals(preview, splits.stream().map(split -> split.itemIds().size()).toList());
+        assertEquals(itemIds, splits.stream().flatMap(split -> split.itemIds().stream()).sorted().toList());
+        for (SplitSummary split : splits) {
+            assertEquals(IntStream.rangeClosed(1, split.itemIds().size()).boxed().toList(), sequences(split.id()));
+            assertFalse(split.assigned());
+        }
+        Split first = generated.getFirst();
+        assertFalse(first.getCreatedAt().isBefore(before));
+        assertFalse(first.getCreatedAt().isAfter(after));
+        for (Split stored : read(session -> session.splits().listByProject(projectId))) {
+            assertEquals(first.getSeed(), stored.getSeed());
+            assertEquals(50, stored.getRequestedBatchSize());
+            assertNull(stored.getAnnotationsPerItem());
+            assertEquals(first.getCreatedAt(), stored.getCreatedAt());
+        }
+    }
+
+    @Test
+    void generateSplits_laterGeneration_onlyAvailableItemsAsRecordedSeedAllocates() {
+        long projectId = newProject("Tweets");
+        long otherId = newProject("Other");
+        CorpusService service = ownerService();
+        registerItems(service, otherId, 2);
+        generate(service, otherId, "1");
+        registerItems(service, projectId, 10);
+        generate(service, projectId, "1");
+        List<SplitSummary> earlier = service.listSplits(projectId);
+        List<SplitSummary> other = service.listSplits(otherId);
+        List<Long> added = registerItems(service, projectId, 3);
+
+        List<Split> generated = generate(service, projectId, "2");
+
+        assertEquals("Split 1", earlier.getFirst().name());
+        List<SplitSummary> splits = service.listSplits(projectId);
+        assertEquals(earlier, splits.subList(0, 10));
+        List<SplitSummary> later = splits.subList(10, splits.size());
+        assertEquals(splitIds(generated), later.stream().map(SplitSummary::id).toList());
+        assertEquals(List.of("Split 11", "Split 12"), later.stream().map(SplitSummary::name).toList());
+        assertEquals(CorpusService.allocate(added, 2, generated.getFirst().getSeed()),
+                later.stream().map(SplitSummary::itemIds).toList());
+        assertEquals(other, service.listSplits(otherId));
+    }
+
+    @Test
+    void generateSplits_itemRegisteredOrUnregisteredSincePreview_rejectedAndNothingStored() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        long firstItem = registerItems(service, projectId, 4).getFirst();
+        List<Integer> preview = service.previewSplits(projectId, "2");
+        long added = registerItems(service, projectId, 1).getFirst();
+        byte[] withAdded = workspace.dataFileBytes();
+
+        assertMessageNames(assertRejected(() -> service.generateSplits(projectId, "2", preview)),
+                "changed since the preview");
+
+        assertArrayEquals(withAdded, workspace.dataFileBytes());
+        service.unregister(added);
+        service.unregister(firstItem);
+        byte[] withRemoved = workspace.dataFileBytes();
+
+        assertMessageNames(assertRejected(() -> service.generateSplits(projectId, "2", preview)),
+                "changed since the preview");
+
+        assertArrayEquals(withRemoved, workspace.dataFileBytes());
+        assertEquals(List.of(), service.listSplits(projectId));
+    }
+
+    @Test
+    void listSplits_afterAssignmentAndRestart_savedMembershipAndOrder() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 7);
+        generate(service, projectId, "3");
+        List<SplitSummary> generated = service.listSplits(projectId);
+        long assignedId = generated.get(1).id();
+
+        workspace.assignSplit(assignedId, "annotator");
+
+        List<SplitSummary> expected = generated.stream()
+                .map(split -> new SplitSummary(split.id(), split.name(), split.itemIds(), split.id() == assignedId))
+                .toList();
+        assertEquals(expected, service.listSplits(projectId));
+        assertEquals(expected, serviceOn(JsonStore.open(workspace.paths())).listSplits(projectId));
+    }
+
+    @Test
+    void deleteSplit_neverAssigned_splitAndMembershipsRemovedAndItemsRegenerated() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        List<Long> itemIds = registerItems(service, projectId, 5);
+        generate(service, projectId, "2");
+        List<SplitSummary> splits = service.listSplits(projectId);
+        SplitSummary deleted = splits.getLast();
+
+        service.deleteSplit(deleted.id());
+
+        assertEquals(splits.subList(0, 2), service.listSplits(projectId));
+        assertTrue(this.<Boolean>read(session -> session.splits().findById(deleted.id()).isEmpty()));
+        assertEquals(List.of(), memberships(deleted.id()));
+        assertEquals(itemIds, ids(service.list(projectId)));
+        assertEquals(List.of(1), service.previewSplits(projectId, "1"));
+        Split regenerated = generate(service, projectId, "1").getFirst();
+        assertEquals("Split 3", regenerated.getName());
+        assertEquals(deleted.itemIds(), service.listSplits(projectId).getLast().itemIds());
+    }
+
+    @Test
+    void deleteSplit_neverAssignedAfterAnotherSplitsAssignment_deletedAndItemsRegenerated() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 5);
+        generate(service, projectId, "2");
+        List<SplitSummary> splits = service.listSplits(projectId);
+        SplitSummary assigned = splits.get(0);
+        SplitSummary deleted = splits.get(1);
+        workspace.assignSplit(assigned.id(), "annotator");
+
+        service.deleteSplit(deleted.id());
+        generate(service, projectId, "2");
+
+        List<SplitSummary> after = service.listSplits(projectId);
+        assertEquals(3, after.size());
+        assertEquals(new SplitSummary(assigned.id(), assigned.name(), assigned.itemIds(), true), after.get(0));
+        assertEquals(splits.get(2), after.get(1));
+        assertEquals("Split 4", after.get(2).name());
+        assertEquals(deleted.itemIds().stream().sorted().toList(), after.get(2).itemIds().stream().sorted().toList());
+    }
+
+    @Test
+    void deleteSplit_assignmentAfterListRead_rejectedAndNothingChanged() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 3);
+        generate(service, projectId, "2");
+        List<SplitSummary> stale = service.listSplits(projectId);
+        assertFalse(stale.getFirst().assigned());
+        workspace.assignSplit(stale.getFirst().id(), "annotator");
+        byte[] before = workspace.dataFileBytes();
+
+        assertRejected(() -> service.deleteSplit(stale.getFirst().id()));
+        assertRejected(() -> service.unregister(stale.getFirst().itemIds().getFirst()));
+
+        assertArrayEquals(before, workspace.dataFileBytes());
+    }
+
+    @Test
+    void deleteSplit_alreadyDeletedOrUnknown_rejectedAndNothingChanged() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 1);
+        long splitId = generate(service, projectId, "1").getFirst().getId();
+        service.deleteSplit(splitId);
+        byte[] before = workspace.dataFileBytes();
+
+        assertRejected(() -> service.deleteSplit(splitId));
+        assertRejected(() -> service.deleteSplit(splitId + 1_000));
+
+        assertArrayEquals(before, workspace.dataFileBytes());
+    }
+
+    @Test
+    void unregister_itemsOfGeneratedSplits_membershipsRemovedAndEmptiedSplitDeleted() {
+        long projectId = newProject("Tweets");
+        CorpusService service = ownerService();
+        registerItems(service, projectId, 3);
+        generate(service, projectId, "2");
+        List<SplitSummary> splits = service.listSplits(projectId);
+        SplitSummary pair = splits.get(0);
+        SplitSummary single = splits.get(1);
+
+        service.unregister(pair.itemIds().getFirst());
+        service.unregister(single.itemIds().getFirst());
+
+        List<SplitSummary> expected = List.of(
+                new SplitSummary(pair.id(), pair.name(), pair.itemIds().subList(1, 2), false));
+        assertEquals(expected, service.listSplits(projectId));
+        assertEquals(List.of(), memberships(single.id()));
+        JsonStore reopened = JsonStore.open(workspace.paths());
+        assertTrue(reopened.<Boolean>read(session -> session.splits().findById(single.id()).isEmpty()));
+        assertEquals(expected, serviceOn(reopened).listSplits(projectId));
+    }
+
+    @Test
     void allMethods_signedOutAfterUse_authExceptionAndNothingChanged() {
         ClassificationWorkflow flow = ClassificationWorkflow.single("pos").seed(workspace);
         AuthService auth = workspace.signIn(TestWorkspace.OWNER);
@@ -549,6 +851,13 @@ class CorpusServiceTest {
         assertThrows(AuthException.class, () -> service.register(flow.projectId() + 1_000, List.of(added)));
         assertThrows(AuthException.class, () -> service.unregister(flow.itemId(0)));
         assertThrows(AuthException.class, () -> service.unregister(flow.itemId(0) + 1_000));
+        assertThrows(AuthException.class, () -> service.listSplits(flow.projectId()));
+        assertThrows(AuthException.class, () -> service.previewSplits(flow.projectId(), "1"));
+        assertThrows(AuthException.class, () -> service.previewSplits(flow.projectId(), "0"));
+        assertThrows(AuthException.class, () -> service.generateSplits(flow.projectId(), "1", List.of(1)));
+        assertThrows(AuthException.class, () -> service.generateSplits(flow.projectId(), "0", List.of(1)));
+        assertThrows(AuthException.class, () -> service.deleteSplit(flow.splitId()));
+        assertThrows(AuthException.class, () -> service.deleteSplit(flow.splitId() + 1_000));
 
         assertArrayEquals(before, workspace.dataFileBytes());
     }
@@ -564,6 +873,10 @@ class CorpusServiceTest {
         assertThrows(AuthException.class, () -> service.list(flow.projectId()));
         assertThrows(AuthException.class, () -> service.register(flow.projectId(), List.of(added)));
         assertThrows(AuthException.class, () -> service.unregister(flow.itemId(0)));
+        assertThrows(AuthException.class, () -> service.listSplits(flow.projectId()));
+        assertThrows(AuthException.class, () -> service.previewSplits(flow.projectId(), "1"));
+        assertThrows(AuthException.class, () -> service.generateSplits(flow.projectId(), "1", List.of(1)));
+        assertThrows(AuthException.class, () -> service.deleteSplit(flow.splitId()));
 
         assertArrayEquals(before, workspace.dataFileBytes());
     }
@@ -614,6 +927,21 @@ class CorpusServiceTest {
         return projectService().create(name, null, TaxonomyKind.SINGLE, OutputFormat.CSV).getId();
     }
 
+    /** Registers this many new text files in a project and returns their identifiers in registration order. */
+    private List<Long> registerItems(CorpusService service, long projectId, int count) {
+        List<Path> files = new ArrayList<>();
+        for (int file = 0; file < count; file++) {
+            sourceCount++;
+            files.add(source("items/item-" + sourceCount + ".txt", "Item " + sourceCount));
+        }
+        return ids(service.register(projectId, files));
+    }
+
+    /** Generates splits of this many items with the sizes its preview shows, as confirming the preview does. */
+    private static List<Split> generate(CorpusService service, long projectId, String itemsPerSplit) {
+        return service.generateSplits(projectId, itemsPerSplit, service.previewSplits(projectId, itemsPerSplit));
+    }
+
     /** Writes a UTF-8 text file below {@code media/} and returns it as the chooser would. */
     private Path source(String belowMedia, String text) {
         return workspace.paths().root().resolve(workspace.writeSource(belowMedia, text).storedPath());
@@ -658,6 +986,17 @@ class CorpusServiceTest {
         return read(session -> session.splitItems().listBySplit(splitId).stream()
                 .map(membership -> membership.getItemId() + "@" + membership.getSequence())
                 .toList());
+    }
+
+    /** Returns the positions of a split's memberships, in stored order. */
+    private List<Integer> sequences(long splitId) {
+        return read(session -> session.splitItems().listBySplit(splitId).stream()
+                .map(SplitItem::getSequence)
+                .toList());
+    }
+
+    private static List<Long> splitIds(List<Split> splits) {
+        return splits.stream().map(Split::getId).toList();
     }
 
     private List<String> labels(long projectId) {
