@@ -1,6 +1,6 @@
 # Shared UI kit and error-handling convention
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -34,6 +34,8 @@ Status: Awaiting human verification.
 - After the review fixes: 209 JUnit tests, 19 new, none skipped. A mutation that recorded the uncaught failure only after the dialog call failed `DialogsTest`.
 - CI on the first revision (0efebea) passed on every platform.
 - The owner approved delivery of the fix on 25 September 2026.
-- Pending: human acceptance, teammate re-review and CI on the fix.
+- CI on the fix (2fcef2c) passed on every platform. Whimsyturtle approved PR #71, and it merged on 25 September 2026.
+- Pending: the eight human acceptance checks in `plans/ui-kit.md`.
+- The owner marked this summary human verified on 25 September 2026.
 
 [#8]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/8
