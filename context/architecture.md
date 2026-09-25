@@ -71,11 +71,12 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 
 - `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup and paths; `WorkspaceLock` owns the file lock ([#61]).
-- `ProjectService`, `CorpusService`: pre-assignment project deletion, import, splits and taxonomy.
+- `ProjectService`: creating, listing and pre-assignment deletion of projects (rule 5). It has no way to change a project's kind or format (rule 4).
+- `CorpusService`: import, splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
 - `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
 - `ResolutionService`: automatic and manual classification resolution (rule 10).
-- `ExportService`: the only code that knows about output formats. Annotators persist canonical annotations and never choose a format.
+- `ExportService`: the only code that writes a dataset in an output format. Annotators persist canonical annotations and never choose a format.
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5

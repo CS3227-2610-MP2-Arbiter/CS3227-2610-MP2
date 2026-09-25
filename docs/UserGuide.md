@@ -11,7 +11,7 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 1. Launch Arbiter. On first run the workspace wizard asks you to choose a [workspace](Glossary.md) folder.
 2. During setup, create the workspace's adjudicator account.
 3. The adjudicator creates annotator accounts and gives each annotator their username and password.
-4. Sign in. The shared shell opens the role's destination ([#5]); these destinations are placeholders until [#12] and [#24] add their screens.
+4. Sign in. Arbiter opens your role's home ([#5]): [Projects](#projects) for the adjudicator, and a placeholder for annotators until [#12].
 
 If the workspace is already in use, close its other Arbiter instance and try again ([#61](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61)).
 
@@ -27,6 +27,7 @@ The accepted V1 behaviour behind each planned task is specified in [User Flows](
 | Track my split progress | Annotator | [#18] |
 | Create or deactivate annotator accounts | Adjudicator | [#31] |
 | Replace an annotator's forgotten password | Adjudicator | [#23] |
+| Create or delete a project | Adjudicator | [#24], [#30] |
 | Import a corpus | Adjudicator | [#25] |
 | Configure labels | Adjudicator | [#26] |
 | Assign annotators | Adjudicator | [#32] |
@@ -34,7 +35,16 @@ The accepted V1 behaviour behind each planned task is specified in [User Flows](
 | Resolve disagreements | Adjudicator | [#27], [#34] |
 | Export the dataset | Adjudicator | [#37] |
 
-Step-by-step instructions for each screen will be added as features are released.
+Instructions for each screen are added below as it is released.
+
+## Projects
+
+Projects is the adjudicator's home screen. It lists every [project](Glossary.md) with its taxonomy kind, output format and counts.
+
+- **Create a project.** Choose **New project**, enter a unique name and an optional description, and pick a [taxonomy kind and output format](Glossary.md#fixed-value-sets). Neither can be changed later ([rule 4](UserFlows.md#3-rules-both-tracks-share)).
+- **Delete a project.** Choose **Delete** on its row and confirm. You can delete a project only before its first assignment, and its source files in `media/` are kept ([rule 5](UserFlows.md#3-rules-both-tracks-share)).
+
+A project cannot be opened yet, so it stays empty until corpus import ([#25]) and taxonomy setup ([#26]) are released.
 
 [Back to home](index.md)
 
@@ -48,6 +58,7 @@ Step-by-step instructions for each screen will be added as features are released
 [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
+[#30]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/30
 [#31]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/31
 [#32]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/32
 [#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33

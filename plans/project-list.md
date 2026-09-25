@@ -2,7 +2,7 @@
 
 **Issues:** [#24] - Create and list text-classification projects; [#30] - Choose CSV or JSON output
 **Branch:** `feat/project-list` (from `main` after [#8] merged)
-**Status:** Plan approved by the owner on 25 September 2026. Implemented with `ProjectServiceTest` and reviewed; `check shadowJar` passes. Human acceptance and the User Guide update remain. Deviation: the UI kit gained a `page` style class and `Components.page`, because the list screen needs padding and spacing, which only the stylesheet may set.
+**Status:** Plan approved by the owner on 25 September 2026. Implemented with `ProjectServiceTest`, reviewed, and accepted by the owner on 25 September 2026; `check shadowJar` passes and the User Guide is updated. The pull request remains. Deviation: the UI kit gained a `page` style class and `Components.page`, because the list screen needs padding and spacing, which only the stylesheet may set.
 
 What the features do is in [#24] and [#30], and the rules they rely on are rules 3, 4 and 5 in [UserFlows](../docs/UserFlows.md#3-rules-both-tracks-share). This plan records how the code will meet them and what is decided.
 
