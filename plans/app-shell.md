@@ -31,7 +31,6 @@ Replace #7's signed-in placeholder with the shared JavaFX shell and provide a re
 
 - #5 originally said an annotator lands on the queue, while #12 defines My Splits as the landing screen and #13 owns the queue. Whimsyturtle chose a My Splits placeholder on 23 September 2026, and #5's issue summary was updated to reflect it.
 - The shell can restrict UI routes, but each future service must still enforce its own authorization; the route tests do not substitute for the blindness tests described in the architecture.
-- Existing untracked `CS3227 Notes.md` and `MP2.md` belong to the working tree and are outside this task.
 
 ## Implementation and verification
 

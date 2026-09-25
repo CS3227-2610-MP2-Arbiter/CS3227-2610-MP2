@@ -18,7 +18,7 @@ Start issue #6 under `context/swe.md`, replacing the planned SQLite store with J
 
 - Applied `clarify-requirements`, `write-plan`, `implement-feature`, `write-test`, `review`, and `log`.
 - Reused the issue #6 branch. Implemented the JSON store, existing repository interfaces, workspace wizard initialization/opening, and integration tests. Commits were split into terminology, workspace, store, repository, and test groups for review.
-- Published the revised bodies for [#6](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6) and [#9](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9), checking eight and seven acceptance criteria respectively. Added a [superseding comment](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6#issuecomment-5790297767) for #6's historical ORMLite note. The user's unrelated `MP2.md` and `CS3227 Notes.md` were untouched. The owner later requested and received the JSON guide updates under `maintain-docs`.
+- Published the revised bodies for [#6](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6) and [#9](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/9), checking eight and seven acceptance criteria respectively. Added a [superseding comment](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/6#issuecomment-5790297767) for #6's historical ORMLite note. The owner later requested and received the JSON guide updates under `maintain-docs`.
 
 ## Verification
 
