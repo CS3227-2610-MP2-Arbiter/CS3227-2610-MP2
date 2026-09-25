@@ -11,6 +11,8 @@ Use one agent with task-specific skills in `.codex/skills/`. Humans own requirem
 5. **Accept:** A human tests the agreed scenarios and confirms whether the changes meet the acceptance criteria. Use `maintain-docs` to document the new or updated behavior in the guides and product site.
 6. **Deliver:** Use `create-pull-request` to prepare a GitHub pull request with verification evidence. A human merges after CI passes and a teammate reviews the final revision.
 
+Before committing, pushing, or creating or updating a pull request, prepare the exact changes and request explicit human approval for those delivery actions. One approval may cover them together. Approval of the scope, plan, implementation, or acceptance tests does not grant delivery approval. Leave the changes uncommitted and provide a ready-to-use PR draft when approval has not been given.
+
 If verification or acceptance testing finds problems, the agent fixes them and reruns the affected checks. A human repeats any affected acceptance tests.
 
 For bugs, reproduce, fix and add regression tests. Small edits and read-only tasks use only applicable steps.
