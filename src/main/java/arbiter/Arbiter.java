@@ -9,6 +9,8 @@ import arbiter.model.user.Role;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
 import arbiter.service.CurrentUser;
+import arbiter.service.ProjectService;
+import arbiter.ui.adjudicator.ProjectsScreen;
 import arbiter.ui.shared.AppShell;
 import arbiter.ui.shared.AuthScreen;
 import arbiter.ui.shared.Components;
@@ -69,7 +71,9 @@ public class Arbiter extends Application {
         }
         stage.setOnHidden(event -> closeWorkspace());
         stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
-        showAuth(stage, new AuthService(JsonStore.open(workspace)));
+        JsonStore store = JsonStore.open(workspace);
+        AuthService auth = new AuthService(store);
+        showAuth(stage, auth, new ProjectService(store, auth));
     }
 
     private void failToStart(Stage stage, String heading, RuntimeException error) {
@@ -82,19 +86,19 @@ public class Arbiter extends Application {
         }
     }
 
-    private void showAuth(Stage stage, AuthService auth) {
-        new AuthScreen(stage, auth, user -> showShell(stage, auth, user)).show();
+    private void showAuth(Stage stage, AuthService auth, ProjectService projects) {
+        new AuthScreen(stage, auth, user -> showShell(stage, auth, projects, user)).show();
     }
 
-    private void showShell(Stage stage, AuthService auth, CurrentUser user) {
+    private void showShell(Stage stage, AuthService auth, ProjectService projects, CurrentUser user) {
         ScreenRegistry screens = new ScreenRegistry();
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
                 Components.emptyState("My splits", "Your assigned splits will appear here.")));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
-                Components.emptyState("Projects", "Your projects will appear here.")));
+                new ProjectsScreen(stage, projects).content()));
         new AppShell(stage, user, screens, () -> {
             auth.logout();
-            showAuth(stage, auth);
+            showAuth(stage, auth, projects);
         }).show();
     }
 
