@@ -68,6 +68,16 @@ This is stronger than package separation: it holds for code written later, by an
 - **A single writer.** Atomic replacement alone does not coordinate separate app instances. The JSON store serializes actions within one process; [#61] supplies the workspace lock across instances. That limits the shared workspace to one writer at a time.
 - **One exporter.** Annotators persist canonical annotations and never choose a file format, so formatting is written once, in `ExportService`.
 
+### Errors and logging
+
+Both roles report problems the same way, through the UI kit in `arbiter.ui.shared` ([#8]). What a user reads depends on who wrote the exception. An exception declared in Arbiter's own packages, such as a failed login or an unreadable workspace, already carries a message written for the user, so it is shown as it is. Anything else is a programming error, so the user sees a generic message and the details go to the log. A new service's exception is covered automatically, with no list to maintain.
+
+A screen catches only the failures of the action it runs. It shows a failed action in an error dialog, which also logs it, or shows a problem the user can fix on the same form inline, such as a wrong password. Anything it does not catch reaches one handler that logs it and tells the user, so nothing fails silently.
+
+The log never takes field values, only a fixed action name and the exception, so a password or source text can reach it only through an exception message, and the convention forbids that. While a workspace is open, the log is written to its `logs/` folder, beside the data it concerns.
+
+The rules agents follow, and the test that enforces them, are in [the architecture context](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/blob/main/context/architecture.md#ui).
+
 ### Design decisions and their costs
 
 | Decision | Alternative rejected | Cost accepted |
@@ -77,6 +87,7 @@ This is stronger than package separation: it holds for code written later, by an
 | Services in one shared package | Per-role service layers | Both tracks edit the same package |
 | Classification components shared by both roles | One editor per role | `ui.shared` is a shared dependency |
 | Blindness enforced in the service and a test | Enforced by package separation | Relies on discipline in the read path |
+| JDK logging to the workspace's `logs/` folder | A logging framework, or a per-user log | One log per workspace, shared by both roles |
 
 The shared-components and blindness rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
 

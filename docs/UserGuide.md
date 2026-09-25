@@ -15,6 +15,8 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 
 If the workspace is already in use, close its other Arbiter instance and try again ([#61](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61)).
 
+If Arbiter says it could not finish something, the details are in the workspace's `logs/arbiter.0.log`. Include that file when you report the problem; it never contains passwords.
+
 ## Quick reference
 
 The accepted V1 behaviour behind each planned task is specified in [User Flows](UserFlows.md); the issue that implements it is linked below. This quick reference does not imply that every screen has been released yet.

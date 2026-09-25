@@ -46,7 +46,9 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 ### UI
 
 - JavaFX, with one `Stage` whose content area is swapped, routed by role after login ([#5]).
-- Report errors through the one convention in `arbiter.ui.shared` ([#8]).
+- Report errors through the one convention in `arbiter.ui.shared` ([#8]): a screen catches only the exceptions of the action it runs and shows them with `Dialogs.showError`, or inline with `ErrorMessages.of` when the user can correct the input on the same form. Anything else reaches the uncaught-exception handler `Arbiter` installs.
+- An exception class declared in an `arbiter` package has a message the UI shows verbatim, so it never holds a credential, hash, salt or source text. Programming errors stay JDK exceptions, which the user sees only as a generic message.
+- Only `DiagnosticLog` logs, only `Dialogs` builds dialogs, and colours, fonts and spacing live in `arbiter.css` behind `Styles`. No code sets inline styles, prints to `System.out` or `System.err`, or calls `printStackTrace`; `UiConventionTest` enforces all of this.
 - Controllers call services and bind results to the view. They hold no business rules and do not access repositories directly.
 
 ### General
