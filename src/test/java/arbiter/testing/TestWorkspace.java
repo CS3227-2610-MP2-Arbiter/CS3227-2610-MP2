@@ -73,7 +73,7 @@ public final class TestWorkspace {
         } catch (IOException e) {
             throw new UncheckedIOException("Could not write the test source " + storedPath, e);
         }
-        return new SourceResolver(paths).resolveForImport(storedPath);
+        return new SourceResolver(paths).resolveForImport(file);
     }
 
     /** Returns a new authentication session signed in as this fixture account. */

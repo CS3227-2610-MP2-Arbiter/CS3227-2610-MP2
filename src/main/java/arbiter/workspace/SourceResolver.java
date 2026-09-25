@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 /**
  * Reads one source file and proves it is the file that was registered.
@@ -32,17 +33,18 @@ import java.util.Objects;
  *
  * <p>A stored path is relative, uses {@code /} between segments, starts with {@code media/} and
  * keeps the case it was registered with. Rejecting {@code \} and {@code :} keeps the form portable,
- * because both are separators or drive syntax on Windows. The stored case is a naming convention
- * rather than a check: whether a name resolves regardless of case is a property of the file system,
- * not of the path, so registration ([#25]) is what keeps the two the same.
+ * because both are separators or drive syntax on Windows. Reads do not check the case, because
+ * whether a name resolves regardless of case is a property of the file system, not of the path.
+ * Instead, {@link #resolveForImport} refuses a file chosen by a name spelled differently from the
+ * one on disk, so a stored path matches the disk from registration ([#25]) on.
  *
  * <p>A malformed path is {@code INVALID_PATH}; a well-formed path whose target has been replaced by
  * a link or junction is {@code OUTSIDE_MEDIA}.
  *
- * <p>{@link #resolve} reads a registered source, and {@link #resolveForImport} applies exactly the
- * same checks to a file about to be registered, so [#25] cannot accept a file that could not be read
- * afterwards. It only reads: nothing is written, copied, moved, relinked or stored, so a failure
- * leaves every project record as it was and restoring the original bytes restores access.
+ * <p>{@link #resolve} reads a registered source. {@link #resolveForImport} makes a chosen file's
+ * stored path and then applies exactly the same checks, so [#25] cannot accept a file that could
+ * not be read afterwards. It only reads: nothing is written, copied, moved, relinked or stored, so a
+ * failure leaves every project record as it was and restoring the original bytes restores access.
  *
  * <p>Nothing is cached, so each call sees the file as it is now.
  *
@@ -107,21 +109,59 @@ public final class SourceResolver {
     }
 
     /**
-     * Checks a source file that is about to be registered, and returns what to record for it.
+     * Checks a file chosen for registration, and returns what to record for it.
      *
-     * <p>Registration ([#25]) calls this instead of reading the file itself, so a file it accepts is
-     * one this resolver can read later: the same path, existence, containment, plain-text, size and
-     * UTF-8 checks run here, and the checks that compare against a recorded hash are skipped because
-     * nothing has been recorded yet. The returned hash is the one to store, exactly as it is
-     * returned, because registration and later reads compare hashes exactly.
+     * <p>Registration ([#25]) calls this instead of reading the file itself. The file must be inside
+     * {@code media/} and chosen by the names on disk, compared without following links so a link
+     * inside {@code media/} keeps its own name. Its stored path is its path below the workspace with
+     * {@code /} between segments, and the same checks as {@link #resolve} then run on it, except the
+     * ones that compare against a recorded hash. The returned stored path and hash are the ones to
+     * store, exactly as they are returned, because registration and later reads compare them exactly.
      *
-     * @param storedPath the workspace-relative path to register, such as {@code media/corpus/review.txt}
-     * @return the file's text and the hash to record for it
-     * @throws SourceException for the same reasons as {@link #resolve}, except that no recorded hash
-     *     is needed
+     * @param file the chosen file, made absolute against the working directory if it is relative
+     * @return the stored path, the file's text and the hash to record for it
+     * @throws SourceException if the file is outside {@code media/} or chosen by a name spelled
+     *     differently from the one on disk, or for the same reasons as {@link #resolve} except that no
+     *     recorded hash is needed
      */
-    public ResolvedSource resolveForImport(String storedPath) {
+    public ResolvedSource resolveForImport(Path file) {
+        Path chosen = Objects.requireNonNull(file, "file").toAbsolutePath().normalize();
+        if (!chosen.startsWith(paths.mediaDirectory())) {
+            throw new SourceException(null, SourceFailure.OUTSIDE_MEDIA, "Only files inside the workspace's "
+                    + WorkspacePaths.MEDIA_DIRECTORY + "/ folder can be registered: " + chosen);
+        }
+        Path relative = paths.root().relativize(chosen);
+        String storedPath = storedForm(relative);
+        requireNamesOnDisk(storedPath, chosen, relative.getNameCount());
         return read(storedPath, null);
+    }
+
+    /**
+     * Refuses a chosen file whose stored path is spelled differently from the names on disk, which a
+     * case-insensitive file system would otherwise find. A missing file is left for the read checks to
+     * report.
+     */
+    private static void requireNamesOnDisk(String storedPath, Path chosen, int segments) {
+        if (!Files.exists(chosen, LinkOption.NOFOLLOW_LINKS)) {
+            return;
+        }
+        Path onDisk = resolveReal(storedPath, chosen, SourceFailure.MISSING,
+                "The recorded source file is missing: " + storedPath, LinkOption.NOFOLLOW_LINKS);
+        // Compared as strings: on Windows, Path.equals ignores case.
+        String spelledOnDisk = storedForm(onDisk.subpath(onDisk.getNameCount() - segments, onDisk.getNameCount()));
+        if (!spelledOnDisk.equals(storedPath)) {
+            throw new SourceException(storedPath, SourceFailure.INVALID_PATH, "The chosen file is named "
+                    + spelledOnDisk + " on disk, not " + storedPath + ". Choose it by the name on disk.");
+        }
+    }
+
+    /** Joins a workspace-relative path's segments with {@code /}, the separator a stored path uses. */
+    private static String storedForm(Path relative) {
+        StringJoiner stored = new StringJoiner("/");
+        for (Path segment : relative) {
+            stored.add(segment.toString());
+        }
+        return stored.toString();
     }
 
     private ResolvedSource read(String storedPath, String expectedHash) {
@@ -202,13 +242,13 @@ public final class SourceResolver {
     }
 
     private static Path resolveReal(String storedPath, Path path, SourceFailure missingReason,
-            String missingMessage) {
+            String missingMessage, LinkOption... options) {
         try {
             // Files.exists does not follow links, so a link to a missing file is reported as missing.
             if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
                 throw new SourceException(storedPath, missingReason, missingMessage);
             }
-            return path.toRealPath();
+            return path.toRealPath(options);
         } catch (NoSuchFileException | NotDirectoryException e) {
             throw new SourceException(storedPath, missingReason, missingMessage, e);
         } catch (IOException | SecurityException e) {

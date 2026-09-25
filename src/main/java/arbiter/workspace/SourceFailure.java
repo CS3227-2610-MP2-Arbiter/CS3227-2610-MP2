@@ -2,7 +2,10 @@ package arbiter.workspace;
 
 /** Why a registered source could not be read. */
 public enum SourceFailure {
-    /** The stored path is missing, blank, or not a workspace-relative path. */
+    /**
+     * The stored path is missing, blank, or not a workspace-relative path, or a file chosen for
+     * registration is spelled differently from its name on disk.
+     */
     INVALID_PATH,
     /** No file exists at the recorded location. */
     MISSING,
