@@ -22,6 +22,7 @@ Decided by the owner on 25 September 2026:
 - The screen uses the merged UI kit in `arbiter.ui.shared`, so no dialog is built outside `Dialogs` (`UiConventionTest`).
 - The design choices below are approved as proposed.
 - After review, the format descriptions moved from the create form to the [Glossary](../docs/Glossary.md#fixed-value-sets), their single home, and the store now rejects a project without exactly one taxonomy settings row.
+- Project names admit only printable ASCII, and the architecture context now prefers ASCII in any counted or compared text.
 
 Assumptions recorded during clarification:
 
@@ -70,7 +71,7 @@ Automated coverage goes in a new `ProjectServiceTest`, seeded with `TestWorkspac
 
 | Acceptance criterion | How it is verified |
 | --- | --- |
-| [#24] Creation requires a valid unique name, a kind and a format, and stores the description and creation time | Test: names blank, 1, 100 and 101 characters after trimming; a duplicate differing only in case; a name reused after deletion; no kind or no format; a blank description stored as none; the creation time set; the project and its settings both present after reopening. Human: a duplicate name shows an inline error |
+| [#24] Creation requires a valid unique name, a kind and a format, and stores the description and creation time | Test: names blank, 1, 100 and 101 characters after trimming; non-ASCII and control characters rejected and ASCII punctuation accepted; a duplicate differing only in case; a name reused after deletion; no kind or no format; a blank description stored as none; the creation time set; the project and its settings both present after reopening. Human: a duplicate name shows an inline error |
 | [#24] No task-type or source-type selector | Human: the form has only name, description, kind and format |
 | [#24] Kind and format cannot change after creation; [#30] the stored format cannot change and export offers no override | Review: `ProjectService` has no update, and the screen shows both as text. Export is [#37]'s, and no export code exists yet |
 | [#24] The list shows item, split, assignment and unresolved counts | Test: a seeded project with items, a split, assignments in each status and some resolved items gives the expected counts, unaffected by a second project. Human: a new project shows zeros, and with none the empty state appears |

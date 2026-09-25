@@ -120,6 +120,25 @@ class ProjectServiceTest {
     }
 
     @Test
+    void create_nameWithNonAsciiOrControlCharacter_rejectedAndNothingStored() {
+        ProjectService service = ownerService();
+        byte[] before = dataFile();
+
+        for (String name : new String[] {"Café reviews", "Tweets 😀", "Tweets\tv2"}) {
+            assertRejected(() -> service.create(name, null, TaxonomyKind.SINGLE, OutputFormat.CSV));
+        }
+
+        assertArrayEquals(before, dataFile());
+    }
+
+    @Test
+    void create_nameWithAsciiPunctuation_accepted() {
+        String name = "Reviews: v2 (en-GB) & ~more!";
+
+        assertEquals(name, ownerService().create(name, null, TaxonomyKind.SINGLE, OutputFormat.CSV).getName());
+    }
+
+    @Test
     void create_nameDuplicateIgnoringCase_rejectedAndNothingStored() {
         ProjectService service = ownerService();
         service.create("Film Reviews", null, TaxonomyKind.SINGLE, OutputFormat.CSV);

@@ -54,6 +54,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - Nothing that assumes a backend: no background jobs, webhooks or message queues (rule 8).
 - No plugin system and no dependency-injection framework.
+- Accept only ASCII in user-entered text that the code counts, compares or matches, such as usernames, passwords and project names. Allow Unicode only where a feature needs it or the text is only stored and shown, such as source text and descriptions.
 - Do not reinvent the wheel: use the Java standard library where it suffices, and otherwise a reputable, maintained third-party library. Never hand-write a solved problem (e.g., JSON parsing).
 - Use a record for any class that only carries immutable data, instead of hand-writing its constructor, accessors, `equals` and `hashCode`. Model classes are the exception, because their fields are not `final` (see [Model](#model)).
 - Java lines are at most 120 characters (Checkstyle in `config/checkstyle`). Markdown is exempt; see "Markdown" in [docs/DeveloperGuide.md](../docs/DeveloperGuide.md#software-engineering-process).

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.RepositorySession;
@@ -22,7 +23,7 @@ import arbiter.model.project.TaxonomySettings;
  * format, which are fixed at creation (rule 4).
  */
 public final class ProjectService {
-    private static final int MAX_NAME_LENGTH = 100;
+    private static final Pattern NAME_PATTERN = Pattern.compile("[ -~]{1,100}");
 
     private final JsonStore store;
     private final AuthService auth;
@@ -36,19 +37,19 @@ public final class ProjectService {
     /**
      * Creates a project and its taxonomy settings in one committed action, stamped with the current time.
      *
-     * <p>The name is stripped of surrounding whitespace and must then meet #24's length and uniqueness rule. A
-     * null or blank description is stored as null, and any other description is stored stripped.
+     * <p>The name is stripped of surrounding whitespace and must then meet #24's name rule. A null or blank
+     * description is stored as null, and any other description is stored stripped.
      *
      * @return the stored project
      * @throws AuthException if the caller is not the signed-in adjudicator
-     * @throws ProjectException if the name is too short, too long or already used, or the kind or format
+     * @throws ProjectException if the name breaks that rule or is already used, or the kind or format
      *     is null; nothing is stored
      */
     public Project create(String name, String description, TaxonomyKind kind, OutputFormat outputFormat) {
         auth.requireAdjudicator();
         String stripped = name == null ? "" : name.strip();
-        if (stripped.isEmpty() || stripped.length() > MAX_NAME_LENGTH) {
-            throw new ProjectException("Project name must be 1 to " + MAX_NAME_LENGTH + " characters");
+        if (!NAME_PATTERN.matcher(stripped).matches()) {
+            throw new ProjectException("Project name must be 1 to 100 ASCII letters, digits, spaces or punctuation");
         }
         if (kind == null) {
             throw new ProjectException("Choose a taxonomy kind");
