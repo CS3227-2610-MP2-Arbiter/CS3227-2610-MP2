@@ -16,6 +16,6 @@ public interface SplitRepository {
     /** Returns a project's splits. */
     List<Split> listByProject(long projectId);
 
-    /** Removes a split before that split's first assignment (rule 14). */
+    /** Removes a split and its memberships before that split's first assignment (rule 14). */
     void deleteById(long id);
 }

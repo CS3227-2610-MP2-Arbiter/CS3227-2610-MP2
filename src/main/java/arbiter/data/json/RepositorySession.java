@@ -275,11 +275,6 @@ public final class RepositorySession {
             }
 
             @Override
-            public void deleteBySplit(long splitId) {
-                removeIf(state.splitItems(), member -> equalsId(member.getSplitId(), splitId));
-            }
-
-            @Override
             public long countBySplit(long splitId) {
                 checkActive();
                 return state.splitItems().stream().filter(member -> equalsId(member.getSplitId(), splitId)).count();
