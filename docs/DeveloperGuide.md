@@ -84,8 +84,11 @@ What each class guarantees is in its Javadoc. The rules agents follow, and the t
 | Classification components shared by both roles | One editor per role | `ui.shared` is a shared dependency |
 | Blindness enforced in the service and a test | Enforced by package separation | Relies on discipline in the read path |
 | JDK logging to the workspace's `logs/` folder | A logging framework, or a per-user log | One log per workspace, shared by both roles |
+| ASCII-only names and passwords | Unicode in all text | Names cannot use accents or non-Latin scripts |
 
 The shared-components and blindness rows are the load-bearing ones. Sharing the annotation components means the roles cannot be built as independent silos, so blindness cannot come from keeping packages apart. Pushing it down to the query boundary and a test is what makes the sharing safe.
+
+Names and passwords are ASCII so that a length limit counts what the user sees and two names that look alike are equal. Unicode would bring characters that count twice, invisible zero-width characters and look-alike letters, each needing its own handling.
 
 The product context, the shape of both flows and the cross-cutting rules in section 3 are in [User Flows](UserFlows.md); the step-by-step behaviour is in the GitHub issues each step links to.
 

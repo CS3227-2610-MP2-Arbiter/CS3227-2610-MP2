@@ -34,7 +34,7 @@ Where a term above has a fixed set of values, they are listed here. Adding a val
 | --- | --- | --- |
 | **Role** | `ANNOTATOR`, `ADJUDICATOR` | Which side of the workflow an account works on. |
 | **Taxonomy kind** | `SINGLE`, `SCALE` | Whether a label set is a pick-one list or a numeric scale. |
-| **Output format** | `CSV`, `JSON` | The format the dataset is written in. |
+| **Output format** | `CSV`, `JSON` | The format the dataset is written in: a table that opens in a spreadsheet, or structured records for scripts and other tools, respectively. |
 | **Assignment status** | `NOT_STARTED`, `IN_PROGRESS`, `SUBMITTED` | Progress through an assignment's queue. `SUBMITTED` means every item in it has a submitted answer. |
 | **Resolution method** | `MAJORITY`, `ADJUDICATED`, `AUTO_SCALE` | How an item's final answer was reached: strict-majority label, adjudicator decision or arithmetic mean of scale ratings, respectively. |
 | **Account status** | `ACTIVE`, `DISABLED` | Whether an account may be used. |

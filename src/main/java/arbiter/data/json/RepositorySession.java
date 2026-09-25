@@ -150,11 +150,6 @@ public final class RepositorySession {
                 return matching(state.taxonomySettings(), settings -> equalsId(settings.getProjectId(), projectId),
                         TaxonomySettings.class).stream().findFirst();
             }
-
-            @Override
-            public void deleteByProject(long projectId) {
-                removeIf(state.taxonomySettings(), settings -> equalsId(settings.getProjectId(), projectId));
-            }
         };
     }
 

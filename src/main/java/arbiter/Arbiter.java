@@ -9,6 +9,8 @@ import arbiter.model.user.Role;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
 import arbiter.service.CurrentUser;
+import arbiter.service.ProjectService;
+import arbiter.ui.adjudicator.ProjectsScreen;
 import arbiter.ui.shared.AppShell;
 import arbiter.ui.shared.AuthScreen;
 import arbiter.ui.shared.Components;
@@ -29,6 +31,8 @@ import javafx.stage.Stage;
 /** Provides Arbiter's JavaFX interface. */
 public class Arbiter extends Application {
     private WorkspaceLock workspace;
+    private AuthService auth;
+    private ProjectService projects;
 
     @Override
     public void start(Stage stage) {
@@ -69,7 +73,10 @@ public class Arbiter extends Application {
         }
         stage.setOnHidden(event -> closeWorkspace());
         stage.setTitle("Arbiter - " + workspace.paths().root().getFileName());
-        showAuth(stage, new AuthService(JsonStore.open(workspace)));
+        JsonStore store = JsonStore.open(workspace);
+        auth = new AuthService(store);
+        projects = new ProjectService(store, auth);
+        showAuth(stage);
     }
 
     private void failToStart(Stage stage, String heading, RuntimeException error) {
@@ -82,19 +89,19 @@ public class Arbiter extends Application {
         }
     }
 
-    private void showAuth(Stage stage, AuthService auth) {
-        new AuthScreen(stage, auth, user -> showShell(stage, auth, user)).show();
+    private void showAuth(Stage stage) {
+        new AuthScreen(stage, auth, user -> showShell(stage, user)).show();
     }
 
-    private void showShell(Stage stage, AuthService auth, CurrentUser user) {
+    private void showShell(Stage stage, CurrentUser user) {
         ScreenRegistry screens = new ScreenRegistry();
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
                 Components.emptyState("My splits", "Your assigned splits will appear here.")));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
-                Components.emptyState("Projects", "Your projects will appear here.")));
+                new ProjectsScreen(stage, projects).content()));
         new AppShell(stage, user, screens, () -> {
             auth.logout();
-            showAuth(stage, auth);
+            showAuth(stage);
         }).show();
     }
 

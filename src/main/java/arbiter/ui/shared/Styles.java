@@ -41,9 +41,12 @@ public final class Styles {
     /** A screen with nothing to show yet. */
     public static final String EMPTY_STATE = "empty-state";
 
+    /** A screen's content, laid out from the top. */
+    public static final String PAGE = "page";
+
     /** Every style class above, each of which has a rule in the stylesheet. */
     public static final List<String> CLASSES = List.of(TOP_BAR, APP_TITLE, NAVIGATION, PAGE_TITLE, HINT, ERROR_TEXT,
-            FORM, EMPTY_STATE);
+            FORM, EMPTY_STATE, PAGE);
 
     private Styles() {
     }

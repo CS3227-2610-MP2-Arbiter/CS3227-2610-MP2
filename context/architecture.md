@@ -23,7 +23,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - `AnnotationEditor` and `ItemView` exist only in `arbiter.ui.shared`. A role difference is a mode flag on the shared component, never a second implementation.
 - `AnnotationEditor` holds only the annotator's current unsubmitted choice. Adjudicator screens reuse the label picker for resolution and never edit a submission (rule 13).
-- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check setup freezes and the pre-assignment deletion guard (rules 3, 5, 14) inside the write transaction; a disabled control is not enforcement.
+- Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check setup freezes and the pre-assignment deletion guard (rules 3, 5, 14) inside the write transaction; a disabled control is not enforcement. For a whole project (rules 3 and 5), they use `FirstAssignment` rather than their own check.
 
 ### Blindness (rule 1)
 
@@ -54,6 +54,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - Nothing that assumes a backend: no background jobs, webhooks or message queues (rule 8).
 - No plugin system and no dependency-injection framework.
+- Accept only ASCII in user-entered text that the code counts, compares or matches, such as usernames, passwords and project names. Allow Unicode only where a feature needs it or the text is only stored and shown, such as source text and descriptions.
 - Do not reinvent the wheel: use the Java standard library where it suffices, and otherwise a reputable, maintained third-party library. Never hand-write a solved problem (e.g., JSON parsing).
 - Use a record for any class that only carries immutable data, instead of hand-writing its constructor, accessors, `equals` and `hashCode`. Model classes are the exception, because their fields are not `final` (see [Model](#model)).
 - Java lines are at most 120 characters (Checkstyle in `config/checkstyle`). Markdown is exempt; see "Markdown" in [docs/DeveloperGuide.md](../docs/DeveloperGuide.md#software-engineering-process).
@@ -71,11 +72,12 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 
 - `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup and paths; `WorkspaceLock` owns the file lock ([#61]).
-- `ProjectService`, `CorpusService`: pre-assignment project deletion, import, splits and taxonomy.
+- `ProjectService`: creating, listing and pre-assignment deletion of projects (rule 5). It has no way to change a project's kind or format (rule 4).
+- `CorpusService`: import, splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
 - `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
 - `ResolutionService`: automatic and manual classification resolution (rule 10).
-- `ExportService`: the only code that knows about output formats. Annotators persist canonical annotations and never choose a format.
+- `ExportService`: the only code that writes a dataset in an output format. Annotators persist canonical annotations and never choose a format.
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5

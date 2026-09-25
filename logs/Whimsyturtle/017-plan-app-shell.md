@@ -12,7 +12,7 @@ The user approved the plan with placeholders. A contradiction emerged between #5
 
 ## Agent responses and outcomes
 
-Read the process, `clarify-requirements`, `write-plan`, `implement-feature`, `write-test`, `review`, architecture, and current login code. A requirements subagent checked the issue boundary, a test subagent wrote route tests, and a review subagent inspected the implementation. Created `feat/app-shell` from `main`, drafted `plans/app-shell.md`, added the shell and routing, and updated #5's issue summary after the user's My Splits decision. The two pre-existing untracked notes were left alone. GitHub CLI initially failed under the network sandbox; approved escalated access retrieved and updated the issue. Git ref creation also needed approved escalation because `.git` is outside the writable sandbox.
+Read the process, `clarify-requirements`, `write-plan`, `implement-feature`, `write-test`, `review`, architecture, and current login code. A requirements subagent checked the issue boundary, a test subagent wrote route tests, and a review subagent inspected the implementation. Created `feat/app-shell` from `main`, drafted `plans/app-shell.md`, added the shell and routing, and updated #5's issue summary after the user's My Splits decision. GitHub CLI initially failed under the network sandbox; approved escalated access retrieved and updated the issue. Git ref creation also needed approved escalation because `.git` is outside the writable sandbox.
 
 ## Verification
 

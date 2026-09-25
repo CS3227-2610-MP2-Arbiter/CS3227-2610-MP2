@@ -34,6 +34,11 @@ public final class Components {
         return styled(new VBox(pageTitle(title), hint(message)), Styles.EMPTY_STATE);
     }
 
+    /** Returns a screen's content of these controls, laid out from the top. */
+    public static VBox page(Node... controls) {
+        return styled(new VBox(controls), Styles.PAGE);
+    }
+
     /** Returns a form of these controls, centred in the available space. */
     public static StackPane form(Node... controls) {
         VBox form = styled(new VBox(controls), Styles.FORM);

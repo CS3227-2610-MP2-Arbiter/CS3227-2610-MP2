@@ -2,6 +2,7 @@ package arbiter.data.json;
 
 import static arbiter.testing.Records.NOW;
 import static arbiter.testing.Records.project;
+import static arbiter.testing.Records.settings;
 import static arbiter.testing.Records.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,7 +40,7 @@ class JsonStoreTransactionTest {
 
         long[] ids = store.write(session -> {
             User user = session.users().save(user("alice"));
-            Project project = session.projects().save(project("Review"));
+            Project project = saveProject(session, "Review");
             return new long[] {user.getId(), project.getId()};
         });
 
@@ -109,9 +110,9 @@ class JsonStoreTransactionTest {
         });
 
         assertThrows(JsonStoreException.class, () -> failing.write(session ->
-                session.projects().save(project("Uncommitted"))));
+                saveProject(session, "Uncommitted")));
         assertThrows(JsonStoreException.class, () -> failing.write(session ->
-                session.projects().save(project("Retry before reopen"))));
+                saveProject(session, "Retry before reopen")));
 
         assertEquals(0, java.util.Arrays.compare(before, Files.readAllBytes(paths.dataFile())));
         JsonStore reopened = JsonStore.open(paths);
@@ -137,7 +138,7 @@ class JsonStoreTransactionTest {
         JsonStore store = JsonStore.initializeNew(paths);
         long[] ids = store.write(session -> {
             long userId = session.users().save(user("alice")).getId();
-            long projectId = session.projects().save(project("Review")).getId();
+            long projectId = saveProject(session, "Review").getId();
             Item item = new Item();
             item.setProjectId(projectId);
             item.setPath("media/item.txt");
@@ -190,4 +191,10 @@ class JsonStoreTransactionTest {
         });
     }
 
+    /** Saves a project with the taxonomy settings every stored project needs. */
+    private static Project saveProject(RepositorySession session, String name) {
+        Project project = session.projects().save(project(name));
+        session.taxonomySettings().save(settings(project.getId()));
+        return project;
+    }
 }
