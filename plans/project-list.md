@@ -20,7 +20,8 @@ Decided by the owner on 25 September 2026:
 - The delete confirmation names only the project, as "Delete project X? This cannot be undone.", through `Dialogs.confirm`.
 - Opening a project page, renaming and editing the description are out of scope.
 - The screen uses the merged UI kit in `arbiter.ui.shared`, so no dialog is built outside `Dialogs` (`UiConventionTest`).
-- The design choices and format descriptions below are approved as proposed.
+- The design choices below are approved as proposed.
+- After review, the format descriptions moved from the create form to the [Glossary](../docs/Glossary.md#fixed-value-sets), their single home, and the store now rejects a project without exactly one taxonomy settings row.
 
 Assumptions recorded during clarification:
 
@@ -44,14 +45,9 @@ Assumptions recorded during clarification:
   - Rejections throw a new `ProjectException`, whose messages are shown to the user under [#8]'s convention.
   - It offers no way to change a project's kind or format.
 - **A Projects screen** in a new `arbiter.ui.adjudicator` package, built from the UI kit: a table of summaries with a Delete action per row, a New project button, and the empty state. The create form replaces the table in the same content area. A rejected create shows inline on the form, and a rejected delete through `Dialogs.showError`. The screen reloads the list after every action.
-- **The create form** has name, optional description, taxonomy kind and output format, and nothing else. The format choice lists `OutputFormat`'s values, each with a one-line description.
+- **The create form** has name, optional description, taxonomy kind and output format, and nothing else. The format choice lists `OutputFormat`'s values.
 - **`Arbiter`** builds `ProjectService` from the open store and the signed-in `AuthService`, and registers the Projects screen in place of the placeholder.
 - **Documentation**, in the Accept step: the User Guide stops calling Projects a placeholder and says how to create and delete a project.
-
-Format descriptions:
-
-- CSV: "A table that opens in a spreadsheet."
-- JSON: "Structured records for scripts and other tools."
 
 ## Design alternatives considered
 
@@ -81,7 +77,7 @@ Automated coverage goes in a new `ProjectServiceTest`, seeded with `TestWorkspac
 | [#24] Before the first assignment, confirmed deletion removes project-owned records and no source files | Test: deleting a project with items, labels and a split removes all its records and leaves other projects, accounts and source files unchanged. Human: the confirmation reads "Delete project X? This cannot be undone."; Cancel keeps the project, and confirming removes it while its `media/` file remains |
 | [#24] From the first assignment, the service rejects deletion after restart and from stale screens | Test: with an assignment that is not started, or whose annotator is disabled, deletion is rejected and nothing changes, including through a new service on a reopened store and after a list read taken before the assignment existed. A signed-out or annotator caller is rejected |
 | [#30] Creation offers exactly CSV and JSON and stores the choice | Test: each value is stored and read back. Human: the choice lists exactly CSV and JSON |
-| [#30] A concise description explains each choice | Human: each format shows its approved description |
+| [#30] A concise description explains each choice | Review: the Glossary describes each format |
 | [#30] No COCO or task/source compatibility branch | Review: `OutputFormat` has only CSV and JSON, and `src` mentions no COCO |
 | `./gradlew check` passes | JDK 25 `./gradlew check shadowJar`, including `UiConventionTest` and `AnnotatorBlindnessTest` over the new screen |
 

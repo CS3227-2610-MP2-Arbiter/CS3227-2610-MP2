@@ -124,7 +124,7 @@ public final class ProjectsScreen {
         }
         controls.add(new Label("Output format"));
         for (OutputFormat format : OutputFormat.values()) {
-            controls.add(new VBox(choice(formats, format), Components.hint(describe(format))));
+            controls.add(choice(formats, format));
         }
         controls.add(Components.hint("The taxonomy kind and output format cannot be changed later."));
         controls.add(actions);
@@ -188,12 +188,5 @@ public final class ProjectsScreen {
     private static <T> T selected(ToggleGroup group, Class<T> type) {
         Toggle toggle = group.getSelectedToggle();
         return toggle == null ? null : type.cast(toggle.getUserData());
-    }
-
-    private static String describe(OutputFormat format) {
-        return switch (format) {
-        case CSV -> "A table that opens in a spreadsheet.";
-        case JSON -> "Structured records for scripts and other tools.";
-        };
     }
 }
