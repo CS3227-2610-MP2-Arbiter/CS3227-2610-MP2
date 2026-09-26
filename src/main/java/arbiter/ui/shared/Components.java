@@ -55,6 +55,18 @@ public final class Components {
         return styled(new VBox(controls), Styles.PAGE);
     }
 
+    /** Returns a screen's content of these controls, laid out from the top, which scrolls if it is taller. */
+    public static ScrollPane scrollingPage(Node... controls) {
+        ScrollPane scroll = styled(new ScrollPane(page(controls)), Styles.FORM_SCROLL);
+        scroll.setFitToWidth(true);
+        return scroll;
+    }
+
+    /** Returns a card of these controls, one item in a list of cards. */
+    public static VBox card(Node... controls) {
+        return styled(new VBox(controls), Styles.CARD);
+    }
+
     /** Returns a form of these controls, centred in the available space, which scrolls if it is taller. */
     public static ScrollPane form(Node... controls) {
         VBox form = styled(new VBox(controls), Styles.FORM);

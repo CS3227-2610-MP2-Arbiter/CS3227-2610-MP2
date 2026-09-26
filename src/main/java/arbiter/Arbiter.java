@@ -6,6 +6,8 @@ import java.util.Optional;
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.user.Role;
+import arbiter.service.AnnotationService;
+import arbiter.service.AssignmentProgress;
 import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
@@ -14,9 +16,9 @@ import arbiter.service.CurrentUser;
 import arbiter.service.ProjectService;
 import arbiter.ui.adjudicator.AccountsScreen;
 import arbiter.ui.adjudicator.ProjectsScreen;
+import arbiter.ui.annotator.MySplitsScreen;
 import arbiter.ui.shared.AppShell;
 import arbiter.ui.shared.AuthScreen;
-import arbiter.ui.shared.Components;
 import arbiter.ui.shared.DiagnosticLog;
 import arbiter.ui.shared.Dialogs;
 import arbiter.ui.shared.ScreenRegistry;
@@ -38,6 +40,7 @@ public class Arbiter extends Application {
     private ProjectService projects;
     private CorpusService corpus;
     private AssignmentService assignments;
+    private AnnotationService annotations;
 
     @Override
     public void start(Stage stage) {
@@ -83,6 +86,7 @@ public class Arbiter extends Application {
         projects = new ProjectService(store, auth);
         corpus = new CorpusService(store, auth, workspace.paths());
         assignments = new AssignmentService(store, auth);
+        annotations = new AnnotationService(store, auth);
         showAuth(stage);
     }
 
@@ -103,7 +107,7 @@ public class Arbiter extends Application {
     private void showShell(Stage stage, CurrentUser user) {
         ScreenRegistry screens = new ScreenRegistry();
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
-                Components.emptyState("My splits", "Your assigned splits will appear here.")));
+                new MySplitsScreen(stage, annotations, assignment -> openQueue(stage, assignment)).content()));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
                 new ProjectsScreen(stage, projects, corpus, assignments).content()));
         screens.register(new ScreenRoute("adjudicator-accounts", "Accounts", Role.ADJUDICATOR, () ->
@@ -112,6 +116,12 @@ public class Arbiter extends Application {
             auth.logout();
             showAuth(stage);
         }).show();
+    }
+
+    private static void openQueue(Stage stage, AssignmentProgress assignment) {
+        // The queue arrives with #13; until then, say which file it will open at.
+        Dialogs.showSuccess(stage, assignment.splitName(), "The queue for this split arrives with the next "
+                + "update. It will open at file " + (assignment.submitted() + 1) + " of " + assignment.total() + ".");
     }
 
     @Override

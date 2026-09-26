@@ -47,9 +47,12 @@ public final class Styles {
     /** A screen's content, laid out from the top. */
     public static final String PAGE = "page";
 
+    /** One item in a list of cards, such as one of an annotator's assignments. */
+    public static final String CARD = "card";
+
     /** Every style class above, each of which has a rule in the stylesheet. */
     public static final List<String> CLASSES = List.of(TOP_BAR, APP_TITLE, NAVIGATION, PAGE_TITLE, HINT, ERROR_TEXT,
-            FORM, FORM_SCROLL, EMPTY_STATE, PAGE);
+            FORM, FORM_SCROLL, EMPTY_STATE, PAGE, CARD);
 
     private Styles() {
     }
