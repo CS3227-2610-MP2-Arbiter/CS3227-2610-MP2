@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.SplitItem;
 import arbiter.testing.ClassificationWorkflow;
@@ -193,6 +194,22 @@ class AnnotationServiceTest {
         assertTrue(queue.finished());
         assertNull(queue.current());
         assertEquals(2, queue.assignment().submitted());
+    }
+
+    @Test
+    void forCurrentUserQueue_storedAsSubmittedWithAFileLeft_finishedWithoutReopening() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice", "positive")
+                .seed(workspace);
+        workspace.store().write(session -> {
+            Assignment assignment = session.assignments().findById(flow.assignmentId("alice")).orElseThrow();
+            assignment.setStatus(AssignmentStatus.SUBMITTED);
+            return session.assignments().save(assignment);
+        });
+
+        QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertTrue(queue.finished());
+        assertEquals(flow.itemId(1), queue.assignment().nextItemId());
     }
 
     @Test

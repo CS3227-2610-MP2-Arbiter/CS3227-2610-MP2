@@ -58,6 +58,7 @@ Non-goals, from [#13]: answer controls ([#14]), storing answers and moving forwa
 - The blindness test needed no change. It walks `QueueScreen` and `ItemView`, and `ItemView` takes only plain values.
 - `AnnotationServiceTest` adds 9 queue tests: position and text, saved order, restart before and after an answer is stored, completion, another annotator's answers, refusing another annotator's assignment exactly like a missing one, a changed source, a missing source, and the adjudicator. Removing the ownership check and letting source errors escape made the refusal test and both source tests fail; both changes were reverted.
 - `docs/UserGuide.md`'s "My splits" section now describes opening a split and unreadable files.
+- After Whimsyturtle's review of PR #78, the queue uses the same two rules as the home screen: `AnnotationService.position` decides the next file, and the stored status decides whether the assignment is finished. A finished assignment shows completion even if a file lacks an answer, so it is never reopened. A new test covers that case, and it failed when the status check was removed.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 351 JUnit tests, with the same 3 existing case-sensitivity tests skipped on macOS.
 
 ### Human acceptance checks

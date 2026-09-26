@@ -13,6 +13,8 @@ Status: Awaiting human verification.
 - Two choices keep the queue blind and honest. Another annotator's assignment gets the same refusal as a missing one, so an identifier cannot be probed. A source error is returned alongside the position rather than thrown, so the annotator still sees where they are.
 - The architecture already required one shared `ItemView`, so the file display went into `arbiter.ui.shared` with plain-value inputs, ready for the adjudicator's dispute screen ([#34]).
 
+- Whimsyturtle's review of #12's PR (#78) applied here too. The queue now takes its next file from the same helper as the home screen, and decides "finished" from the stored status rather than from the absence of a next file, so both screens agree.
+
 ## Agent responses and outcomes
 
 - Used `write-plan`, `implement-feature`, `write-test`, `review`, `maintain-docs` and `log`. The plan is `plans/text-queue.md`, on branch `feat/text-queue` stacked on `feat/annotator-home`.
@@ -25,6 +27,7 @@ Status: Awaiting human verification.
 - `AnnotationServiceTest` adds 9 queue tests. Removing the ownership check and letting source errors escape made 3 of them fail, and both changes were reverted.
 - Not verified: the screen in a running app. The plan lists four human checks.
 - The owner approved the plan and delivery on 26 September 2026.
+- The owner approved delivery of the review fixes on 26 September 2026.
 - Pending: human acceptance, teammate review and CI.
 
 [#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
