@@ -71,6 +71,7 @@ Non-goals, from [#17]: drafts, autosave, flags, Back, skipping, batch submit, co
 - `docs/UserGuide.md` describes Submit & next.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 380 JUnit tests, with 3 existing case-sensitivity tests skipped on macOS.
 
+- After [#26] merged (PR #83), which refuses a SINGLE project's first assignment until it has two labels, the tests here seed two-label projects. The "no labels yet" test deletes both labels after assignment. No production code changed.
 ### Human acceptance checks
 
 These need a seeded workspace until [#26].
@@ -85,3 +86,4 @@ A stale screen's submission cannot be produced in the running app, because the w
 [#14]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/14
 [#17]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/17
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
+[#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26

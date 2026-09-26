@@ -349,8 +349,8 @@ class AnnotationServiceTest {
 
     @Test
     void submit_lastFile_assignmentSubmittedAndQueueFinished() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice", "positive")
-                .seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2)
+                .assign("alice", "positive").seed(workspace);
         long assignmentId = flow.assignmentId("alice");
 
         QueueView next = service("alice").submit(assignmentId, flow.itemId(1), Answer.label(flow.labelId("positive")));
@@ -371,7 +371,7 @@ class AnnotationServiceTest {
 
     @Test
     void submit_sameFileTwice_secondRefusedAndNothingMoreStored() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2).assign("alice")
                 .seed(workspace);
         AnnotationService alice = service("alice");
         long assignmentId = flow.assignmentId("alice");
@@ -386,7 +386,7 @@ class AnnotationServiceTest {
 
     @Test
     void submit_notTheNextFile_refusedAndNothingStored() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2).assign("alice")
                 .seed(workspace);
 
         assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(1),
@@ -395,7 +395,7 @@ class AnnotationServiceTest {
 
     @Test
     void submit_finishedAssignment_refusedAndNothingStored() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice", "positive")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice", "positive")
                 .seed(workspace);
 
         assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(0),
@@ -404,8 +404,8 @@ class AnnotationServiceTest {
 
     @Test
     void submit_anotherAnnotatorsAssignment_refusedLikeAMissingOne() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").assign("bob")
-                .seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .assign("bob").seed(workspace);
         AnnotationService alice = service("alice");
         Answer positive = Answer.label(flow.labelId("positive"));
         long bobs = flow.assignmentId("bob");
@@ -421,7 +421,8 @@ class AnnotationServiceTest {
 
     @Test
     void submit_answerOutsideTheTaxonomy_refusedAndNothingStored() {
-        ClassificationWorkflow labels = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow labels = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         ClassificationWorkflow scale = ClassificationWorkflow.scale(1, 5).assign("alice").seed(workspace);
         ClassificationWorkflow other = ClassificationWorkflow.single("elsewhere").seed(workspace);
 
@@ -435,7 +436,8 @@ class AnnotationServiceTest {
 
     @Test
     void submit_changedSource_refusedWithoutNamingTheFile() throws IOException {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         Files.writeString(workspace.paths().root().resolve("media/corpus-1/item-1.txt"), "Edited after import");
 
         ProjectException refused = assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(0),
@@ -446,7 +448,7 @@ class AnnotationServiceTest {
 
     @Test
     void submit_thenRestart_freshSessionResumesAtTheNextFile() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3).assign("alice")
                 .seed(workspace);
         long assignmentId = flow.assignmentId("alice");
         service("alice").submit(assignmentId, flow.itemId(0), Answer.label(flow.labelId("positive")));
@@ -458,7 +460,8 @@ class AnnotationServiceTest {
 
     @Test
     void submit_adjudicator_rejected() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
         long assignmentId = flow.assignmentId("alice");
         Answer positive = Answer.label(flow.labelId("positive"));
