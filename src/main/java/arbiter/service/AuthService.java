@@ -1,6 +1,7 @@
 package arbiter.service;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,11 +13,27 @@ import arbiter.model.user.AccountStatus;
 import arbiter.model.user.Role;
 import arbiter.model.user.User;
 
-/** Owns workspace owner setup and the in-memory login session. */
+/**
+ * Owns workspace owner setup, the in-memory login session, and the adjudicator's management of annotator
+ * accounts (#31) and their passwords (#23).
+ *
+ * <p>Owner setup, annotator creation and password replacement share one username and password check and
+ * one salted hashing. Every account-management method first requires the signed-in adjudicator through
+ * {@link #requireAdjudicator}.
+ */
 public final class AuthService {
+    /** States the username rule, both when refusing a username and as the hint on every form that sets one. */
+    public static final String USERNAME_RULE =
+            "Username must be 1 to 64 ASCII letters, digits, dots, underscores or hyphens";
+
+    /** States the password rule, both when refusing a password and as the hint on every form that sets one. */
+    public static final String PASSWORD_RULE =
+            "Password must be at least 8 characters using only ASCII letters and digits";
+
     private static final Pattern USERNAME_PATTERN = Pattern.compile("[A-Za-z0-9._-]{1,64}");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("[A-Za-z0-9]{8,}");
     private static final String LOGIN_FAILED = "Invalid username or password";
+    private static final String ACCOUNT_DISABLED = "Account is disabled";
     private static final String INVALID_OWNER = "The workspace owner records are invalid";
 
     private final JsonStore store;
@@ -41,14 +58,7 @@ public final class AuthService {
             if (!bootstrapNeeded(session)) {
                 throw new AuthException("This workspace already has an owner");
             }
-            User owner = new User();
-            owner.setUsername(username);
-            owner.setPasswordHash(stored.hash());
-            owner.setPasswordSalt(stored.salt());
-            owner.setRole(Role.ADJUDICATOR);
-            owner.setAccountStatus(AccountStatus.ACTIVE);
-            owner.setCreatedAt(Instant.now());
-            session.users().save(owner);
+            session.users().save(newAccount(username, stored, Role.ADJUDICATOR));
             return null;
         });
     }
@@ -68,7 +78,7 @@ public final class AuthService {
                 throw new AuthException(LOGIN_FAILED);
             }
             if (user.getAccountStatus() != AccountStatus.ACTIVE) {
-                throw new AuthException("Account is disabled");
+                throw new AuthException(ACCOUNT_DISABLED);
             }
             return identity(user);
         });
@@ -108,6 +118,104 @@ public final class AuthService {
         return user;
     }
 
+    /**
+     * Returns every account in identifier order, which is creation order with the owner first.
+     *
+     * @throws AuthException if the caller is not the signed-in adjudicator
+     */
+    public List<AccountSummary> listAccounts() {
+        requireAdjudicator();
+        return store.read(session -> session.users().listAll().stream()
+                .sorted(Comparator.comparing(User::getId))
+                .map(AuthService::summarize)
+                .toList());
+    }
+
+    /**
+     * Creates an active annotator in one committed action, keeping the username as typed.
+     *
+     * @return the stored account's summary
+     * @throws AuthException if the caller is not the signed-in adjudicator, the username or password fails
+     *     owner setup's check, or any account, disabled ones included, has this username in any letter case;
+     *     nothing is stored
+     */
+    public AccountSummary createAnnotator(String username, String password) {
+        requireAdjudicator();
+        validateUsername(username);
+        validatePassword(password);
+        PasswordHasher.StoredPassword stored = PasswordHasher.hash(password);
+        return store.write(session -> {
+            if (session.users().findByUsername(username).isPresent()) {
+                throw new AuthException("An account with this username already exists");
+            }
+            return summarize(session.users().save(newAccount(username, stored, Role.ANNOTATOR)));
+        });
+    }
+
+    /**
+     * Permanently disables an active annotator in one committed action, keeping their work and assignments
+     * (rule 19). Only the account's status changes.
+     *
+     * @throws AuthException if the caller is not the signed-in adjudicator, or the account is missing, the
+     *     owner or already disabled; nothing is changed
+     */
+    public void deactivateAnnotator(long accountId) {
+        requireAdjudicator();
+        store.write(session -> {
+            User annotator = requireActiveAnnotator(session, accountId);
+            annotator.setAccountStatus(AccountStatus.DISABLED);
+            session.users().save(annotator);
+            return null;
+        });
+    }
+
+    /**
+     * Replaces an active annotator's password in one committed action. Only the account's hash and salt
+     * change.
+     *
+     * @throws AuthException if the caller is not the signed-in adjudicator, the password fails owner setup's
+     *     check, or the account is missing, the owner or disabled; nothing is changed
+     */
+    public void resetAnnotatorPassword(long accountId, String password) {
+        requireAdjudicator();
+        validatePassword(password);
+        PasswordHasher.StoredPassword stored = PasswordHasher.hash(password);
+        store.write(session -> {
+            User annotator = requireActiveAnnotator(session, accountId);
+            annotator.setPasswordHash(stored.hash());
+            annotator.setPasswordSalt(stored.salt());
+            session.users().save(annotator);
+            return null;
+        });
+    }
+
+    private static User requireActiveAnnotator(RepositorySession session, long accountId) {
+        User user = session.users().findById(accountId)
+                .orElseThrow(() -> new AuthException("This account does not exist"));
+        if (user.getRole() != Role.ANNOTATOR) {
+            throw new AuthException("The workspace owner's account cannot be changed");
+        }
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new AuthException(ACCOUNT_DISABLED);
+        }
+        return user;
+    }
+
+    private static User newAccount(String username, PasswordHasher.StoredPassword stored, Role role) {
+        User user = new User();
+        user.setUsername(username);
+        user.setPasswordHash(stored.hash());
+        user.setPasswordSalt(stored.salt());
+        user.setRole(role);
+        user.setAccountStatus(AccountStatus.ACTIVE);
+        user.setCreatedAt(Instant.now());
+        return user;
+    }
+
+    private static AccountSummary summarize(User user) {
+        return new AccountSummary(user.getId(), user.getUsername(), user.getRole(), user.getAccountStatus());
+    }
+
     private static boolean bootstrapNeeded(RepositorySession session) {
         List<User> users = session.users().listAll();
         if (session.isPristine()) {
@@ -125,13 +233,13 @@ public final class AuthService {
 
     private static void validateUsername(String username) {
         if (username == null || !USERNAME_PATTERN.matcher(username).matches()) {
-            throw new AuthException("Username must be 1 to 64 ASCII letters, digits, dots, underscores or hyphens");
+            throw new AuthException(USERNAME_RULE);
         }
     }
 
     private static void validatePassword(String password) {
         if (!validPassword(password)) {
-            throw new AuthException("Password must be at least 8 characters using only ASCII letters and digits");
+            throw new AuthException(PASSWORD_RULE);
         }
     }
 
