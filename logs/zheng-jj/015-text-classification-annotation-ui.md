@@ -33,6 +33,7 @@ Status: Awaiting human verification.
 - Mutations that accepted any rating or any label each failed their tests, and both were reverted.
 - Not verified: the editor in a running app, which needs [#26] or a seeded workspace. The plan lists four human checks.
 - The owner approved the plan and delivery on 26 September 2026.
+- The owner approved delivery of the review fixes on 26 September 2026.
 - Pending: human acceptance, teammate review and CI.
 
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
