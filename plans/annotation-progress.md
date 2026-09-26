@@ -42,6 +42,7 @@ Non-goals, from [#18]: timing, averages, lifetime or project totals, charts, agr
 - `docs/UserGuide.md` mentions the remaining count.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 383 JUnit tests, with 3 existing case-sensitivity tests skipped on macOS.
 
+- After [#26] merged (PR #83), which refuses a SINGLE project's first assignment until it has two labels, the tests here seed two-label projects. The "no labels yet" test deletes both labels after assignment. No production code changed.
 ### Human acceptance checks
 
 These need a seeded workspace until [#26].

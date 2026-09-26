@@ -471,7 +471,7 @@ class AnnotationServiceTest {
 
     @Test
     void progress_submittingEveryFile_homeAndQueueAgreeAtEachStep() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3).assign("alice")
                 .assign("bob").seed(workspace);
         AnnotationService alice = service("alice");
         AnnotationService bob = service("bob");
