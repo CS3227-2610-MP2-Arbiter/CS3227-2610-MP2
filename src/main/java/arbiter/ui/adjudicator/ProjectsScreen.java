@@ -18,7 +18,6 @@ import arbiter.ui.shared.ErrorMessages;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableView;
@@ -112,13 +111,6 @@ public final class ProjectsScreen {
                 Dialogs.showError(owner, "The project could not be created", e);
             }
         });
-        Button cancel = new Button("Cancel");
-        cancel.setCancelButton(true);
-        cancel.setOnAction(event -> showList());
-        ButtonBar actions = new ButtonBar();
-        ButtonBar.setButtonData(create, ButtonBar.ButtonData.OK_DONE);
-        ButtonBar.setButtonData(cancel, ButtonBar.ButtonData.CANCEL_CLOSE);
-        actions.getButtons().setAll(create, cancel);
 
         List<Node> controls = new ArrayList<>(List.of(Components.pageTitle("New project"), name, description,
                 new Label("Taxonomy kind")));
@@ -130,7 +122,7 @@ public final class ProjectsScreen {
             controls.add(choice(formats, format));
         }
         controls.add(Components.hint("The taxonomy kind and output format cannot be changed later."));
-        controls.add(actions);
+        controls.add(Components.formActions(create, this::showList));
         controls.add(error);
         content.getChildren().setAll(Components.form(controls.toArray(Node[]::new)));
     }
@@ -147,7 +139,7 @@ public final class ProjectsScreen {
             // The list was out of date, so the reload below shows why.
             Dialogs.showError(owner, DELETE_FAILED, e);
         } catch (AuthException | JsonStoreException e) {
-            // Nothing changed, so the list is still current, and reloading would likely report this again.
+            // Nothing changed, so the list is still current.
             Dialogs.showError(owner, DELETE_FAILED, e);
             return;
         }

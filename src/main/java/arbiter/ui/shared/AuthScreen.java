@@ -16,8 +16,6 @@ import javafx.stage.Stage;
 
 /** Owner setup and login surface for one workspace. */
 public final class AuthScreen {
-    private static final String USERNAME_HINT = "1-64 ASCII letters, digits, dots, underscores or hyphens";
-
     private final Stage stage;
     private final AuthService auth;
     private final Consumer<CurrentUser> onLogin;
@@ -41,20 +39,16 @@ public final class AuthScreen {
     private void showOwnerSetup() {
         TextField username = new TextField();
         username.setPromptText("Username");
-        PasswordField password = new PasswordField();
-        password.setPromptText("Password");
-        PasswordField confirmation = new PasswordField();
-        confirmation.setPromptText("Confirm password");
+        PasswordFields passwords = new PasswordFields("Password", "Confirm password");
         Label error = Components.errorText();
         Button create = new Button("Create adjudicator account");
         create.setDefaultButton(true);
         create.setOnAction(event -> {
-            if (!password.getText().equals(confirmation.getText())) {
-                error.setText("Passwords do not match");
+            if (!passwords.confirmed(error)) {
                 return;
             }
             try {
-                auth.bootstrapOwner(username.getText(), password.getText());
+                auth.bootstrapOwner(username.getText(), passwords.password().getText());
                 showLogin();
             } catch (AuthException e) {
                 error.setText(ErrorMessages.of(e));
@@ -64,9 +58,8 @@ public final class AuthScreen {
         });
         showForm(Components.pageTitle("Create the workspace adjudicator"),
                 Components.hint("Keep this password safe; owner recovery is not available."),
-                Components.hint(USERNAME_HINT), username,
-                Components.hint("Password: at least 8 characters using only ASCII letters and digits"),
-                password, confirmation, create, error);
+                Components.hint(AuthService.USERNAME_RULE), username, Components.hint(AuthService.PASSWORD_RULE),
+                passwords.password(), passwords.confirmation(), create, error);
     }
 
     private void showLogin() {

@@ -8,6 +8,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -52,6 +53,18 @@ public final class Components {
         VBox form = styled(new VBox(controls), Styles.FORM);
         form.setAlignment(Pos.CENTER_LEFT);
         return new StackPane(form);
+    }
+
+    /** Returns a form's buttons: {@code confirm}, and Cancel, which runs {@code cancel} and answers Escape. */
+    public static ButtonBar formActions(Button confirm, Runnable cancel) {
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setCancelButton(true);
+        cancelButton.setOnAction(event -> cancel.run());
+        ButtonBar actions = new ButtonBar();
+        ButtonBar.setButtonData(confirm, ButtonBar.ButtonData.OK_DONE);
+        ButtonBar.setButtonData(cancelButton, ButtonBar.ButtonData.CANCEL_CLOSE);
+        actions.getButtons().setAll(confirm, cancelButton);
+        return actions;
     }
 
     /** Returns a table column titled {@code title} that shows {@code value} of each row. */
