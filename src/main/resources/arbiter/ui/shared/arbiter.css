@@ -41,6 +41,14 @@
     -fx-max-width: 420;
 }
 
+/* No border, and a viewport the colour of .root, which the viewport paints with -fx-background. */
+.form-scroll {
+    -fx-background: #ffffff;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
 .empty-state {
     -fx-padding: 24;
     -fx-spacing: 12;

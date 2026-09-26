@@ -6,6 +6,7 @@ import java.util.Optional;
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.user.Role;
+import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
 import arbiter.service.CorpusService;
@@ -36,6 +37,7 @@ public class Arbiter extends Application {
     private AuthService auth;
     private ProjectService projects;
     private CorpusService corpus;
+    private AssignmentService assignments;
 
     @Override
     public void start(Stage stage) {
@@ -80,6 +82,7 @@ public class Arbiter extends Application {
         auth = new AuthService(store);
         projects = new ProjectService(store, auth);
         corpus = new CorpusService(store, auth, workspace.paths());
+        assignments = new AssignmentService(store, auth);
         showAuth(stage);
     }
 
@@ -102,7 +105,7 @@ public class Arbiter extends Application {
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
                 Components.emptyState("My splits", "Your assigned splits will appear here.")));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
-                new ProjectsScreen(stage, projects, corpus).content()));
+                new ProjectsScreen(stage, projects, corpus, assignments).content()));
         screens.register(new ScreenRoute("adjudicator-accounts", "Accounts", Role.ADJUDICATOR, () ->
                 new AccountsScreen(stage, auth).content()));
         new AppShell(stage, user, screens, () -> {

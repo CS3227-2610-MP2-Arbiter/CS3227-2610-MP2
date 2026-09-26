@@ -212,7 +212,8 @@ public final class AuthService {
         return user;
     }
 
-    private static AccountSummary summarize(User user) {
+    /** Returns an account without its credentials. */
+    static AccountSummary summarize(User user) {
         return new AccountSummary(user.getId(), user.getUsername(), user.getRole(), user.getAccountStatus());
     }
 

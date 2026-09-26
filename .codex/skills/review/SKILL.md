@@ -7,7 +7,7 @@ description: Verify an Arbiter change by running relevant automated checks and r
 
 **Input:** A change or revision to verify, its acceptance criteria and any existing verification results.
 
-1. Inspect the diff and relevant surrounding code against the requirements. Review correctness, role isolation, data integrity, shared design, test coverage, documentation, style and unused code.
+1. Inspect the diff and relevant surrounding code against the requirements. Review correctness, role isolation, data integrity, shared design, test coverage, documentation, style and unused code. For screen changes, check the UI rules in `context/architecture.md`, including that no text can be cut off, and add a check with the longest realistic text to the remaining human checks.
 2. For code changes, use JDK 25 and run `./gradlew check shadowJar` (Windows: `.\gradlew.bat check shadowJar`). For focused test requests or documentation-only changes, run the applicable checks and state the scope.
 3. Inspect command results and test reports. Distinguish passing tests from skipped tasks, cached results, `NO-SOURCE` and checks that could not run. Never hide failures or weaken tests to pass.
 4. Report findings with severity, file locations and concrete impact. For a review-only request, leave edits to the user; during an authorized implementation, fix issues within scope and rerun affected checks.

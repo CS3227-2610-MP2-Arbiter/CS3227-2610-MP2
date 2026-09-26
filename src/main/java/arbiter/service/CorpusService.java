@@ -33,7 +33,7 @@ import arbiter.workspace.WorkspacePaths;
  * (rule 21).
  */
 public final class CorpusService {
-    private static final Pattern ITEMS_PER_SPLIT_PATTERN = Pattern.compile("0*[1-9][0-9]*");
+    private static final Pattern COUNT_PATTERN = Pattern.compile("0*[1-9][0-9]*");
     private static final Pattern SPLIT_NAME_PATTERN = Pattern.compile("Split ([0-9]{1,9})");
 
     private final JsonStore store;
@@ -282,15 +282,26 @@ public final class CorpusService {
     }
 
     private static int parseItemsPerSplit(String text) {
+        return parseCount(text, "Files per split must be a positive whole number");
+    }
+
+    /**
+     * Parses a count the adjudicator typed, such as files per split (#28) or a split's k (#32), which must be
+     * a positive whole number in ASCII digits once surrounding whitespace is stripped.
+     *
+     * @param rule the message to reject any other text with
+     * @return the count, capped at {@link Integer#MAX_VALUE}
+     * @throws ProjectException with {@code rule} if the text breaks this rule
+     */
+    static int parseCount(String text, String rule) {
         String stripped = text == null ? "" : text.strip();
-        if (!ITEMS_PER_SPLIT_PATTERN.matcher(stripped).matches()) {
-            throw new ProjectException("Files per split must be a positive whole number");
+        if (!COUNT_PATTERN.matcher(stripped).matches()) {
+            throw new ProjectException(rule);
         }
         try {
             return Integer.parseInt(stripped);
         } catch (NumberFormatException e) {
-            // The pattern leaves only a number too large for an int. No project has that many items, so the
-            // capped number is still rejected as too many.
+            // The pattern leaves only a number too large for an int.
             return Integer.MAX_VALUE;
         }
     }
@@ -338,6 +349,6 @@ public final class CorpusService {
                 .map(SplitItem::getItemId)
                 .toList();
         return new SplitSummary(split.getId(), split.getName(), itemIds,
-                FirstAssignment.reachedSplit(session, split.getId()));
+                session.assignments().listBySplit(split.getId()).size(), split.getAnnotationsPerItem());
     }
 }

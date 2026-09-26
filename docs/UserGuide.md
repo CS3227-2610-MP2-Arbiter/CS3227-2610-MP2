@@ -49,8 +49,9 @@ Projects is the adjudicator's home screen. It lists every [project](Glossary.md)
 - **Unregister a file.** On the project page, choose **Unregister** on its row and confirm. The file itself stays in `media/`, and a split left with no files is deleted.
 - **Generate splits.** On the project page, enter the number of files per split, choose **Generate splits** and confirm the sizes shown. Arbiter shuffles the files not yet in a split into new splits, and the **Split** column shows each file's split and position ([rule 7](UserFlows.md#3-rules-both-tracks-share)).
 - **Delete a split.** Choose **Delete** on its row and confirm. Its files return to those not yet in a split. You can delete a split only before its first assignment ([rule 14](UserFlows.md#3-rules-both-tracks-share)).
+- **Assign annotators.** On the project page, choose **Assign** on a split's row. The form lists the split's annotators and the active annotators you can add, each with their unfinished assignments and files. With the split's first assignment, enter [*k*](Glossary.md), which cannot be changed afterwards. Tick one or more annotators, choose **Assign** and confirm. The **Annotators** column shows how many of the split's *k* places are taken. Assignments cannot be removed or moved, and a deactivated annotator keeps their place ([rule 19](UserFlows.md#3-rules-both-tracks-share)).
 
-You can register or unregister files only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)). Labels and assignments cannot be set up until taxonomy setup ([#26]) and assignment ([#32]) are released.
+You can register or unregister files only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)). Labels cannot be set up until taxonomy setup ([#26]) is released, and a project assigned before then can never get them.
 
 ## Accounts
 

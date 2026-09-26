@@ -4,12 +4,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.layout.StackPane;
@@ -23,6 +25,11 @@ public final class Components {
     /** Returns a screen or form heading. */
     public static Label pageTitle(String text) {
         return styled(wrapping(text), Styles.PAGE_TITLE);
+    }
+
+    /** Returns plain text, such as a message or data. */
+    public static Label text(String text) {
+        return wrapping(text);
     }
 
     /** Returns secondary text that explains a control or a rule. */
@@ -48,11 +55,18 @@ public final class Components {
         return styled(new VBox(controls), Styles.PAGE);
     }
 
-    /** Returns a form of these controls, centred in the available space. */
-    public static StackPane form(Node... controls) {
+    /** Returns a form of these controls, centred in the available space, which scrolls if it is taller. */
+    public static ScrollPane form(Node... controls) {
         VBox form = styled(new VBox(controls), Styles.FORM);
         form.setAlignment(Pos.CENTER_LEFT);
-        return new StackPane(form);
+        StackPane centred = new StackPane(form);
+        ScrollPane scroll = styled(new ScrollPane(centred), Styles.FORM_SCROLL);
+        scroll.setFitToWidth(true);
+        // Filling at least the visible height centres a short form. Fitting it to that height instead would
+        // squeeze a tall one, cutting off its wrapped text, and could hide the scroll bar it needs.
+        centred.minHeightProperty().bind(Bindings.createDoubleBinding(() -> scroll.getViewportBounds().getHeight(),
+                scroll.viewportBoundsProperty()));
+        return scroll;
     }
 
     /** Returns a form's buttons: {@code confirm}, and Cancel, which runs {@code cancel} and answers Escape. */
