@@ -83,9 +83,10 @@ class AssignmentServiceTest {
         long first = annotator("first");
         long second = annotator("second");
         long third = annotator("third");
-        ClassificationWorkflow.single("pos").items(3).assign("first").seed(workspace);
-        ClassificationWorkflow.single("pos").items(2).assign("first", "pos").assign("second").seed(workspace);
-        ClassificationWorkflow.single("pos").items(1).assign("first", "pos").assign("second", "pos").seed(workspace);
+        ClassificationWorkflow.single("pos", "neg").items(3).assign("first").seed(workspace);
+        ClassificationWorkflow.single("pos", "neg").items(2).assign("first", "pos").assign("second").seed(workspace);
+        ClassificationWorkflow.single("pos", "neg").items(1).assign("first", "pos").assign("second", "pos")
+                .seed(workspace);
         long splitId = newSplit(4).splitId();
 
         List<AnnotatorLoad> offered = service().options(splitId).offered();
@@ -437,7 +438,7 @@ class AssignmentServiceTest {
 
     /** Seeds a project whose one split holds this many items and has no assignment. */
     private ClassificationWorkflow newSplit(int items) {
-        return ClassificationWorkflow.single("pos").items(items).seed(workspace);
+        return ClassificationWorkflow.single("pos", "neg").items(items).seed(workspace);
     }
 
     private AssignmentService service() {
