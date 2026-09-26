@@ -495,11 +495,17 @@ class AnnotationServiceTest {
     }
 
     @Test
-    void progress_positionAndRemaining() {
+    void progress_remaining() {
         AssignmentProgress started = new AssignmentProgress(1, "Project", "Batch", AssignmentStatus.IN_PROGRESS, 2, 5);
 
         assertEquals(3, started.remaining());
-        assertEquals(3, started.position());
+    }
+
+    @Test
+    void queueView_position_onePastTheAnsweredFiles() {
+        AssignmentProgress started = new AssignmentProgress(1, "Project", "Batch", AssignmentStatus.IN_PROGRESS, 2, 5);
+
+        assertEquals(3, new QueueView(started, new QueueItem(7, "Text", null), null).position());
     }
 
     private void assertProgress(AnnotationService annotator, long assignmentId, AssignmentStatus status,

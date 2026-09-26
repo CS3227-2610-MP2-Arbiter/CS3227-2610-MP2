@@ -18,7 +18,7 @@ Non-goals, from [#18]: timing, averages, lifetime or project totals, charts, agr
 
 ## Proposed changes
 
-- **`AssignmentProgress.remaining()` and `position()`** derive the remaining files and the queue's 1-based position from the same `submitted` and `total` both screens already use.
+- **`AssignmentProgress.remaining()`** derives the remaining files, and **`QueueView.position()`** the queue's 1-based position, from the same `submitted` and `total` both screens already use.
 - **`ProgressText`** in `arbiter.ui.annotator` words the line "k of n files submitted, r remaining" once, for the card and the queue. It lives in the annotator package because only annotator screens show it.
 - **`QueueScreen`** shows that line under "File k of n", and on the completion screen. Each submission redraws from stored state, so the counts change immediately after a successful submission and never for an unsent choice.
 
@@ -37,7 +37,8 @@ Non-goals, from [#18]: timing, averages, lifetime or project totals, charts, agr
 
 ## Implementation and verification
 
-- Added `AssignmentProgress.remaining()` and `position()`, `ProgressText`, and the progress line in `QueueScreen`. My splits uses `ProgressText` too.
+- Added `AssignmentProgress.remaining()`, `QueueView.position()`, `ProgressText`, and the progress line in `QueueScreen`. My splits uses `ProgressText` too.
+- After Whimsyturtle's review of PR #82, `position()` moved from `AssignmentProgress` to `QueueView`. It describes the queue's current file, which only the queue has, while `remaining()` stays on `AssignmentProgress` because both screens show it.
 - `AnnotationServiceTest` adds 2 tests, and `ProgressTextTest` adds 1.
 - `docs/UserGuide.md` mentions the remaining count.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 383 JUnit tests, with 3 existing case-sensitivity tests skipped on macOS.

@@ -9,4 +9,11 @@ package arbiter.service;
  * @param taxonomy the project's taxonomy, which an answer to {@code current} must follow (#14)
  */
 public record QueueView(AssignmentProgress assignment, QueueItem current, TaxonomySummary taxonomy) {
+    /**
+     * Returns the number of the file the queue is on, counting from 1: one past the files already answered. It
+     * describes {@code current}, so it means nothing once the assignment is finished.
+     */
+    public int position() {
+        return assignment.submitted() + 1;
+    }
 }

@@ -20,11 +20,6 @@ public record AssignmentProgress(long assignmentId, String projectName, String s
         return total - submitted;
     }
 
-    /** Returns the position the queue is on, counting from 1, which is one past the files already answered. */
-    public int position() {
-        return submitted + 1;
-    }
-
     /**
      * Returns whether the assignment is finished, so its files are never reopened. This is the one definition,
      * taken from the stored status, which submission (#17) sets once every file has an answer.

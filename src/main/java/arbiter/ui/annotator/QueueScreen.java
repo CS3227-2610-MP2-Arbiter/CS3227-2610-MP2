@@ -99,7 +99,7 @@ public final class QueueScreen {
         }
         // The page scrolls as a whole, so neither a long file nor many labels can push Submit & next out of reach.
         content.getChildren().setAll(Components.scrollingPage(title,
-                Components.text("File " + assignment.position() + " of " + assignment.total()),
+                Components.text("File " + view.position() + " of " + assignment.total()),
                 Components.hint(ProgressText.of(assignment)), file, answer, submit, back));
     }
 
