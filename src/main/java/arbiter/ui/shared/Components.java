@@ -14,8 +14,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 
 /** Builds the basic display pieces both roles' screens share; their look comes from {@link Styles}. */
 public final class Components {
@@ -100,6 +102,24 @@ public final class Components {
         return column;
     }
 
+    /** Returns a {@link #column} whose text wraps onto more lines, for text too long to fit its width. */
+    public static <T> TableColumn<T, String> wrappingColumn(String title, Function<T, String> value) {
+        TableColumn<T, String> column = column(title, value);
+        column.setCellFactory(ignored -> {
+            TableCell<T, String> cell = new TableCell<>();
+            Text text = new Text();
+            text.textProperty().bind(cell.itemProperty());
+            text.fillProperty().bind(cell.textFillProperty());
+            // A row is only as tall as its cells' single-line text, so the text wraps to the column itself.
+            text.wrappingWidthProperty().bind(Bindings.createDoubleBinding(() -> column.getWidth()
+                    - cell.getInsets().getLeft() - cell.getInsets().getRight(), column.widthProperty(),
+                    cell.insetsProperty()));
+            cell.setGraphic(text);
+            return cell;
+        });
+        return column;
+    }
+
     /**
      * Returns a table column with one {@code text} button per row, which runs {@code action} on that row
      * and is disabled for rows that {@code disabled} matches.
@@ -129,6 +149,8 @@ public final class Components {
         Label label = new Label(text);
         label.setWrapText(true);
         label.setMaxWidth(Double.MAX_VALUE);
+        // Otherwise a layout short of room, such as a page with a table, squeezes wrapped lines off.
+        label.setMinHeight(Region.USE_PREF_SIZE);
         return label;
     }
 

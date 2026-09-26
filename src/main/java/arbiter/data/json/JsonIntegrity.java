@@ -93,17 +93,38 @@ final class JsonIntegrity {
             reference(projects, taxonomy.getProjectId(), "taxonomy project");
             require(taxonomy.getKind(), "taxonomy kind");
             requireUnique(configured, taxonomy.getProjectId(), "duplicate taxonomy settings for a project");
+            validateRange(taxonomy.getScaleMin(), taxonomy.getScaleMax());
         }
         if (!configured.containsAll(projects)) {
             throw invalid("missing taxonomy settings for a project");
         }
     }
 
+    /** Checks that a scale range is unset, or has both ends, within the bounds, and its minimum below its maximum. */
+    private static void validateRange(Integer minimum, Integer maximum) {
+        if (minimum == null && maximum == null) {
+            return;
+        }
+        if (minimum == null || maximum == null) {
+            throw invalid("scale range with only one end");
+        }
+        if (minimum >= maximum) {
+            throw invalid("scale range minimum not below its maximum");
+        }
+        if (minimum < TaxonomySettings.LOWEST_SCALE_VALUE || maximum > TaxonomySettings.HIGHEST_SCALE_VALUE) {
+            throw invalid("scale range outside its bounds");
+        }
+    }
+
+    /** Checks each label, and that no two labels of a project have the same key, ignoring case (#26). */
     private static void validateLabels(List<Label> labels, Set<Long> projects) {
+        Map<Long, Set<String>> keys = new HashMap<>();
         for (Label label : labels) {
             reference(projects, label.getProjectId(), "label project");
             require(label.getKey(), "label key");
             require(label.getSequence(), "label sequence");
+            requireUnique(keys.computeIfAbsent(label.getProjectId(), project -> new TreeSet<>(
+                    String.CASE_INSENSITIVE_ORDER)), label.getKey(), "duplicate label key in a project");
         }
     }
 
