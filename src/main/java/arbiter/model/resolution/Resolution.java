@@ -5,7 +5,7 @@ import java.time.Instant;
 /**
  * How an item was settled: its final answer and how it was reached.
  *
- * <p>A resolution exists only once its item is settled. An item with k valid answers and no resolution
+ * <p>A resolution exists only once its item is settled. An item with k submitted answers and no resolution
  * awaits the adjudicator, because automatic resolution runs as the kth answer is recorded (#27).
  *
  * <p>A resolution carries at most one result: a {@code labelId} or {@code scaleValue}. The setters

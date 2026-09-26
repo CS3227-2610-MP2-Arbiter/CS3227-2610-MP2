@@ -34,8 +34,10 @@ import arbiter.workspace.ResolvedSource;
  *
  * <p>Build one with {@link #single} or {@link #scale}, describe the state a test starts from, and
  * {@link Builder#seed seed} it into a {@link TestWorkspace}. The fixture records only states the app
- * can reach. A test names each resolution it needs, so the expected answer is visible in the test,
- * and the fixture refuses one that does not follow from the answers under rule 10.
+ * can reach, including those of a workspace from before automatic resolution (#27): an item with k
+ * answers has a resolution only if the test names one. A test names each resolution it needs, so the
+ * expected answer is visible in the test, and the fixture refuses one that does not follow from the
+ * answers under rule 10.
  */
 public final class ClassificationWorkflow {
     private final long ownerId;
