@@ -8,8 +8,7 @@ import arbiter.testing.Records;
 /**
  * Builds annotator accounts whose password works with {@link AuthService#login}.
  *
- * <p>It lives in this package because {@link PasswordHasher} is package-private. Once annotator
- * creation is a service operation ([#31]), fixtures should create accounts through it instead.
+ * <p>It lives in this package because {@link PasswordHasher} is package-private.
  */
 public final class TestAccounts {
     private TestAccounts() {
