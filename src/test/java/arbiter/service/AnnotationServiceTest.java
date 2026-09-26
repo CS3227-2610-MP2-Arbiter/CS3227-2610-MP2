@@ -21,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 import arbiter.model.annotation.Annotation;
 import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
+import arbiter.model.project.Label;
 import arbiter.model.project.SplitItem;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.testing.ClassificationWorkflow;
@@ -278,20 +279,24 @@ class AnnotationServiceTest {
         ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
                 .seed(workspace);
 
-        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
 
-        assertEquals(new Taxonomy(TaxonomyKind.SINGLE, List.of(
-                new LabelOption(flow.labelId("positive"), "positive", "Synthetic label"),
-                new LabelOption(flow.labelId("negative"), "negative", "Synthetic label")), null, null), taxonomy);
+        assertEquals(TaxonomyKind.SINGLE, taxonomy.kind());
+        assertEquals(List.of(flow.labelId("positive"), flow.labelId("negative")),
+                taxonomy.labels().stream().map(Label::getId).toList());
+        assertEquals(List.of("positive", "negative"), taxonomy.labels().stream().map(Label::getKey).toList());
+        assertEquals(List.of("Synthetic label", "Synthetic label"),
+                taxonomy.labels().stream().map(Label::getDescription).toList());
+        assertTrue(taxonomy.frozen());
     }
 
     @Test
     void forCurrentUserQueue_scaleProject_rangeWithNoLabels() {
         ClassificationWorkflow flow = ClassificationWorkflow.scale(-2, 5).assign("alice").seed(workspace);
 
-        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
 
-        assertEquals(new Taxonomy(TaxonomyKind.SCALE, List.of(), -2, 5), taxonomy);
+        assertEquals(new TaxonomySummary(TaxonomyKind.SCALE, List.of(), -2, 5, true), taxonomy);
     }
 
     @Test
@@ -304,7 +309,7 @@ class AnnotationServiceTest {
             return null;
         });
 
-        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
 
         assertFalse(taxonomy.answerable());
     }
@@ -336,7 +341,7 @@ class AnnotationServiceTest {
         long assignmentId = flow.assignmentId("alice");
         Instant before = Instant.now();
 
-        QueueView next = service("alice").submit(assignmentId, flow.itemId(0), Answer.label(flow.labelId("negative")));
+        QueueView next = service("alice").submit(assignmentId, flow.itemId(0), label(flow.labelId("negative")));
 
         Annotation stored = answerOf(flow.itemId(0), flow.annotatorId("alice")).orElseThrow();
         assertEquals(flow.labelId("negative"), stored.getLabelId());
@@ -353,7 +358,7 @@ class AnnotationServiceTest {
                 .assign("alice", "positive").seed(workspace);
         long assignmentId = flow.assignmentId("alice");
 
-        QueueView next = service("alice").submit(assignmentId, flow.itemId(1), Answer.label(flow.labelId("positive")));
+        QueueView next = service("alice").submit(assignmentId, flow.itemId(1), label(flow.labelId("positive")));
 
         assertEquals(AssignmentStatus.SUBMITTED, statusOf(assignmentId));
         assertTrue(next.assignment().finished());
@@ -364,7 +369,7 @@ class AnnotationServiceTest {
     void submit_scaleRating_stored() {
         ClassificationWorkflow flow = ClassificationWorkflow.scale(-2, 5).assign("alice").seed(workspace);
 
-        service("alice").submit(flow.assignmentId("alice"), flow.itemId(0), Answer.rating(-2));
+        service("alice").submit(flow.assignmentId("alice"), flow.itemId(0), rating(-2));
 
         assertEquals(-2, answerOf(flow.itemId(0), flow.annotatorId("alice")).orElseThrow().getScaleValue());
     }
@@ -375,7 +380,7 @@ class AnnotationServiceTest {
                 .seed(workspace);
         AnnotationService alice = service("alice");
         long assignmentId = flow.assignmentId("alice");
-        Answer positive = Answer.label(flow.labelId("positive"));
+        Answer positive = label(flow.labelId("positive"));
         alice.submit(assignmentId, flow.itemId(0), positive);
         byte[] afterFirst = workspace.dataFileBytes();
 
@@ -390,7 +395,7 @@ class AnnotationServiceTest {
                 .seed(workspace);
 
         assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(1),
-                Answer.label(flow.labelId("positive")));
+                label(flow.labelId("positive")));
     }
 
     @Test
@@ -399,7 +404,7 @@ class AnnotationServiceTest {
                 .seed(workspace);
 
         assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(0),
-                Answer.label(flow.labelId("positive")));
+                label(flow.labelId("positive")));
     }
 
     @Test
@@ -407,7 +412,7 @@ class AnnotationServiceTest {
         ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
                 .assign("bob").seed(workspace);
         AnnotationService alice = service("alice");
-        Answer positive = Answer.label(flow.labelId("positive"));
+        Answer positive = label(flow.labelId("positive"));
         long bobs = flow.assignmentId("bob");
         long item = flow.itemId(0);
         byte[] before = workspace.dataFileBytes();
@@ -427,11 +432,11 @@ class AnnotationServiceTest {
         ClassificationWorkflow other = ClassificationWorkflow.single("elsewhere").seed(workspace);
 
         assertRefusedUnchanged("alice", labels.assignmentId("alice"), labels.itemId(0),
-                Answer.label(other.labelId("elsewhere")));
-        assertRefusedUnchanged("alice", labels.assignmentId("alice"), labels.itemId(0), Answer.rating(1));
-        assertRefusedUnchanged("alice", scale.assignmentId("alice"), scale.itemId(0), Answer.rating(6));
+                label(other.labelId("elsewhere")));
+        assertRefusedUnchanged("alice", labels.assignmentId("alice"), labels.itemId(0), rating(1));
+        assertRefusedUnchanged("alice", scale.assignmentId("alice"), scale.itemId(0), rating(6));
         assertRefusedUnchanged("alice", scale.assignmentId("alice"), scale.itemId(0),
-                Answer.label(labels.labelId("positive")));
+                label(labels.labelId("positive")));
     }
 
     @Test
@@ -441,7 +446,7 @@ class AnnotationServiceTest {
         Files.writeString(workspace.paths().root().resolve("media/corpus-1/item-1.txt"), "Edited after import");
 
         ProjectException refused = assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(0),
-                Answer.label(flow.labelId("positive")));
+                label(flow.labelId("positive")));
 
         assertFalse(refused.getMessage().contains("item-1"), refused.getMessage());
     }
@@ -451,7 +456,7 @@ class AnnotationServiceTest {
         ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3).assign("alice")
                 .seed(workspace);
         long assignmentId = flow.assignmentId("alice");
-        service("alice").submit(assignmentId, flow.itemId(0), Answer.label(flow.labelId("positive")));
+        service("alice").submit(assignmentId, flow.itemId(0), label(flow.labelId("positive")));
 
         QueueView afterRestart = service("alice").forCurrentUser(assignmentId);
 
@@ -464,7 +469,7 @@ class AnnotationServiceTest {
                 .seed(workspace);
         AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
         long assignmentId = flow.assignmentId("alice");
-        Answer positive = Answer.label(flow.labelId("positive"));
+        Answer positive = label(flow.labelId("positive"));
 
         assertThrows(AuthException.class, () -> owner.submit(assignmentId, flow.itemId(0), positive));
     }
@@ -476,7 +481,7 @@ class AnnotationServiceTest {
         AnnotationService alice = service("alice");
         AnnotationService bob = service("bob");
         long assignmentId = flow.assignmentId("alice");
-        Answer positive = Answer.label(flow.labelId("positive"));
+        Answer positive = label(flow.labelId("positive"));
 
         assertProgress(alice, assignmentId, AssignmentStatus.NOT_STARTED, 0, 3);
         bob.submit(flow.assignmentId("bob"), flow.itemId(0), positive);
@@ -524,6 +529,14 @@ class AnnotationServiceTest {
     private AssignmentStatus statusOf(long assignmentId) {
         return workspace.store().read(session -> session.assignments().findById(assignmentId).orElseThrow())
                 .getStatus();
+    }
+
+    private static Answer label(long labelId) {
+        return new Answer.LabelChoice(labelId);
+    }
+
+    private static Answer rating(int value) {
+        return new Answer.Rating(value);
     }
 
     private AnnotationService service(String username) {

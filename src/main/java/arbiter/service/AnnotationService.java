@@ -13,7 +13,6 @@ import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.Item;
 import arbiter.model.project.Split;
 import arbiter.model.project.SplitItem;
-import arbiter.model.project.TaxonomySettings;
 import arbiter.workspace.SourceException;
 import arbiter.workspace.SourceResolver;
 import arbiter.workspace.WorkspacePaths;
@@ -80,7 +79,7 @@ public final class AnnotationService {
             Assignment assignment = requireOwn(session, assignmentId, annotatorId);
             Position position = position(session, assignment.getSplitId(), annotatorId);
             AssignmentProgress progress = progress(session, assignment, position);
-            Taxonomy taxonomy = taxonomy(session, assignment.getSplitId());
+            TaxonomySummary taxonomy = taxonomy(session, assignment.getSplitId());
             if (progress.finished()) {
                 return new Snapshot(progress, null, taxonomy);
             }
@@ -91,7 +90,7 @@ public final class AnnotationService {
             return new Snapshot(progress, session.items().findById(position.nextItemId()).orElseThrow(), taxonomy);
         });
         AssignmentProgress progress = snapshot.progress();
-        Taxonomy taxonomy = snapshot.taxonomy();
+        TaxonomySummary taxonomy = snapshot.taxonomy();
         Item item = snapshot.next();
         if (item == null) {
             return new QueueView(progress, null, taxonomy);
@@ -144,10 +143,9 @@ public final class AnnotationService {
             stored.setItemId(itemId);
             stored.setAssignmentId(assignmentId);
             stored.setAnnotatorId(annotatorId);
-            if (answer.labelId() != null) {
-                stored.setLabelId(answer.labelId());
-            } else {
-                stored.setScaleValue(answer.rating());
+            switch (answer) {
+            case Answer.LabelChoice choice -> stored.setLabelId(choice.labelId());
+            case Answer.Rating rating -> stored.setScaleValue(rating.value());
             }
             stored.setSubmittedAt(Instant.now());
             session.annotations().insert(stored);
@@ -175,13 +173,8 @@ public final class AnnotationService {
     }
 
     /** Returns the taxonomy of a split's project, with its labels in their saved order. */
-    private static Taxonomy taxonomy(RepositorySession session, long splitId) {
-        long projectId = session.splits().findById(splitId).orElseThrow().getProjectId();
-        TaxonomySettings settings = session.taxonomySettings().findByProject(projectId).orElseThrow();
-        List<LabelOption> labels = session.labels().listByProject(projectId).stream()
-                .map(label -> new LabelOption(label.getId(), label.getKey(), label.getDescription()))
-                .toList();
-        return new Taxonomy(settings.getKind(), labels, settings.getScaleMin(), settings.getScaleMax());
+    private static TaxonomySummary taxonomy(RepositorySession session, long splitId) {
+        return CorpusService.taxonomyOf(session, session.splits().findById(splitId).orElseThrow().getProjectId());
     }
 
     private static AssignmentProgress progress(RepositorySession session, Assignment assignment, Position position) {
@@ -220,6 +213,6 @@ public final class AnnotationService {
     }
 
     /** An assignment's progress, its next file's record and its project's taxonomy, read from one snapshot. */
-    private record Snapshot(AssignmentProgress progress, Item next, Taxonomy taxonomy) {
+    private record Snapshot(AssignmentProgress progress, Item next, TaxonomySummary taxonomy) {
     }
 }
