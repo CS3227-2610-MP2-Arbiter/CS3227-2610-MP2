@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.layout.Region;
 import javafx.stage.Window;
 
 /**
@@ -91,6 +92,8 @@ public final class Dialogs {
         alert.setTitle(TITLE);
         alert.setHeaderText(heading);
         alert.setContentText(message);
+        // Otherwise a long message is cut off with an ellipsis instead of wrapping onto more lines.
+        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
         Styles.apply(alert.getDialogPane());
         return alert;
     }

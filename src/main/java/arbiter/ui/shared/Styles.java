@@ -38,6 +38,9 @@ public final class Styles {
     /** A centred form. */
     public static final String FORM = "form";
 
+    /** The area a form scrolls in, which looks like the screen behind it. */
+    public static final String FORM_SCROLL = "form-scroll";
+
     /** A screen with nothing to show yet. */
     public static final String EMPTY_STATE = "empty-state";
 
@@ -46,7 +49,7 @@ public final class Styles {
 
     /** Every style class above, each of which has a rule in the stylesheet. */
     public static final List<String> CLASSES = List.of(TOP_BAR, APP_TITLE, NAVIGATION, PAGE_TITLE, HINT, ERROR_TEXT,
-            FORM, EMPTY_STATE, PAGE);
+            FORM, FORM_SCROLL, EMPTY_STATE, PAGE);
 
     private Styles() {
     }
