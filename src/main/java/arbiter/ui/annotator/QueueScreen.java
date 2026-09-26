@@ -76,7 +76,8 @@ public final class QueueScreen {
         Node title = Components.pageTitle(assignment.projectName() + ": " + assignment.splitName());
         if (assignment.finished()) {
             content.getChildren().setAll(Components.page(title,
-                    Components.text("You have answered every file in this split."), back));
+                    Components.text("You have answered every file in this split."),
+                    Components.hint(ProgressText.of(assignment)), back));
             return;
         }
         QueueItem current = view.current();
@@ -98,8 +99,8 @@ public final class QueueScreen {
         }
         // The page scrolls as a whole, so neither a long file nor many labels can push Submit & next out of reach.
         content.getChildren().setAll(Components.scrollingPage(title,
-                Components.text("File " + (assignment.submitted() + 1) + " of " + assignment.total()), file, answer,
-                submit, back));
+                Components.text("File " + view.position() + " of " + assignment.total()),
+                Components.hint(ProgressText.of(assignment)), file, answer, submit, back));
     }
 
     private void submit(Button submit, AnnotationEditor editor, long itemId) {

@@ -15,6 +15,11 @@ import arbiter.model.project.AssignmentStatus;
  */
 public record AssignmentProgress(long assignmentId, String projectName, String splitName, AssignmentStatus status,
         int submitted, int total) {
+    /** Returns the split's files this annotator has not answered yet (#18). */
+    public int remaining() {
+        return total - submitted;
+    }
+
     /**
      * Returns whether the assignment is finished, so its files are never reopened. This is the one definition,
      * taken from the stored status, which submission (#17) sets once every file has an answer.

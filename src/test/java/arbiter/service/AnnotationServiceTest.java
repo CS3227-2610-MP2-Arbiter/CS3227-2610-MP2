@@ -474,6 +474,51 @@ class AnnotationServiceTest {
         assertThrows(AuthException.class, () -> owner.submit(assignmentId, flow.itemId(0), positive));
     }
 
+    @Test
+    void progress_submittingEveryFile_homeAndQueueAgreeAtEachStep() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3).assign("alice")
+                .assign("bob").seed(workspace);
+        AnnotationService alice = service("alice");
+        AnnotationService bob = service("bob");
+        long assignmentId = flow.assignmentId("alice");
+        Answer positive = label(flow.labelId("positive"));
+
+        assertProgress(alice, assignmentId, AssignmentStatus.NOT_STARTED, 0, 3);
+        bob.submit(flow.assignmentId("bob"), flow.itemId(0), positive);
+        assertProgress(alice, assignmentId, AssignmentStatus.NOT_STARTED, 0, 3);
+        alice.submit(assignmentId, flow.itemId(0), positive);
+        assertProgress(alice, assignmentId, AssignmentStatus.IN_PROGRESS, 1, 2);
+        alice.submit(assignmentId, flow.itemId(1), positive);
+        assertProgress(alice, assignmentId, AssignmentStatus.IN_PROGRESS, 2, 1);
+        alice.submit(assignmentId, flow.itemId(2), positive);
+        assertProgress(alice, assignmentId, AssignmentStatus.SUBMITTED, 3, 0);
+    }
+
+    @Test
+    void progress_remaining() {
+        AssignmentProgress started = new AssignmentProgress(1, "Project", "Batch", AssignmentStatus.IN_PROGRESS, 2, 5);
+
+        assertEquals(3, started.remaining());
+    }
+
+    @Test
+    void queueView_position_onePastTheAnsweredFiles() {
+        AssignmentProgress started = new AssignmentProgress(1, "Project", "Batch", AssignmentStatus.IN_PROGRESS, 2, 5);
+
+        assertEquals(3, new QueueView(started, new QueueItem(7, "Text", null), null).position());
+    }
+
+    private void assertProgress(AnnotationService annotator, long assignmentId, AssignmentStatus status,
+            int submitted, int remaining) {
+        AssignmentProgress home = annotator.forCurrentUser().stream()
+                .filter(assignment -> assignment.assignmentId() == assignmentId).findFirst().orElseThrow();
+        AssignmentProgress queue = annotator.forCurrentUser(assignmentId).assignment();
+        assertEquals(home, queue);
+        assertEquals(status, home.status());
+        assertEquals(submitted, home.submitted());
+        assertEquals(remaining, home.remaining());
+    }
+
     private ProjectException assertRefusedUnchanged(String username, long assignmentId, long itemId, Answer answer) {
         AnnotationService annotator = service(username);
         byte[] before = workspace.dataFileBytes();

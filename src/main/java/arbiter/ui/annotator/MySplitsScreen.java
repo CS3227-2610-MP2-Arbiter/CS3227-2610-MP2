@@ -71,7 +71,7 @@ public final class MySplitsScreen {
         CardState state = CardState.of(assignment);
         VBox card = Components.card(Components.text(assignment.projectName() + ": " + assignment.splitName()),
                 Components.hint(state.statusText()),
-                Components.text(assignment.submitted() + " of " + assignment.total() + " files submitted"));
+                Components.text(ProgressText.of(assignment)));
         if (state.openLabel() != null) {
             Button open = new Button(state.openLabel());
             open.setOnAction(event -> open(assignment));
