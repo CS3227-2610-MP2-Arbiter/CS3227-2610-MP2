@@ -59,6 +59,12 @@ Non-goals, from [#13]: answer controls ([#14]), storing answers and moving forwa
 - `AnnotationServiceTest` adds 9 queue tests: position and text, saved order, restart before and after an answer is stored, completion, another annotator's answers, refusing another annotator's assignment exactly like a missing one, a changed source, a missing source, and the adjudicator. Removing the ownership check and letting source errors escape made the refusal test and both source tests fail; both changes were reverted.
 - `docs/UserGuide.md`'s "My splits" section now describes opening a split and unreadable files.
 - After Whimsyturtle's review of PR #78, the queue uses the same two rules as the home screen: `AnnotationService.position` decides the next file, and the stored status decides whether the assignment is finished. A finished assignment shows completion even if a file lacks an answer, so it is never reopened. A new test covers that case, and it failed when the status check was removed.
+- Whimsyturtle's review of PR #79 raised four points, all fixed:
+  - **"Finished" had two definitions.** `QueueView.finished()` meant "no current file"; it is gone, and `AssignmentProgress.finished()`, from the stored status, is the only one. The queue has a current file exactly when the assignment is not finished. An unfinished assignment with every file answered, which [#17] never leaves behind, is refused as inconsistent.
+  - **The current file was stored twice**, as `AssignmentProgress.nextItemId` and `QueueItem.itemId`. `nextItemId` is removed, since the home screen never showed it, so the queue's current file is the only copy.
+  - **Showing the file path could leak a label** through a file or folder name. `QueueItem` no longer carries a path, and a source failure reaches the annotator as a `SourceFailure` reason, worded by `QueueScreen`, rather than the resolver's message, which names the path.
+  - **`ItemView` held annotator-only wording.** It now only shows text; what to say about an unreadable file is the screen's choice.
+- 352 JUnit tests pass. #12's two next-file tests became queue tests, and a new test covers the inconsistent state.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 351 JUnit tests, with the same 3 existing case-sensitivity tests skipped on macOS.
 
 ### Human acceptance checks

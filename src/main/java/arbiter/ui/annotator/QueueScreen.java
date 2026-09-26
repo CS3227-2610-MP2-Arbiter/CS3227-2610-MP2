@@ -12,8 +12,11 @@ import arbiter.service.QueueView;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
 import arbiter.ui.shared.ItemView;
+import arbiter.workspace.SourceFailure;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 /**
@@ -53,12 +56,23 @@ public final class QueueScreen {
         }
         AssignmentProgress assignment = view.assignment();
         Node title = Components.pageTitle(assignment.projectName() + ": " + assignment.splitName());
-        if (view.finished()) {
+        if (assignment.finished()) {
             return Components.page(title, Components.text("You have answered every file in this split."), back);
         }
         QueueItem current = view.current();
+        Node file = current.readable() ? ItemView.of(current.text()) : unreadable(current.failure());
         return Components.page(title,
-                Components.text("File " + (assignment.submitted() + 1) + " of " + assignment.total()),
-                ItemView.of(current.storedPath(), current.text(), current.sourceError()), back);
+                Components.text("File " + (assignment.submitted() + 1) + " of " + assignment.total()), file, back);
+    }
+
+    /** Explains an unreadable file without naming it, since a file's name can hint at its label. */
+    private static Node unreadable(SourceFailure failure) {
+        Label error = Components.errorText();
+        error.setText(switch (failure) {
+        case MISSING, NOT_A_FILE -> "This file is missing from the workspace.";
+        case HASH_MISMATCH -> "This file has changed since it was added to the project.";
+        default -> "This file cannot be read.";
+        });
+        return new VBox(error, Components.hint("It cannot be answered until your adjudicator restores it."));
     }
 }

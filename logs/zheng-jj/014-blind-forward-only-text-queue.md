@@ -15,6 +15,14 @@ Status: Awaiting human verification.
 
 - Whimsyturtle's review of #12's PR (#78) applied here too. The queue now takes its next file from the same helper as the home screen, and decides "finished" from the stored status rather than from the absence of a next file, so both screens agree.
 
+- Whimsyturtle's review of #79 found four problems:
+  - two definitions of "finished"
+  - the current file stored twice
+  - file paths shown to annotators, which could hint at labels
+  - annotator wording inside the shared `ItemView`
+
+  All four were fixed by giving each fact one owner. Finished is the stored status. The current file lives only in the queue. Annotators get a failure reason, never a path. `ItemView` shows only text. The path issue is the notable one: blindness also covers hints in the data itself, not just other annotators' answers.
+
 ## Agent responses and outcomes
 
 - Used `write-plan`, `implement-feature`, `write-test`, `review`, `maintain-docs` and `log`. The plan is `plans/text-queue.md`, on branch `feat/text-queue` stacked on `feat/annotator-home`.
@@ -28,6 +36,7 @@ Status: Awaiting human verification.
 - Not verified: the screen in a running app. The plan lists four human checks.
 - The owner approved the plan and delivery on 26 September 2026.
 - The owner approved delivery of the review fixes on 26 September 2026.
+- The owner approved delivery of the second review's fixes on 26 September 2026.
 - Pending: human acceptance, teammate review and CI.
 
 [#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12

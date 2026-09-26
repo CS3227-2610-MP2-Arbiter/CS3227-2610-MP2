@@ -52,22 +52,24 @@ public final class AnnotationService {
         long annotatorId = auth.requireAnnotator().id();
         return store.read(session -> session.assignments().listByAnnotator(annotatorId).stream()
                 .sorted(HOME_ORDER)
-                .map(assignment -> progress(session, assignment, annotatorId))
+                .map(assignment -> progress(session, assignment,
+                        position(session, assignment.getSplitId(), annotatorId)))
                 .toList());
     }
 
     /**
-     * Returns where one of the signed-in annotator's assignments stands (#13): its progress and the first file
-     * in saved split order without their answer, with that file's text. A finished assignment, by its stored
-     * status, has no file, so its files are never reopened; neither does one with every file answered.
+     * Returns where one of the signed-in annotator's assignments stands (#13): its progress and, unless it is
+     * finished, the first file in saved split order without their answer, with that file's text.
      *
      * <p>The position is worked out from stored answers each time, so a restart resumes at the first unanswered
-     * file (rule 18). A file whose source is missing, unreadable or changed is returned with the resolver's
-     * error instead of its text (rule 21), so the queue still shows where the annotator is.
+     * file (rule 18). A file whose source is missing, unreadable or changed is returned with the reason instead
+     * of its text (rule 21), so the queue still shows where the annotator is.
      *
      * @throws AuthException if the caller is not a signed-in annotator
      * @throws ProjectException if the assignment does not exist or is another annotator's; both are refused
      *     alike, so the refusal reveals nothing about other annotators
+     * @throws IllegalStateException if the assignment is not finished but every file has an answer, which
+     *     submission (#17) never leaves behind
      */
     public QueueView forCurrentUser(long assignmentId) {
         long annotatorId = auth.requireAnnotator().id();
@@ -75,10 +77,16 @@ public final class AnnotationService {
             Assignment assignment = session.assignments().findById(assignmentId)
                     .filter(found -> found.getAnnotatorId() == annotatorId)
                     .orElseThrow(() -> new ProjectException(NOT_ASSIGNED));
-            AssignmentProgress progress = progress(session, assignment, annotatorId);
-            Item next = progress.finished() || progress.nextItemId() == null ? null
-                    : session.items().findById(progress.nextItemId()).orElseThrow();
-            return new Snapshot(progress, next);
+            Position position = position(session, assignment.getSplitId(), annotatorId);
+            AssignmentProgress progress = progress(session, assignment, position);
+            if (progress.finished()) {
+                return new Snapshot(progress, null);
+            }
+            if (position.nextItemId() == null) {
+                throw new IllegalStateException("Assignment " + assignmentId
+                        + " has an answer for every file but is not submitted");
+            }
+            return new Snapshot(progress, session.items().findById(position.nextItemId()).orElseThrow());
         });
         AssignmentProgress progress = snapshot.progress();
         Item item = snapshot.next();
@@ -88,18 +96,17 @@ public final class AnnotationService {
         // The file is read outside the store's action, which holds the workspace's data, not its media.
         try {
             String text = sources.resolve(item.getPath(), item.getContentHash()).text();
-            return new QueueView(progress, new QueueItem(item.getId(), item.getPath(), text, null));
+            return new QueueView(progress, new QueueItem(item.getId(), text, null));
         } catch (SourceException e) {
-            return new QueueView(progress, new QueueItem(item.getId(), item.getPath(), null, e.getMessage()));
+            return new QueueView(progress, new QueueItem(item.getId(), null, e.reason()));
         }
     }
 
-    private static AssignmentProgress progress(RepositorySession session, Assignment assignment, long annotatorId) {
+    private static AssignmentProgress progress(RepositorySession session, Assignment assignment, Position position) {
         Split split = session.splits().findById(assignment.getSplitId()).orElseThrow();
         String projectName = session.projects().findById(split.getProjectId()).orElseThrow().getName();
-        Position position = position(session, split.getId(), annotatorId);
         return new AssignmentProgress(assignment.getId(), projectName, split.getName(), assignment.getStatus(),
-                position.submitted(), position.total(), position.nextItemId());
+                position.submitted(), position.total());
     }
 
     /**
