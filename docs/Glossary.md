@@ -11,7 +11,7 @@ The terms Arbiter's documentation and issues rely on. Each term uses only the te
 | **Project** | One plain-text classification job, with a taxonomy kind and output format. |
 | **Item** | One annotatable plain-text document. |
 | **Corpus** | The collection of items imported into a project. |
-| **Label** | One answer an annotator can choose. A project's labels form its *taxonomy*, which the adjudicator defines. |
+| **Label** | One answer an annotator can choose. A `SINGLE` project's labels, or a `SCALE` project's range, form its *taxonomy*, which the adjudicator defines. |
 | **Split** | A batch of corpus items, which is what gets assigned. |
 | **Assignment** | The link between one split and one annotator who works it. |
 | **Annotation** | One annotator's submitted answer for one item: a label or an integer scale rating. |
