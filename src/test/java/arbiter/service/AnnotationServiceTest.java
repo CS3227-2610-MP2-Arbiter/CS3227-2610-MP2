@@ -293,9 +293,11 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_projectWithoutLabelsYet_unanswerable() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         workspace.store().write(session -> {
             session.labels().deleteById(flow.labelId("positive"));
+            session.labels().deleteById(flow.labelId("negative"));
             return null;
         });
 
@@ -306,7 +308,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_opening_writesNothing() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2).assign("alice")
                 .seed(workspace);
         byte[] before = workspace.dataFileBytes();
 

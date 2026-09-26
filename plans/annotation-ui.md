@@ -65,6 +65,7 @@ Non-goals, from [#14]: storing the answer and moving forward ([#17]), multi-sele
 - `docs/UserGuide.md` describes choosing an answer.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 367 JUnit tests, with 3 existing case-sensitivity tests skipped on macOS.
 
+- After [#26] merged (PR #83), which refuses a SINGLE project's first assignment until it has two labels, the tests here seed two-label projects. The "no labels yet" test deletes both labels after assignment. No production code changed.
 ### Human acceptance checks
 
 These need a project with labels or a range. Until [#26], they need a workspace seeded by a test fixture.
