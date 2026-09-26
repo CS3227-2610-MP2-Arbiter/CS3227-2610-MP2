@@ -6,6 +6,7 @@ package arbiter.service;
  * @param assignment the assignment's progress, as the annotator's home shows it
  * @param current the first file in saved split order without the annotator's answer, or null exactly when the
  *     assignment is {@link AssignmentProgress#finished() finished}
+ * @param taxonomy the project's taxonomy, which an answer to {@code current} must follow (#14)
  */
-public record QueueView(AssignmentProgress assignment, QueueItem current) {
+public record QueueView(AssignmentProgress assignment, QueueItem current, Taxonomy taxonomy) {
 }

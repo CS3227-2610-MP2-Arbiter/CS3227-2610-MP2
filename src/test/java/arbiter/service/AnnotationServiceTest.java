@@ -1,5 +1,6 @@
 package arbiter.service;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.SplitItem;
+import arbiter.model.project.TaxonomyKind;
 import arbiter.testing.ClassificationWorkflow;
 import arbiter.testing.Records;
 import arbiter.testing.TestWorkspace;
@@ -261,6 +263,51 @@ class AnnotationServiceTest {
 
         assertFalse(current.readable());
         assertEquals(SourceFailure.MISSING, current.failure());
+    }
+
+    @Test
+    void forCurrentUserQueue_singleProject_labelsInSavedOrderWithDescriptions() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
+
+        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+
+        assertEquals(new Taxonomy(TaxonomyKind.SINGLE, List.of(
+                new LabelOption(flow.labelId("positive"), "positive", "Synthetic label"),
+                new LabelOption(flow.labelId("negative"), "negative", "Synthetic label")), null, null), taxonomy);
+    }
+
+    @Test
+    void forCurrentUserQueue_scaleProject_rangeWithNoLabels() {
+        ClassificationWorkflow flow = ClassificationWorkflow.scale(-2, 5).assign("alice").seed(workspace);
+
+        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+
+        assertEquals(new Taxonomy(TaxonomyKind.SCALE, List.of(), -2, 5), taxonomy);
+    }
+
+    @Test
+    void forCurrentUserQueue_projectWithoutLabelsYet_unanswerable() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        workspace.store().write(session -> {
+            session.labels().deleteById(flow.labelId("positive"));
+            return null;
+        });
+
+        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+
+        assertFalse(taxonomy.answerable());
+    }
+
+    @Test
+    void forCurrentUserQueue_opening_writesNothing() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+                .seed(workspace);
+        byte[] before = workspace.dataFileBytes();
+
+        service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
