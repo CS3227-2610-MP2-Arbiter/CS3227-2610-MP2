@@ -3,18 +3,15 @@ package arbiter.ui.adjudicator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
-import arbiter.data.json.JsonStoreException;
 import arbiter.service.AccountSummary;
 import arbiter.service.AnnotatorLoad;
 import arbiter.service.AssignmentOptions;
 import arbiter.service.AssignmentService;
-import arbiter.service.AuthException;
-import arbiter.service.ProjectException;
 import arbiter.service.SplitSummary;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
-import arbiter.ui.shared.ErrorMessages;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -110,18 +107,13 @@ final class AssignForm {
     }
 
     private void assign(String annotationsPerItem, List<AnnotatorLoad> chosen, Label error) {
-        error.setText("");
         List<Long> annotatorIds = chosen.stream().map(AnnotatorLoad::id).toList();
-        int confirmedPerItem;
-        try {
-            confirmedPerItem = assignments.check(split.id(), annotationsPerItem, annotatorIds);
-        } catch (ProjectException e) {
-            error.setText(ErrorMessages.of(e));
-            return;
-        } catch (AuthException | JsonStoreException e) {
-            Dialogs.showError(owner, ASSIGN_FAILED, e);
+        Optional<Integer> checked = ProjectPage.runInline(owner, ASSIGN_FAILED, error, () -> assignments.check(
+                split.id(), annotationsPerItem, annotatorIds));
+        if (checked.isEmpty()) {
             return;
         }
+        int confirmedPerItem = checked.get();
         String names = String.join(", ", chosen.stream().map(AnnotatorLoad::username).toList());
         String message = names + " will be assigned to " + split.name() + ", with "
                 + ProjectPage.plural(confirmedPerItem, "annotator") + " per file. Assignments cannot be removed, "

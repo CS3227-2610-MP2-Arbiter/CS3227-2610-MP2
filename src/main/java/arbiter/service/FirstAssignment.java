@@ -22,11 +22,18 @@ final class FirstAssignment {
         if (session.projects().findById(projectId).isEmpty()) {
             throw new ProjectException("This project no longer exists");
         }
-        boolean reached = session.splits().listByProject(projectId).stream()
-                .anyMatch(split -> reachedSplit(session, split.getId()));
-        if (reached) {
+        if (reachedProject(session, projectId)) {
             throw new ProjectException(frozenMessage);
         }
+    }
+
+    /**
+     * Returns whether any of the project's splits has had its first assignment, as {@link #reachedSplit} decides.
+     * When it guards a write, call it inside that write action.
+     */
+    static boolean reachedProject(RepositorySession session, long projectId) {
+        return session.splits().listByProject(projectId).stream()
+                .anyMatch(split -> reachedSplit(session, split.getId()));
     }
 
     /**

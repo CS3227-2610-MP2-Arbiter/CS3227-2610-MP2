@@ -47,10 +47,7 @@ public final class ProjectService {
      */
     public Project create(String name, String description, TaxonomyKind kind, OutputFormat outputFormat) {
         auth.requireAdjudicator();
-        String stripped = name == null ? "" : name.strip();
-        if (!NAME_PATTERN.matcher(stripped).matches()) {
-            throw new ProjectException("Project name must be 1 to 100 ASCII letters, digits, spaces or punctuation");
-        }
+        String stripped = requireName(name, "Project name");
         if (kind == null) {
             throw new ProjectException("Choose a taxonomy kind");
         }
@@ -65,7 +62,7 @@ public final class ProjectService {
             }
             Project project = new Project();
             project.setName(stripped);
-            project.setDescription(description == null || description.isBlank() ? null : description.strip());
+            project.setDescription(optionalText(description));
             project.setOutputFormat(outputFormat);
             project.setCreatedAt(Instant.now());
             Project stored = session.projects().save(project);
@@ -112,6 +109,28 @@ public final class ProjectService {
             session.projects().deleteById(projectId);
             return null;
         });
+    }
+
+    /**
+     * Strips a name the adjudicator typed of surrounding whitespace and requires it to meet #24's name rule, which
+     * label keys also follow (#26).
+     *
+     * @param subject what the name is, such as "Project name", which starts the message any other name is rejected
+     *     with
+     * @return the stripped name
+     * @throws ProjectException if the name breaks that rule
+     */
+    static String requireName(String name, String subject) {
+        String stripped = name == null ? "" : name.strip();
+        if (!NAME_PATTERN.matcher(stripped).matches()) {
+            throw new ProjectException(subject + " must be 1 to 100 ASCII letters, digits, spaces or punctuation");
+        }
+        return stripped;
+    }
+
+    /** Returns optional text, such as a description, as it is stored: null if it is null or blank, else stripped. */
+    static String optionalText(String text) {
+        return text == null || text.isBlank() ? null : text.strip();
     }
 
     private static ProjectSummary summarize(RepositorySession session, Project project) {
