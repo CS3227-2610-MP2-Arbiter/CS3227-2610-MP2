@@ -32,7 +32,7 @@ Non-goals, from [#11]: feature behaviour owned by later issues, and fixtures for
   - If *k* is not set, it is the number of assignees for an assigned split and null for an unassigned one, matching the model (`Split.annotationsPerItem` is null until assignment).
   - It refuses states the app cannot reach before writing anything: an unknown label, a rating outside the range, an answer of the wrong kind, more answers than items, a duplicate assignee, more assignees than *k*, a resolution before *k* answers, and a resolution that does not follow from the answers.
   - It creates the owner through `AuthService.bootstrapOwner` if the workspace has none, and reuses an existing account with the same username.
-- **`arbiter.service.TestAccounts`** (test source set) builds annotator accounts with real `PasswordHasher` credentials, so a fixture annotator can sign in. It sits in `arbiter.service` because `PasswordHasher` is package-private; once [#31] adds annotator creation to the service, the fixture should call that instead.
+- **`arbiter.service.TestAccounts`** (test source set) builds annotator accounts with real `PasswordHasher` credentials, so a fixture annotator can sign in. It sits in `arbiter.service` because `PasswordHasher` is package-private.
 
 ### Blindness test (`src/test/java/arbiter/blindness`)
 
@@ -83,7 +83,7 @@ Non-goals, from [#11]: feature behaviour owned by later issues, and fixtures for
 
 ## Open questions
 
-- When [#31] lands, `TestAccounts` should give way to the service's annotator creation.
+- None. The [account management plan](account-management.md) keeps `TestAccounts` after [#31].
 
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10

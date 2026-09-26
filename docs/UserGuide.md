@@ -10,7 +10,7 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 
 1. Launch Arbiter. On first run the workspace wizard asks you to choose a [workspace](Glossary.md) folder.
 2. During setup, create the workspace's adjudicator account.
-3. The adjudicator creates annotator accounts and gives each annotator their username and password.
+3. The adjudicator creates annotator accounts on the [Accounts](#accounts) screen and gives each annotator their username and password.
 4. Sign in. Arbiter opens your role's home ([#5]): [Projects](#projects) for the adjudicator, and a placeholder for annotators until [#12].
 
 If the workspace is already in use, close its other Arbiter instance and try again ([#61](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61)).
@@ -51,6 +51,14 @@ Projects is the adjudicator's home screen. It lists every [project](Glossary.md)
 - **Delete a split.** Choose **Delete** on its row and confirm. Its files return to those not yet in a split. You can delete a split only before its first assignment ([rule 14](UserFlows.md#3-rules-both-tracks-share)).
 
 You can register or unregister files only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)). Labels and assignments cannot be set up until taxonomy setup ([#26]) and assignment ([#32]) are released.
+
+## Accounts
+
+Accounts lists every account with its role and [status](Glossary.md#fixed-value-sets), the adjudicator first. Only the adjudicator sees it, and every account they create is an annotator ([rule 12](UserFlows.md#3-rules-both-tracks-share)).
+
+- **Create an annotator.** Choose **New annotator** and enter a username and the password twice. A username already taken in any letter case, even by a disabled account, is refused.
+- **Reset a password.** Choose **Reset password** on an active annotator's row and enter the new password twice. The adjudicator's own password cannot be reset.
+- **Deactivate an annotator.** Choose **Deactivate** on their row and confirm. They can no longer sign in, and their work and assignments are kept ([rule 19](UserFlows.md#3-rules-both-tracks-share)). Deactivation is permanent.
 
 [Back to home](index.md)
 
