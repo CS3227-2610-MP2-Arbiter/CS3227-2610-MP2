@@ -1,5 +1,6 @@
 package arbiter.data.json;
 
+import static arbiter.testing.Records.assignment;
 import static arbiter.testing.Records.item;
 import static arbiter.testing.Records.label;
 import static arbiter.testing.Records.membership;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import arbiter.model.project.Item;
+import arbiter.model.project.Split;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.model.user.User;
 import arbiter.workspace.WorkspacePaths;
@@ -90,6 +92,32 @@ class JsonStoreIntegrityTest {
 
         assertEquals(TaxonomyKind.SINGLE, store.read(session -> session.taxonomySettings().findByProject(project))
                 .orElseThrow().getKind());
+    }
+
+    @Test
+    void write_assignmentToSplitWithoutAnnotationsPerItem_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long[] ids = splitAndAnnotators(store, null, 1);
+
+        assertAssignmentRejected(store, ids[0], ids[1], "missing annotations per item of an assigned split");
+    }
+
+    @Test
+    void write_assignmentBeyondAnnotationsPerItem_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long[] ids = splitAndAnnotators(store, 1, 2);
+        assign(store, ids[0], ids[1]);
+
+        assertAssignmentRejected(store, ids[0], ids[2], "more assignments than annotations per item on a split");
+    }
+
+    @Test
+    void write_annotatorAssignedToSplitTwice_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long[] ids = splitAndAnnotators(store, 2, 1);
+        assign(store, ids[0], ids[1]);
+
+        assertAssignmentRejected(store, ids[0], ids[1], "duplicate assignment of an annotator to a split");
     }
 
     @Test
@@ -170,5 +198,36 @@ class JsonStoreIntegrityTest {
     private JsonStore newStore() {
         WorkspacePaths paths = new WorkspaceService().create(temporary.resolve("workspace"));
         return JsonStore.initializeNew(paths);
+    }
+
+    /** Stores a split with this k and this many annotators, and returns the split's identifier, then theirs. */
+    private static long[] splitAndAnnotators(JsonStore store, Integer annotationsPerItem, int annotators) {
+        return store.write(session -> {
+            long project = session.projects().save(project("Project")).getId();
+            session.taxonomySettings().save(settings(project));
+            Split split = split(project, "Batch");
+            split.setAnnotationsPerItem(annotationsPerItem);
+            long[] ids = new long[annotators + 1];
+            ids[0] = session.splits().save(split).getId();
+            for (int index = 1; index <= annotators; index++) {
+                ids[index] = session.users().save(user("annotator" + index)).getId();
+            }
+            return ids;
+        });
+    }
+
+    private static void assign(JsonStore store, long splitId, long annotatorId) {
+        store.write(session -> session.assignments().save(assignment(splitId, annotatorId)));
+    }
+
+    /** Asserts that assigning this annotator to the split is rejected for this reason and stores nothing. */
+    private static void assertAssignmentRejected(JsonStore store, long splitId, long annotatorId, String reason) {
+        int before = store.<Integer>read(session -> session.assignments().listBySplit(splitId).size());
+
+        JsonStoreException rejected = assertThrows(JsonStoreException.class, () -> assign(store, splitId, annotatorId));
+
+        assertEquals("Invalid workspace data: " + reason, rejected.getMessage());
+
+        assertEquals(before, store.<Integer>read(session -> session.assignments().listBySplit(splitId).size()));
     }
 }

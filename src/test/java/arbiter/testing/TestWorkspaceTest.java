@@ -130,7 +130,7 @@ class TestWorkspaceTest {
     }
 
     @Test
-    void assignSplit_unassignedSplit_newAnnotatorAssignedNotStarted() {
+    void assignSplit_unassignedSplit_newAnnotatorAssignedNotStartedAndKSaved() {
         TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
         ClassificationWorkflow flow = ClassificationWorkflow.single("positive").seed(workspace);
 
@@ -138,6 +138,8 @@ class TestWorkspaceTest {
 
         List<Assignment> assignments = workspace.store().read(session ->
                 session.assignments().listBySplit(flow.splitId()));
+        assertEquals(1, workspace.store().read(session -> session.splits().findById(flow.splitId()))
+                .orElseThrow().getAnnotationsPerItem());
         assertEquals(1, assignments.size());
         assertEquals(AssignmentStatus.NOT_STARTED, assignments.getFirst().getStatus());
         User annotator = workspace.store().read(session ->

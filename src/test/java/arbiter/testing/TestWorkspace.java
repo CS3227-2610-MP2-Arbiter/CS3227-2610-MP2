@@ -112,9 +112,15 @@ public final class TestWorkspace {
         });
     }
 
-    /** Assigns a split to a new annotator account with placeholder credentials, not started, as #32 will. */
+    /**
+     * Gives a split its first assignment, to a new annotator account with placeholder credentials, not started,
+     * and saves k = 1 with it, as #32 does.
+     */
     public void assignSplit(long splitId, String username) {
         store.write(session -> {
+            Split split = session.splits().findById(splitId).orElseThrow();
+            split.setAnnotationsPerItem(1);
+            session.splits().save(split);
             long annotatorId = session.users().save(Records.user(username)).getId();
             return session.assignments().save(notStarted(splitId, annotatorId));
         });

@@ -1,7 +1,9 @@
 package arbiter.data.json;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -46,7 +48,7 @@ final class JsonIntegrity {
         validateItems(state.items(), projects);
         validateSplits(state.splits(), projects);
         validateSplitItems(state.splitItems(), splits, items);
-        validateAssignments(state.assignments(), splits, users);
+        validateAssignments(state.assignments(), state.splits(), users);
         validateAnnotations(state.annotations(), items, assignments, users, labels);
         validateResolutions(state.resolutions(), items, labels, users);
     }
@@ -132,12 +134,29 @@ final class JsonIntegrity {
         }
     }
 
-    private static void validateAssignments(List<Assignment> assignments, Set<Long> splits, Set<Long> users) {
+    /**
+     * Checks each assignment, and that an assigned split has its annotations per item, no more assignments than
+     * that and no annotator twice (rule 19).
+     */
+    private static void validateAssignments(List<Assignment> assignments, List<Split> splits, Set<Long> users) {
+        Map<Long, Integer> annotationsPerItem = new HashMap<>();
+        for (Split split : splits) {
+            annotationsPerItem.put(split.getId(), split.getAnnotationsPerItem());
+        }
+        Map<Long, Integer> taken = new HashMap<>();
+        Set<List<Long>> assigned = new HashSet<>();
         for (Assignment assignment : assignments) {
-            reference(splits, assignment.getSplitId(), "assignment split");
+            reference(annotationsPerItem.keySet(), assignment.getSplitId(), "assignment split");
             reference(users, assignment.getAnnotatorId(), "assignment annotator");
             require(assignment.getStatus(), "assignment status");
             require(assignment.getAssignedAt(), "assignment time");
+            Integer places = annotationsPerItem.get(assignment.getSplitId());
+            require(places, "annotations per item of an assigned split");
+            if (taken.merge(assignment.getSplitId(), 1, Integer::sum) > places) {
+                throw invalid("more assignments than annotations per item on a split");
+            }
+            requireUnique(assigned, List.of(assignment.getSplitId(), assignment.getAnnotatorId()),
+                    "duplicate assignment of an annotator to a split");
         }
     }
 
