@@ -74,18 +74,20 @@ public final class AssignmentService {
      * Checks an assignment request as {@link #assign} would, without storing anything, and returns the k to
      * confirm.
      *
-     * <p>Before the split's first assignment ({@link FirstAssignment}), k is the typed text, parsed by
-     * {@link CorpusService#parseCount}, and at most the number of active annotators. Afterwards the text is
-     * ignored and the split's saved k applies. The split's free places are k less its assignments, whatever
+     * <p>Before the project's first assignment ({@link FirstAssignment}), its taxonomy must be ready for it
+     * ({@link CorpusService#requireTaxonomyReady}). Before the split's first assignment, k is the typed text,
+     * parsed by {@link CorpusService#parseCount}, and at most the number of active annotators. Afterwards the text
+     * is ignored and the split's saved k applies. The split's free places are k less its assignments, whatever
      * their status or annotator's account status (rule 19).
      *
      * @param annotationsPerItemText the split's k as the adjudicator typed it
      * @param annotatorIds the account identifiers of the annotators to assign
      * @return the k the split has or would be given
      * @throws AuthException if the caller is not the signed-in adjudicator
-     * @throws ProjectException if no split has this identifier, the k text breaks the rule above, no annotator
-     *     is chosen, a chosen account is missing, the owner or disabled, is chosen more than once or is already
-     *     assigned to the split, or more annotators are chosen than the split has free places
+     * @throws ProjectException if no split has this identifier, the project's taxonomy is not ready, the k text
+     *     breaks the rule above, no annotator is chosen, a chosen account is missing, the owner or disabled, is
+     *     chosen more than once or is already assigned to the split, or more annotators are chosen than the split
+     *     has free places
      */
     public int check(long splitId, String annotationsPerItemText, List<Long> annotatorIds) {
         auth.requireAdjudicator();
@@ -138,6 +140,9 @@ public final class AssignmentService {
     /** Applies {@link #check}'s rules to a request, returning the k to use. */
     private static int requireValid(RepositorySession session, Split split, String annotationsPerItemText,
             List<Long> annotatorIds) {
+        if (!FirstAssignment.reachedProject(session, split.getProjectId())) {
+            CorpusService.requireTaxonomyReady(session, split.getProjectId());
+        }
         int annotationsPerItem;
         if (FirstAssignment.reachedSplit(session, split.getId())) {
             annotationsPerItem = split.getAnnotationsPerItem();

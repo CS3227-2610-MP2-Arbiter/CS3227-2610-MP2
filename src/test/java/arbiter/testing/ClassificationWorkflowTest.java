@@ -78,15 +78,18 @@ class ClassificationWorkflowTest {
     }
 
     @Test
-    void start_emptyOrRepeatedLabelsOrInvertedScale_exceptionThrown() {
+    void start_emptyOrRepeatedLabelsOrScaleTheAppCannotSave_exceptionThrown() {
         assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single());
         assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single("positive", "positive"));
         assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(4, 3));
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(3, 3));
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(-11, 0));
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(0, 11));
     }
 
     @Test
-    void start_singleValueScaleAndOneOfEach_seeded() {
-        ClassificationWorkflow flow = ClassificationWorkflow.scale(3, 3).items(1).annotationsPerItem(1)
+    void start_narrowestScaleAndOneOfEach_seeded() {
+        ClassificationWorkflow flow = ClassificationWorkflow.scale(3, 4).items(1).annotationsPerItem(1)
                 .assign("alice", 3).seed(workspace);
 
         assertEquals(3, answerOf(flow.itemId(0), flow.annotatorId("alice")).orElseThrow().getScaleValue());
@@ -136,6 +139,14 @@ class ClassificationWorkflowTest {
     void seed_assigneesAboveK_exceptionThrownAndNothingWritten() {
         ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative")
                 .annotationsPerItem(1).assign("alice").assign("bob");
+
+        assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
+        assertUntouched();
+    }
+
+    @Test
+    void seed_oneLabelWithAssignee_exceptionThrownAndNothingWritten() {
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive").assign("alice");
 
         assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
         assertUntouched();

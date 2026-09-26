@@ -66,10 +66,14 @@ public final class ClassificationWorkflow {
         return new Builder(TaxonomyKind.SINGLE, keys, 0, 0);
     }
 
-    /** Starts a scale project whose ratings run from {@code minimum} to {@code maximum} inclusive. */
+    /**
+     * Starts a scale project whose ratings run from {@code minimum} to {@code maximum} inclusive, which must be a
+     * range the app can save (#26).
+     */
     public static Builder scale(int minimum, int maximum) {
-        if (minimum > maximum) {
-            throw new IllegalArgumentException("The scale minimum is above its maximum");
+        if (minimum >= maximum || minimum < TaxonomySettings.LOWEST_SCALE_VALUE
+                || maximum > TaxonomySettings.HIGHEST_SCALE_VALUE) {
+            throw new IllegalArgumentException("The app cannot save a scale from " + minimum + " to " + maximum);
         }
         return new Builder(TaxonomyKind.SCALE, List.of(), minimum, maximum);
     }
@@ -280,6 +284,9 @@ public final class ClassificationWorkflow {
             }
             if (k != null && assignees.size() > k) {
                 throw new IllegalArgumentException(assignees.size() + " assignees exceed k = " + k);
+            }
+            if (kind == TaxonomyKind.SINGLE && labelKeys.size() < 2 && !assignees.isEmpty()) {
+                throw new IllegalArgumentException("A project needs two labels before its first assignment");
             }
             assignees.forEach((username, answers) -> {
                 if (answers.size() > itemCount) {
