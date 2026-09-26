@@ -62,6 +62,9 @@ Non-goals, from [#12]: the queue and answer controls ([#13], [#14]), statistics,
 - The blindness test needed no change. It walks `MySplitsScreen`, which reads only through the already-trusted `AnnotationService.forCurrentUser`, and still passes.
 - `AnnotationServiceTest` (9 tests) covers isolation between annotators, counts that ignore another annotator's answers, saved split order when it differs from identifier order, finished assignments, the empty list, order, and rejection of the adjudicator, a signed-out session and an account disabled after sign-in. Counting any answer on a file, instead of only the signed-in annotator's, made the isolation test fail.
 - `docs/UserGuide.md` gains a "My splits" section and no longer calls the annotator's home a placeholder.
+- Whimsyturtle's review of PR #78:
+  - The card decided its state three ways, with the button label taken from the answer count and the rest from the status. One `CardState`, taken from the stored status, now decides the status text, whether there is a button and its label.
+  - The next-file rule sat inside the summary builder. It is now one helper, `AnnotationService.position`, which the home screen, the queue ([#13]) and submission ([#17]) all use.
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 342 JUnit tests. The 3 skipped are existing case-sensitivity tests that skip on macOS's case-insensitive file system.
 
 ### Human acceptance checks

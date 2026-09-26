@@ -58,7 +58,8 @@ public final class AnnotationService {
 
     /**
      * Returns where one of the signed-in annotator's assignments stands (#13): its progress and the first file
-     * in saved split order without their answer, with that file's text, or no file once every one is answered.
+     * in saved split order without their answer, with that file's text. A finished assignment, by its stored
+     * status, has no file, so its files are never reopened; neither does one with every file answered.
      *
      * <p>The position is worked out from stored answers each time, so a restart resumes at the first unanswered
      * file (rule 18). A file whose source is missing, unreadable or changed is returned with the resolver's
@@ -70,17 +71,17 @@ public final class AnnotationService {
      */
     public QueueView forCurrentUser(long assignmentId) {
         long annotatorId = auth.requireAnnotator().id();
-        Position position = store.read(session -> {
+        Snapshot snapshot = store.read(session -> {
             Assignment assignment = session.assignments().findById(assignmentId)
                     .filter(found -> found.getAnnotatorId() == annotatorId)
                     .orElseThrow(() -> new ProjectException(NOT_ASSIGNED));
             AssignmentProgress progress = progress(session, assignment, annotatorId);
-            Item next = progress.nextItemId() == null ? null
+            Item next = progress.finished() || progress.nextItemId() == null ? null
                     : session.items().findById(progress.nextItemId()).orElseThrow();
-            return new Position(progress, next);
+            return new Snapshot(progress, next);
         });
-        AssignmentProgress progress = position.progress();
-        Item item = position.next();
+        AssignmentProgress progress = snapshot.progress();
+        Item item = snapshot.next();
         if (item == null) {
             return new QueueView(progress, null);
         }
@@ -96,7 +97,17 @@ public final class AnnotationService {
     private static AssignmentProgress progress(RepositorySession session, Assignment assignment, long annotatorId) {
         Split split = session.splits().findById(assignment.getSplitId()).orElseThrow();
         String projectName = session.projects().findById(split.getProjectId()).orElseThrow().getName();
-        List<SplitItem> members = session.splitItems().listBySplit(split.getId());
+        Position position = position(session, split.getId(), annotatorId);
+        return new AssignmentProgress(assignment.getId(), projectName, split.getName(), assignment.getStatus(),
+                position.submitted(), position.total(), position.nextItemId());
+    }
+
+    /**
+     * Works out where an annotator stands in a split from its saved order and their own answers: the one place
+     * the next file is decided, for the home screen, the queue and submission alike.
+     */
+    private static Position position(RepositorySession session, long splitId, long annotatorId) {
+        List<SplitItem> members = session.splitItems().listBySplit(splitId);
         int submitted = 0;
         Long nextItemId = null;
         for (SplitItem member : members) {
@@ -106,11 +117,20 @@ public final class AnnotationService {
                 nextItemId = member.getItemId();
             }
         }
-        return new AssignmentProgress(assignment.getId(), projectName, split.getName(), assignment.getStatus(),
-                submitted, members.size(), nextItemId);
+        return new Position(submitted, members.size(), nextItemId);
+    }
+
+    /**
+     * Where an annotator stands in a split.
+     *
+     * @param submitted the split's files they have answered
+     * @param total the split's files
+     * @param nextItemId the first file in saved order they have not answered, or null if none is left
+     */
+    private record Position(int submitted, int total, Long nextItemId) {
     }
 
     /** An assignment's progress and its next file's record, read from one snapshot. */
-    private record Position(AssignmentProgress progress, Item next) {
+    private record Snapshot(AssignmentProgress progress, Item next) {
     }
 }
