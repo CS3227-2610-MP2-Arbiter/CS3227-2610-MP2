@@ -22,8 +22,8 @@ import arbiter.workspace.WorkspacePaths;
  *
  * <p>Every {@code forCurrentUser} method requires a signed-in annotator through
  * {@link AuthService#requireAnnotator} and reads only that annotator's assignments and answers, never another
- * annotator's work or a resolution (rule 1). They are the only annotation reads annotator screens may make,
- * which the blindness test relies on.
+ * annotator's work or a resolution (rule 1). They and {@link #submit}, which returns only the annotator's own
+ * queue, are the only annotation calls annotator screens may make, which the blindness test relies on.
  */
 public final class AnnotationService {
     private static final Comparator<Assignment> HOME_ORDER = Comparator
@@ -83,7 +83,7 @@ public final class AnnotationService {
      * Submits the annotator's answer for the file their queue is on and moves the queue forward (#17), all in
      * one committed action: the answer is stored with its submission time and can never change, and the
      * assignment becomes {@code SUBMITTED} once every file has an answer and {@code IN_PROGRESS} before then
-     * (rules 2, 18). Automatic resolution of an item's kth answer (#27) belongs in this same action.
+     * (rules 2, 18). An item's kth answer is resolved automatically in this same action (#27).
      *
      * <p>Every check runs inside that action, and any refusal stores nothing, so a repeated or stale submission
      * cannot add a second answer or move the queue twice.
@@ -125,6 +125,7 @@ public final class AnnotationService {
             }
             stored.setSubmittedAt(Instant.now());
             session.annotations().insert(stored);
+            ResolutionService.resolveAutomatically(session, stored);
             boolean last = position.submitted() + 1 == position.total();
             assignment.setStatus(last ? AssignmentStatus.SUBMITTED : AssignmentStatus.IN_PROGRESS);
             session.assignments().save(assignment);
