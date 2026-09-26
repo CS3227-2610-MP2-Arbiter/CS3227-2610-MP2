@@ -731,7 +731,8 @@ class CorpusServiceTest {
         workspace.assignSplit(assignedId, "annotator");
 
         List<SplitSummary> expected = generated.stream()
-                .map(split -> new SplitSummary(split.id(), split.name(), split.itemIds(), split.id() == assignedId))
+                .map(split -> new SplitSummary(split.id(), split.name(), split.itemIds(),
+                        split.id() == assignedId ? 1 : 0, split.id() == assignedId ? 1 : null))
                 .toList();
         assertEquals(expected, service.listSplits(projectId));
         assertEquals(expected, serviceOn(JsonStore.open(workspace.paths())).listSplits(projectId));
@@ -774,7 +775,7 @@ class CorpusServiceTest {
 
         List<SplitSummary> after = service.listSplits(projectId);
         assertEquals(3, after.size());
-        assertEquals(new SplitSummary(assigned.id(), assigned.name(), assigned.itemIds(), true), after.get(0));
+        assertEquals(new SplitSummary(assigned.id(), assigned.name(), assigned.itemIds(), 1, 1), after.get(0));
         assertEquals(splits.get(2), after.get(1));
         assertEquals("Split 4", after.get(2).name());
         assertEquals(deleted.itemIds().stream().sorted().toList(), after.get(2).itemIds().stream().sorted().toList());
@@ -826,7 +827,7 @@ class CorpusServiceTest {
         service.unregister(single.itemIds().getFirst());
 
         List<SplitSummary> expected = List.of(
-                new SplitSummary(pair.id(), pair.name(), pair.itemIds().subList(1, 2), false));
+                new SplitSummary(pair.id(), pair.name(), pair.itemIds().subList(1, 2), 0, null));
         assertEquals(expected, service.listSplits(projectId));
         assertEquals(List.of(), memberships(single.id()));
         JsonStore reopened = JsonStore.open(workspace.paths());
