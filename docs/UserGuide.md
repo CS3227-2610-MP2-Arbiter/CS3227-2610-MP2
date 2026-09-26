@@ -11,7 +11,7 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 1. Launch Arbiter. On first run the workspace wizard asks you to choose a [workspace](Glossary.md) folder.
 2. During setup, create the workspace's adjudicator account.
 3. The adjudicator creates annotator accounts on the [Accounts](#accounts) screen and gives each annotator their username and password.
-4. Sign in. Arbiter opens your role's home ([#5]): [Projects](#projects) for the adjudicator, and a placeholder for annotators until [#12].
+4. Sign in. Arbiter opens your role's home ([#5]): [Projects](#projects) for the adjudicator, and [My splits](#my-splits) for annotators.
 
 If the workspace is already in use, close its other Arbiter instance and try again ([#61](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61)).
 
@@ -53,6 +53,15 @@ Projects is the adjudicator's home screen. It lists every [project](Glossary.md)
 
 You can register or unregister files only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)). Labels cannot be set up until taxonomy setup ([#26]) is released, and a project assigned before then can never get them.
 
+## My splits
+
+My splits is an annotator's home screen. It lists only your own assignments, unfinished ones first, each with its project and split, its status and how many of its files you have answered.
+
+- **Start or continue a split.** Choose **Start** or **Continue** on its card. Labelling opens at the first file you have not answered, in the split's saved order; the labelling screen arrives with [#13] and [#14].
+- **Finished splits** show that every file has your answer and cannot be reopened.
+
+You never see another annotator's assignments, answers or progress ([rule 1](UserFlows.md#3-rules-both-tracks-share)).
+
 ## Accounts
 
 Accounts lists every account with its role and [status](Glossary.md#fixed-value-sets), the adjudicator first. Only the adjudicator sees it, and every account they create is an annotator ([rule 12](UserFlows.md#3-rules-both-tracks-share)).
@@ -64,7 +73,6 @@ Accounts lists every account with its role and [status](Glossary.md#fixed-value-
 [Back to home](index.md)
 
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
-[#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
 [#14]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/14
 [#18]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/18
