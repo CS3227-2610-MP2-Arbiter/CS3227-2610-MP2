@@ -40,7 +40,7 @@ Instructions for each screen are added below as it is released.
 
 ## Projects
 
-Projects is the adjudicator's home screen. It lists every [project](Glossary.md) with its taxonomy kind, output format and counts.
+Projects is the adjudicator's home screen. It lists every [project](Glossary.md) with its taxonomy kind, output format and counts. A file stops counting as **Unresolved** once its *k*th answer settles it automatically ([rule 10](UserFlows.md#3-rules-both-tracks-share)); a label [dispute](Glossary.md) stays unresolved until manual resolution ([#34]) is released.
 
 - **Create a project.** Choose **New project**, enter a unique name and an optional description, and pick a [taxonomy kind and output format](Glossary.md#fixed-value-sets). Neither can be changed later ([rule 4](UserFlows.md#3-rules-both-tracks-share)).
 - **Delete a project.** Choose **Delete** on its row and confirm. You can delete a project only before its first assignment, and its source files in `media/` are kept ([rule 5](UserFlows.md#3-rules-both-tracks-share)).

@@ -42,7 +42,7 @@ class AnnotatorBlindnessTest {
      * scoping to the signed-in annotator is tested by its own feature, so adding one is a reviewed
      * decision: annotator reads go through {@code AnnotationService.forCurrentUser} (architecture), and
      * submission (#17) goes through {@code AnnotationService.submit}, which reads the annotator's own answers to
-     * place the queue and returns only their own queue.
+     * place the queue and the item's answers for its resolution (#27), but still returns only their own queue.
      */
     private static final Set<String> TRUSTED_ENTRY_POINTS = Set.of("arbiter.service.AnnotationService.forCurrentUser",
             "arbiter.service.AnnotationService.submit");

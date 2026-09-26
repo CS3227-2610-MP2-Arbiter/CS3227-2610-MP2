@@ -56,7 +56,7 @@ Building the roles as separate silos would duplicate the classification controls
 
 Keeping the role packages apart cannot guarantee [blindness](UserFlows.md#3-rules-both-tracks-share) once they share components, because a shared `AnnotationEditor` can be handed any annotation. Blindness is enforced where it can be seen and tested instead:
 
-- **At the query boundary.** Annotator reads go through `AnnotationService`, which scopes every read to the session user. Resolved labels are never loaded on that path.
+- **At the query boundary.** Annotator screens go through `AnnotationService`, which returns only the session user's own work, never another annotator's or a resolved result.
 - **By a test.** [#11] includes a test that fails if any annotator-facing code path can reach another annotator's annotation.
 
 This is stronger than package separation: it holds for code written later, by anyone, in any package.
