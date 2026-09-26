@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,7 +40,6 @@ import arbiter.workspace.WorkspacePaths;
  */
 public final class CorpusService {
     private static final Pattern COUNT_PATTERN = Pattern.compile("0*[1-9][0-9]*");
-    private static final Pattern SCALE_END_PATTERN = Pattern.compile("-?[0-9]+");
     private static final Pattern SPLIT_NAME_PATTERN = Pattern.compile("Split ([0-9]{1,9})");
 
     private final JsonStore store;
@@ -277,12 +277,19 @@ public final class CorpusService {
      */
     public TaxonomySummary taxonomy(long projectId) {
         auth.requireAdjudicator();
-        return store.read(session -> {
-            TaxonomySettings settings = session.taxonomySettings().findByProject(projectId)
-                    .orElseThrow(() -> new ProjectException("This project no longer exists"));
-            return new TaxonomySummary(settings.getKind(), session.labels().listByProject(projectId),
-                    settings.getScaleMin(), settings.getScaleMax(), FirstAssignment.reachedProject(session, projectId));
-        });
+        return store.read(session -> taxonomyOf(session, projectId));
+    }
+
+    /**
+     * Returns a project's taxonomy from this session, for the adjudicator's view and the annotator's queue alike.
+     *
+     * @throws ProjectException if no project has this identifier
+     */
+    static TaxonomySummary taxonomyOf(RepositorySession session, long projectId) {
+        TaxonomySettings settings = session.taxonomySettings().findByProject(projectId)
+                .orElseThrow(() -> new ProjectException("This project no longer exists"));
+        return new TaxonomySummary(settings.getKind(), session.labels().listByProject(projectId),
+                settings.getScaleMin(), settings.getScaleMax(), FirstAssignment.reachedProject(session, projectId));
     }
 
     /**
@@ -477,16 +484,10 @@ public final class CorpusService {
      * @throws ProjectException if the text breaks {@link #saveRange}'s rule for an end
      */
     private static int parseScaleEnd(String text, String end) {
-        String stripped = text == null ? "" : text.strip();
-        if (SCALE_END_PATTERN.matcher(stripped).matches()) {
-            try {
-                int value = Integer.parseInt(stripped);
-                if (value >= TaxonomySettings.LOWEST_SCALE_VALUE && value <= TaxonomySettings.HIGHEST_SCALE_VALUE) {
-                    return value;
-                }
-            } catch (NumberFormatException e) {
-                // The pattern leaves only a number too large for an int, which is out of bounds too.
-            }
+        OptionalInt value = WholeNumbers.parse(text);
+        if (value.isPresent() && value.getAsInt() >= TaxonomySettings.LOWEST_SCALE_VALUE
+                && value.getAsInt() <= TaxonomySettings.HIGHEST_SCALE_VALUE) {
+            return value.getAsInt();
         }
         throw new ProjectException(end + " must be a whole number from " + TaxonomySettings.LOWEST_SCALE_VALUE
                 + " to " + TaxonomySettings.HIGHEST_SCALE_VALUE);

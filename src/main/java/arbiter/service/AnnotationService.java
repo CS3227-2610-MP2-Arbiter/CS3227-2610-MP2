@@ -79,27 +79,34 @@ public final class AnnotationService {
                     .orElseThrow(() -> new ProjectException(NOT_ASSIGNED));
             Position position = position(session, assignment.getSplitId(), annotatorId);
             AssignmentProgress progress = progress(session, assignment, position);
+            TaxonomySummary taxonomy = taxonomy(session, assignment.getSplitId());
             if (progress.finished()) {
-                return new Snapshot(progress, null);
+                return new Snapshot(progress, null, taxonomy);
             }
             if (position.nextItemId() == null) {
                 throw new IllegalStateException("Assignment " + assignmentId
                         + " has an answer for every file but is not submitted");
             }
-            return new Snapshot(progress, session.items().findById(position.nextItemId()).orElseThrow());
+            return new Snapshot(progress, session.items().findById(position.nextItemId()).orElseThrow(), taxonomy);
         });
         AssignmentProgress progress = snapshot.progress();
+        TaxonomySummary taxonomy = snapshot.taxonomy();
         Item item = snapshot.next();
         if (item == null) {
-            return new QueueView(progress, null);
+            return new QueueView(progress, null, taxonomy);
         }
         // The file is read outside the store's action, which holds the workspace's data, not its media.
         try {
             String text = sources.resolve(item.getPath(), item.getContentHash()).text();
-            return new QueueView(progress, new QueueItem(item.getId(), text, null));
+            return new QueueView(progress, new QueueItem(item.getId(), text, null), taxonomy);
         } catch (SourceException e) {
-            return new QueueView(progress, new QueueItem(item.getId(), null, e.reason()));
+            return new QueueView(progress, new QueueItem(item.getId(), null, e.reason()), taxonomy);
         }
+    }
+
+    /** Returns the taxonomy of a split's project, with its labels in their saved order. */
+    private static TaxonomySummary taxonomy(RepositorySession session, long splitId) {
+        return CorpusService.taxonomyOf(session, session.splits().findById(splitId).orElseThrow().getProjectId());
     }
 
     private static AssignmentProgress progress(RepositorySession session, Assignment assignment, Position position) {
@@ -137,7 +144,7 @@ public final class AnnotationService {
     private record Position(int submitted, int total, Long nextItemId) {
     }
 
-    /** An assignment's progress and its next file's record, read from one snapshot. */
-    private record Snapshot(AssignmentProgress progress, Item next) {
+    /** An assignment's progress, its next file's record and its project's taxonomy, read from one snapshot. */
+    private record Snapshot(AssignmentProgress progress, Item next, TaxonomySummary taxonomy) {
     }
 }

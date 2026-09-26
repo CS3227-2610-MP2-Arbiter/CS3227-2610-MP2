@@ -1,5 +1,6 @@
 package arbiter.service;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -17,7 +18,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
+import arbiter.model.project.Label;
 import arbiter.model.project.SplitItem;
+import arbiter.model.project.TaxonomyKind;
 import arbiter.testing.ClassificationWorkflow;
 import arbiter.testing.Records;
 import arbiter.testing.TestWorkspace;
@@ -266,6 +269,57 @@ class AnnotationServiceTest {
 
         assertFalse(current.readable());
         assertEquals(SourceFailure.MISSING, current.failure());
+    }
+
+    @Test
+    void forCurrentUserQueue_singleProject_labelsInSavedOrderWithDescriptions() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
+
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+
+        assertEquals(TaxonomyKind.SINGLE, taxonomy.kind());
+        assertEquals(List.of(flow.labelId("positive"), flow.labelId("negative")),
+                taxonomy.labels().stream().map(Label::getId).toList());
+        assertEquals(List.of("positive", "negative"), taxonomy.labels().stream().map(Label::getKey).toList());
+        assertEquals(List.of("Synthetic label", "Synthetic label"),
+                taxonomy.labels().stream().map(Label::getDescription).toList());
+        assertTrue(taxonomy.frozen());
+    }
+
+    @Test
+    void forCurrentUserQueue_scaleProject_rangeWithNoLabels() {
+        ClassificationWorkflow flow = ClassificationWorkflow.scale(-2, 5).assign("alice").seed(workspace);
+
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+
+        assertEquals(new TaxonomySummary(TaxonomyKind.SCALE, List.of(), -2, 5, true), taxonomy);
+    }
+
+    @Test
+    void forCurrentUserQueue_projectWithoutLabelsYet_unanswerable() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
+        workspace.store().write(session -> {
+            session.labels().deleteById(flow.labelId("positive"));
+            session.labels().deleteById(flow.labelId("negative"));
+            return null;
+        });
+
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+
+        assertFalse(taxonomy.answerable());
+    }
+
+    @Test
+    void forCurrentUserQueue_opening_writesNothing() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2).assign("alice")
+                .seed(workspace);
+        byte[] before = workspace.dataFileBytes();
+
+        service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertArrayEquals(before, workspace.dataFileBytes());
     }
 
     @Test
