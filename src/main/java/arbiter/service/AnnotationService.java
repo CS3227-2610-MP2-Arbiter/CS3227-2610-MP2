@@ -75,33 +75,8 @@ public final class AnnotationService {
      */
     public QueueView forCurrentUser(long assignmentId) {
         long annotatorId = auth.requireAnnotator().id();
-        Snapshot snapshot = store.read(session -> {
-            Assignment assignment = requireOwn(session, assignmentId, annotatorId);
-            Position position = position(session, assignment.getSplitId(), annotatorId);
-            AssignmentProgress progress = progress(session, assignment, position);
-            TaxonomySummary taxonomy = taxonomy(session, assignment.getSplitId());
-            if (progress.finished()) {
-                return new Snapshot(progress, null, taxonomy);
-            }
-            if (position.nextItemId() == null) {
-                throw new IllegalStateException("Assignment " + assignmentId
-                        + " has an answer for every file but is not submitted");
-            }
-            return new Snapshot(progress, session.items().findById(position.nextItemId()).orElseThrow(), taxonomy);
-        });
-        AssignmentProgress progress = snapshot.progress();
-        TaxonomySummary taxonomy = snapshot.taxonomy();
-        Item item = snapshot.next();
-        if (item == null) {
-            return new QueueView(progress, null, taxonomy);
-        }
-        // The file is read outside the store's action, which holds the workspace's data, not its media.
-        try {
-            String text = sources.resolve(item.getPath(), item.getContentHash()).text();
-            return new QueueView(progress, new QueueItem(item.getId(), text, null), taxonomy);
-        } catch (SourceException e) {
-            return new QueueView(progress, new QueueItem(item.getId(), null, e.reason()), taxonomy);
-        }
+        return view(store.read(session -> snapshot(session, requireOwn(session, assignmentId, annotatorId),
+                annotatorId)));
     }
 
     /**
@@ -114,7 +89,8 @@ public final class AnnotationService {
      * cannot add a second answer or move the queue twice.
      *
      * @param itemId the file the annotator answered, which must be the next one in their queue
-     * @return where the assignment stands afterwards, as {@link #forCurrentUser(long)} returns it
+     * @return where the assignment stands afterwards, as {@link #forCurrentUser(long)} returns it, worked out inside
+     *     the same action from what it just stored
      * @throws AuthException if the caller is not a signed-in annotator
      * @throws ProjectException if the assignment is missing or another annotator's, is finished, or the file is
      *     not their next one, already has their answer or cannot be read, or the answer does not follow the
@@ -123,7 +99,7 @@ public final class AnnotationService {
     public QueueView submit(long assignmentId, long itemId, Answer answer) {
         Objects.requireNonNull(answer, "answer");
         long annotatorId = auth.requireAnnotator().id();
-        store.write(session -> {
+        Snapshot after = store.write(session -> {
             Assignment assignment = requireOwn(session, assignmentId, annotatorId);
             if (assignment.getStatus() == AssignmentStatus.SUBMITTED) {
                 throw new ProjectException("You have already finished this split");
@@ -152,9 +128,45 @@ public final class AnnotationService {
             boolean last = position.submitted() + 1 == position.total();
             assignment.setStatus(last ? AssignmentStatus.SUBMITTED : AssignmentStatus.IN_PROGRESS);
             session.assignments().save(assignment);
-            return null;
+            return snapshot(session, assignment, annotatorId);
         });
-        return forCurrentUser(assignmentId);
+        return view(after);
+    }
+
+    /**
+     * Reads where an assignment stands from this session: its progress, its next file's record unless it is
+     * finished, and its project's taxonomy.
+     *
+     * @throws IllegalStateException if the assignment is not finished but every file has an answer
+     */
+    private static Snapshot snapshot(RepositorySession session, Assignment assignment, long annotatorId) {
+        Position position = position(session, assignment.getSplitId(), annotatorId);
+        AssignmentProgress progress = progress(session, assignment, position);
+        TaxonomySummary taxonomy = taxonomy(session, assignment.getSplitId());
+        if (progress.finished()) {
+            return new Snapshot(progress, null, taxonomy);
+        }
+        if (position.nextItemId() == null) {
+            throw new IllegalStateException("Assignment " + assignment.getId()
+                    + " has an answer for every file but is not submitted");
+        }
+        return new Snapshot(progress, session.items().findById(position.nextItemId()).orElseThrow(), taxonomy);
+    }
+
+    /** Turns a snapshot into the queue's view, reading its next file's text outside the store's action. */
+    private QueueView view(Snapshot snapshot) {
+        Item item = snapshot.next();
+        if (item == null) {
+            return new QueueView(snapshot.progress(), null, snapshot.taxonomy());
+        }
+        // The file is read outside the store's action, which holds the workspace's data, not its media.
+        try {
+            String text = sources.resolve(item.getPath(), item.getContentHash()).text();
+            return new QueueView(snapshot.progress(), new QueueItem(item.getId(), text, null), snapshot.taxonomy());
+        } catch (SourceException e) {
+            return new QueueView(snapshot.progress(), new QueueItem(item.getId(), null, e.reason()),
+                    snapshot.taxonomy());
+        }
     }
 
     private static Assignment requireOwn(RepositorySession session, long assignmentId, long annotatorId) {

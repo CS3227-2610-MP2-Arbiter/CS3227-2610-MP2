@@ -13,6 +13,14 @@ Status: Awaiting human verification.
 - The lesson from #79's review carried over: a changed source is refused with a message that does not name the file, because the resolver's message includes the path.
 - The plan was implemented before approval, and the work stays uncommitted under the delivery rule.
 
+- Whimsyturtle's review of #81 found four problems:
+  - wording that contradicted the Back to My splits button
+  - rule 18 restated without a link
+  - comments and docs describing a second window the app cannot open
+  - `submit`'s returned view being discarded and re-read after the commit
+
+  All four were fixed. Describing the one-instance, one-window app accurately matters as much as the code: an imagined scenario had leaked into both the comments and the User Guide.
+
 ## Agent responses and outcomes
 
 - Used `write-plan`, `implement-feature`, `write-test`, `review`, `maintain-docs` and `log`. The plan is `plans/submit-and-advance.md`, on branch `feat/submit-and-next` stacked on `feat/annotation-ui`.
@@ -25,6 +33,7 @@ Status: Awaiting human verification.
 - A mutation run failed the targeted tests: dropping both duplicate guards, skipping the status update, and removing `submit` from the trusted list. All were reverted.
 - Not verified: submission in a running app, which needs [#26] or a seeded workspace. The plan lists three human checks.
 - The owner approved the plan and delivery on 26 September 2026, without the hook.
+- The owner approved delivery of the review fixes on 26 September 2026.
 - Pending: human acceptance, teammate review and CI.
 
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13

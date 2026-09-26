@@ -57,17 +57,21 @@ public final class QueueScreen {
 
     /** Shows where the assignment stands now, read afresh, so the screen always matches what is stored. */
     private void show() {
-        Button back = new Button("Back to My splits");
-        back.setOnAction(event -> onBack.run());
         QueueView view;
         try {
             view = annotations.forCurrentUser(assignmentId);
         } catch (ProjectException | AuthException | JsonStoreException e) {
             Dialogs.showError(owner, "This split could not be opened", e);
             content.getChildren().setAll(Components.page(Components.pageTitle("This split could not be opened"),
-                    back));
+                    backButton()));
             return;
         }
+        render(view);
+    }
+
+    /** Shows this view of the assignment. */
+    private void render(QueueView view) {
+        Button back = backButton();
         AssignmentProgress assignment = view.assignment();
         Node title = Components.pageTitle(assignment.projectName() + ": " + assignment.splitName());
         if (assignment.finished()) {
@@ -104,10 +108,11 @@ public final class QueueScreen {
         submit.disableProperty().unbind();
         submit.setDisable(true);
         try {
-            annotations.submit(assignmentId, itemId, editor.answerProperty().get());
-            show();
+            // submit returns where the queue stands after its own action, so it is shown without reading again.
+            render(annotations.submit(assignmentId, itemId, editor.answerProperty().get()));
         } catch (ProjectException e) {
-            // The queue may have moved elsewhere, such as from another screen, so show where it really is.
+            // Something changed since the file was shown, most likely the file itself on disk, so show the queue
+            // as it now stands.
             Dialogs.showError(owner, SUBMIT_FAILED, e);
             show();
         } catch (AuthException | JsonStoreException e) {
@@ -115,6 +120,12 @@ public final class QueueScreen {
             Dialogs.showError(owner, SUBMIT_FAILED, e);
             submit.disableProperty().bind(editor.answerProperty().isNull());
         }
+    }
+
+    private Button backButton() {
+        Button back = new Button("Back to My splits");
+        back.setOnAction(event -> onBack.run());
+        return back;
     }
 
     /** Explains an unreadable file without naming it, since a file's name can hint at its label. */

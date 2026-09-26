@@ -73,6 +73,10 @@ Non-goals, from [#17]: drafts, autosave, flags, Back, skipping, batch submit, co
 
 - After [#26] merged (PR #83), which refuses a SINGLE project's first assignment until it has two labels, the tests here seed two-label projects. The "no labels yet" test deletes both labels after assignment. No production code changed.
 - After #80's review, `submit` switches over the sealed `Answer` (`LabelChoice` or `Rating`) and checks it with `TaxonomySummary.accepts`, which replaced `Taxonomy`. The two `accepts(Answer)` tests this plan added now live in `TaxonomySummaryTest`, leaving 412 JUnit tests.
+- Whimsyturtle's review of PR #81, all fixed:
+  - **The User Guide said "there is no Back"** beside a "Back to My splits" button, and restated rule 18 without linking it. The bullet now says a submitted answer cannot be reopened or changed, and links rules 13 and 18.
+  - **The code comment and the User Guide described the split moving on "in another window".** That cannot happen: the workspace lock allows one instance, and it has one window. Both now name the real cause of a refusal after the screen opened, a file that changed on disk.
+  - **`submit`'s returned view was thrown away,** and it read the queue again after committing. `submit` now works out the new position inside its own write action, through the same `snapshot` helper `forCurrentUser` uses, and reads the file's text afterwards. `QueueScreen` shows what `submit` returns. 412 JUnit tests pass.
 ### Human acceptance checks
 
 These need a seeded workspace until [#26].
