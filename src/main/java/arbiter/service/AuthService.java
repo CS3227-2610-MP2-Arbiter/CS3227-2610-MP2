@@ -118,6 +118,15 @@ public final class AuthService {
         return user;
     }
 
+    /** Requires a current active annotator for the annotator's own services. */
+    public CurrentUser requireAnnotator() {
+        CurrentUser user = currentUser().orElseThrow(() -> new AuthException("Sign in as an annotator"));
+        if (user.role() != Role.ANNOTATOR) {
+            throw new AuthException("Only an annotator can perform this action");
+        }
+        return user;
+    }
+
     /**
      * Returns every account in identifier order, which is creation order with the owner first.
      *
