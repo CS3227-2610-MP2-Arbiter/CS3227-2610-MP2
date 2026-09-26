@@ -18,6 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
+import arbiter.model.project.Label;
 import arbiter.model.project.SplitItem;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.testing.ClassificationWorkflow;
@@ -275,20 +276,24 @@ class AnnotationServiceTest {
         ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
                 .seed(workspace);
 
-        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
 
-        assertEquals(new Taxonomy(TaxonomyKind.SINGLE, List.of(
-                new LabelOption(flow.labelId("positive"), "positive", "Synthetic label"),
-                new LabelOption(flow.labelId("negative"), "negative", "Synthetic label")), null, null), taxonomy);
+        assertEquals(TaxonomyKind.SINGLE, taxonomy.kind());
+        assertEquals(List.of(flow.labelId("positive"), flow.labelId("negative")),
+                taxonomy.labels().stream().map(Label::getId).toList());
+        assertEquals(List.of("positive", "negative"), taxonomy.labels().stream().map(Label::getKey).toList());
+        assertEquals(List.of("Synthetic label", "Synthetic label"),
+                taxonomy.labels().stream().map(Label::getDescription).toList());
+        assertTrue(taxonomy.frozen());
     }
 
     @Test
     void forCurrentUserQueue_scaleProject_rangeWithNoLabels() {
         ClassificationWorkflow flow = ClassificationWorkflow.scale(-2, 5).assign("alice").seed(workspace);
 
-        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
 
-        assertEquals(new Taxonomy(TaxonomyKind.SCALE, List.of(), -2, 5), taxonomy);
+        assertEquals(new TaxonomySummary(TaxonomyKind.SCALE, List.of(), -2, 5, true), taxonomy);
     }
 
     @Test
@@ -301,7 +306,7 @@ class AnnotationServiceTest {
             return null;
         });
 
-        Taxonomy taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
+        TaxonomySummary taxonomy = service("alice").forCurrentUser(flow.assignmentId("alice")).taxonomy();
 
         assertFalse(taxonomy.answerable());
     }

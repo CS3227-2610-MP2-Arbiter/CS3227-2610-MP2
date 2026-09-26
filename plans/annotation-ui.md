@@ -18,7 +18,7 @@ Non-goals, from [#14]: storing the answer and moving forward ([#17]), multi-sele
 
 ## Proposed changes
 
-- **`Taxonomy`** in `arbiter.service` is a record of the project's kind, its labels in order (`LabelOption`: identifier, key, description) and its scale range. It owns the answer rules, so the screen and [#17]'s enforcement apply the same ones:
+- **`Taxonomy`** (replaced after review by `TaxonomySummary`, see below) in `arbiter.service` is a record of the project's kind, its labels in order (`LabelOption`: identifier, key, description) and its scale range. It owns the answer rules, so the screen and [#17]'s enforcement apply the same ones:
   - `accepts(labelId)` is true only for one of the project's labels.
   - `parseRating(text)` accepts ASCII digits with an optional leading minus sign, once surrounding whitespace is stripped, within the inclusive range. It returns empty for anything else, including a number too large for an `int`. ASCII only follows the architecture rule for text the code compares.
   - `answerable()` is false for SINGLE with no labels, or SCALE with no range.
@@ -66,6 +66,13 @@ Non-goals, from [#14]: storing the answer and moving forward ([#17]), multi-sele
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 367 JUnit tests, with 3 existing case-sensitivity tests skipped on macOS.
 
 - After [#26] merged (PR #83), which refuses a SINGLE project's first assignment until it has two labels, the tests here seed two-label projects. The "no labels yet" test deletes both labels after assignment. No production code changed.
+- Whimsyturtle's review of PR #80, all fixed:
+  - **The queue page could cut off the file and Submit & next.** The page now scrolls as a whole, and `ItemView` shows the file in full instead of in a scroll pane of its own.
+  - **The rating parsing duplicated [#26]'s.** Both now use `WholeNumbers.parse`, and `CorpusService.parseScaleEnd` keeps only its bounds check.
+  - **`Taxonomy` duplicated `TaxonomySummary`.** `Taxonomy` and `LabelOption` are gone. The queue carries `TaxonomySummary`, built by `CorpusService.taxonomyOf` for both roles, and the answer rules moved onto it.
+  - **`Answer` could be simpler.** It is now a sealed interface with two records, `LabelChoice` and `Rating`, so an invalid answer cannot be built and submission can switch over it.
+  - **The rating field showed an error mid-typing.** The message now appears only when the field is left, and clears as soon as the text is valid, so "-" on the way to "-2" is not an error.
+- `TaxonomyTest` became `TaxonomySummaryTest`, now also checking "-" alone. 401 JUnit tests pass.
 ### Human acceptance checks
 
 These need a project with labels or a range. Until [#26], they need a workspace seeded by a test fixture.
