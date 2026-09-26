@@ -58,3 +58,12 @@
     -fx-padding: 24;
     -fx-spacing: 12;
 }
+
+.card {
+    -fx-padding: 12 16 12 16;
+    -fx-spacing: 6;
+    -fx-background-color: #f8f9fb;
+    -fx-border-color: #d9dee5;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
