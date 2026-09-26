@@ -51,7 +51,17 @@ public final class AnnotationService {
     private static AssignmentProgress progress(RepositorySession session, Assignment assignment, long annotatorId) {
         Split split = session.splits().findById(assignment.getSplitId()).orElseThrow();
         String projectName = session.projects().findById(split.getProjectId()).orElseThrow().getName();
-        List<SplitItem> members = session.splitItems().listBySplit(split.getId());
+        Position position = position(session, split.getId(), annotatorId);
+        return new AssignmentProgress(assignment.getId(), projectName, split.getName(), assignment.getStatus(),
+                position.submitted(), position.total(), position.nextItemId());
+    }
+
+    /**
+     * Works out where an annotator stands in a split from its saved order and their own answers: the one place
+     * the next file is decided, for the home screen, the queue and submission alike.
+     */
+    private static Position position(RepositorySession session, long splitId, long annotatorId) {
+        List<SplitItem> members = session.splitItems().listBySplit(splitId);
         int submitted = 0;
         Long nextItemId = null;
         for (SplitItem member : members) {
@@ -61,7 +71,16 @@ public final class AnnotationService {
                 nextItemId = member.getItemId();
             }
         }
-        return new AssignmentProgress(assignment.getId(), projectName, split.getName(), assignment.getStatus(),
-                submitted, members.size(), nextItemId);
+        return new Position(submitted, members.size(), nextItemId);
+    }
+
+    /**
+     * Where an annotator stands in a split.
+     *
+     * @param submitted the split's files they have answered
+     * @param total the split's files
+     * @param nextItemId the first file in saved order they have not answered, or null if none is left
+     */
+    private record Position(int submitted, int total, Long nextItemId) {
     }
 }

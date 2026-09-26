@@ -13,6 +13,8 @@ Status: Awaiting human verification.
 - The architecture already reserved `AnnotationService.forCurrentUser(...)` as the annotator's scoped read, and the #11 blindness test already trusted that name. Putting the new read there meant no trusted entry point had to be added, so the blindness rule did not change.
 - Whimsyturtle's new rule that no text may be cut off shaped the screen: cards of wrapping labels in a scrolling page, not a table.
 
+- Whimsyturtle's review raised two points. The card derived one state three ways: status text and button from the stored status, but the button label from the answer count. And the next-file rule was buried in the summary builder, although the queue and submission need it too. Both were fixed by deciding each thing in exactly one place: `CardState` from the stored status, and `AnnotationService.position` for the next file. The lesson: when a value has an owner (#17 owns status), derive every display of it from that one source.
+
 ## Agent responses and outcomes
 
 - Used `write-plan`, `implement-feature`, `write-test`, `review`, `maintain-docs` and `log`. `clarify-requirements` was skipped because #12's criteria were agreed. The plan is `plans/annotator-home.md`, on branch `feat/annotator-home` from `main` at 2448350.
@@ -25,6 +27,7 @@ Status: Awaiting human verification.
 - `AnnotationServiceTest` adds 9 tests. A mutation that counted any annotator's answer on a file failed the isolation test, and it was reverted.
 - Not verified: the screen in a running app. The plan lists four human checks.
 - The owner approved the plan and delivery on 26 September 2026.
+- The owner approved delivery of the review fixes on 26 September 2026.
 - Pending: human acceptance, teammate review and CI.
 
 [#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
