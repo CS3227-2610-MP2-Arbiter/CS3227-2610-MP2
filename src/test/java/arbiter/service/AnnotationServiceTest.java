@@ -10,12 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import arbiter.model.annotation.Annotation;
 import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.SplitItem;
@@ -316,6 +319,161 @@ class AnnotationServiceTest {
         AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
 
         assertThrows(AuthException.class, () -> owner.forCurrentUser(flow.assignmentId("alice")));
+    }
+
+    @Test
+    void submit_validLabel_storedWithTimeInProgressAndNextFileReturned() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2).assign("alice")
+                .seed(workspace);
+        long assignmentId = flow.assignmentId("alice");
+        Instant before = Instant.now();
+
+        QueueView next = service("alice").submit(assignmentId, flow.itemId(0), Answer.label(flow.labelId("negative")));
+
+        Annotation stored = answerOf(flow.itemId(0), flow.annotatorId("alice")).orElseThrow();
+        assertEquals(flow.labelId("negative"), stored.getLabelId());
+        assertEquals(assignmentId, stored.getAssignmentId());
+        assertFalse(stored.getSubmittedAt().isBefore(before));
+        assertEquals(AssignmentStatus.IN_PROGRESS, statusOf(assignmentId));
+        assertEquals(flow.itemId(1), next.current().itemId());
+        assertEquals(1, next.assignment().submitted());
+    }
+
+    @Test
+    void submit_lastFile_assignmentSubmittedAndQueueFinished() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice", "positive")
+                .seed(workspace);
+        long assignmentId = flow.assignmentId("alice");
+
+        QueueView next = service("alice").submit(assignmentId, flow.itemId(1), Answer.label(flow.labelId("positive")));
+
+        assertEquals(AssignmentStatus.SUBMITTED, statusOf(assignmentId));
+        assertTrue(next.assignment().finished());
+        assertNull(next.current());
+    }
+
+    @Test
+    void submit_scaleRating_stored() {
+        ClassificationWorkflow flow = ClassificationWorkflow.scale(-2, 5).assign("alice").seed(workspace);
+
+        service("alice").submit(flow.assignmentId("alice"), flow.itemId(0), Answer.rating(-2));
+
+        assertEquals(-2, answerOf(flow.itemId(0), flow.annotatorId("alice")).orElseThrow().getScaleValue());
+    }
+
+    @Test
+    void submit_sameFileTwice_secondRefusedAndNothingMoreStored() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+                .seed(workspace);
+        AnnotationService alice = service("alice");
+        long assignmentId = flow.assignmentId("alice");
+        Answer positive = Answer.label(flow.labelId("positive"));
+        alice.submit(assignmentId, flow.itemId(0), positive);
+        byte[] afterFirst = workspace.dataFileBytes();
+
+        assertThrows(ProjectException.class, () -> alice.submit(assignmentId, flow.itemId(0), positive));
+
+        assertArrayEquals(afterFirst, workspace.dataFileBytes());
+    }
+
+    @Test
+    void submit_notTheNextFile_refusedAndNothingStored() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+                .seed(workspace);
+
+        assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(1),
+                Answer.label(flow.labelId("positive")));
+    }
+
+    @Test
+    void submit_finishedAssignment_refusedAndNothingStored() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice", "positive")
+                .seed(workspace);
+
+        assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(0),
+                Answer.label(flow.labelId("positive")));
+    }
+
+    @Test
+    void submit_anotherAnnotatorsAssignment_refusedLikeAMissingOne() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").assign("bob")
+                .seed(workspace);
+        AnnotationService alice = service("alice");
+        Answer positive = Answer.label(flow.labelId("positive"));
+        long bobs = flow.assignmentId("bob");
+        long item = flow.itemId(0);
+        byte[] before = workspace.dataFileBytes();
+
+        ProjectException foreign = assertThrows(ProjectException.class, () -> alice.submit(bobs, item, positive));
+        ProjectException missing = assertThrows(ProjectException.class, () -> alice.submit(999_999L, item, positive));
+
+        assertEquals(missing.getMessage(), foreign.getMessage());
+        assertArrayEquals(before, workspace.dataFileBytes());
+    }
+
+    @Test
+    void submit_answerOutsideTheTaxonomy_refusedAndNothingStored() {
+        ClassificationWorkflow labels = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow scale = ClassificationWorkflow.scale(1, 5).assign("alice").seed(workspace);
+        ClassificationWorkflow other = ClassificationWorkflow.single("elsewhere").seed(workspace);
+
+        assertRefusedUnchanged("alice", labels.assignmentId("alice"), labels.itemId(0),
+                Answer.label(other.labelId("elsewhere")));
+        assertRefusedUnchanged("alice", labels.assignmentId("alice"), labels.itemId(0), Answer.rating(1));
+        assertRefusedUnchanged("alice", scale.assignmentId("alice"), scale.itemId(0), Answer.rating(6));
+        assertRefusedUnchanged("alice", scale.assignmentId("alice"), scale.itemId(0),
+                Answer.label(labels.labelId("positive")));
+    }
+
+    @Test
+    void submit_changedSource_refusedWithoutNamingTheFile() throws IOException {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        Files.writeString(workspace.paths().root().resolve("media/corpus-1/item-1.txt"), "Edited after import");
+
+        ProjectException refused = assertRefusedUnchanged("alice", flow.assignmentId("alice"), flow.itemId(0),
+                Answer.label(flow.labelId("positive")));
+
+        assertFalse(refused.getMessage().contains("item-1"), refused.getMessage());
+    }
+
+    @Test
+    void submit_thenRestart_freshSessionResumesAtTheNextFile() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
+                .seed(workspace);
+        long assignmentId = flow.assignmentId("alice");
+        service("alice").submit(assignmentId, flow.itemId(0), Answer.label(flow.labelId("positive")));
+
+        QueueView afterRestart = service("alice").forCurrentUser(assignmentId);
+
+        assertEquals(flow.itemId(1), afterRestart.current().itemId());
+    }
+
+    @Test
+    void submit_adjudicator_rejected() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
+        long assignmentId = flow.assignmentId("alice");
+        Answer positive = Answer.label(flow.labelId("positive"));
+
+        assertThrows(AuthException.class, () -> owner.submit(assignmentId, flow.itemId(0), positive));
+    }
+
+    private ProjectException assertRefusedUnchanged(String username, long assignmentId, long itemId, Answer answer) {
+        AnnotationService annotator = service(username);
+        byte[] before = workspace.dataFileBytes();
+        ProjectException refused = assertThrows(ProjectException.class, () -> annotator.submit(assignmentId,
+                itemId, answer));
+        assertArrayEquals(before, workspace.dataFileBytes());
+        return refused;
+    }
+
+    private Optional<Annotation> answerOf(long itemId, long annotatorId) {
+        return workspace.store().read(session -> session.annotations().findByItemAndAnnotator(itemId, annotatorId));
+    }
+
+    private AssignmentStatus statusOf(long assignmentId) {
+        return workspace.store().read(session -> session.assignments().findById(assignmentId).orElseThrow())
+                .getStatus();
     }
 
     private AnnotationService service(String username) {

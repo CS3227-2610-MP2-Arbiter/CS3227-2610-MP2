@@ -33,6 +33,14 @@ public record Taxonomy(TaxonomyKind kind, List<LabelOption> labels, Integer scal
         return kind == TaxonomyKind.SINGLE && labels.stream().anyMatch(label -> label.id() == labelId);
     }
 
+    /** Returns whether an answer follows the taxonomy: a project label for SINGLE, a rating in range for SCALE. */
+    public boolean accepts(Answer answer) {
+        if (kind == TaxonomyKind.SINGLE) {
+            return answer.labelId() != null && accepts(answer.labelId());
+        }
+        return answer.rating() != null && acceptsRating(answer.rating());
+    }
+
     /**
      * Returns the rating this text gives for a SCALE project: ASCII digits with an optional leading minus sign,
      * once surrounding whitespace is stripped, within the inclusive range.
@@ -49,10 +57,14 @@ public record Taxonomy(TaxonomyKind kind, List<LabelOption> labels, Integer scal
         }
         try {
             int rating = Integer.parseInt(stripped);
-            return rating >= scaleMin && rating <= scaleMax ? OptionalInt.of(rating) : OptionalInt.empty();
+            return acceptsRating(rating) ? OptionalInt.of(rating) : OptionalInt.empty();
         } catch (NumberFormatException e) {
             // The pattern leaves only a number too large for an int, which is outside every range.
             return OptionalInt.empty();
         }
+    }
+
+    private boolean acceptsRating(int rating) {
+        return kind == TaxonomyKind.SCALE && answerable() && rating >= scaleMin && rating <= scaleMax;
     }
 }

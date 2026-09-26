@@ -82,6 +82,22 @@ class TaxonomyTest {
     }
 
     @Test
+    void acceptsAnswer_rightKindAndValue_accepted() {
+        assertTrue(LABELS.accepts(Answer.label(10)));
+        assertTrue(SCALE.accepts(Answer.rating(-2)));
+        assertTrue(SCALE.accepts(Answer.rating(5)));
+    }
+
+    @Test
+    void acceptsAnswer_wrongKindOrValue_refused() {
+        assertFalse(LABELS.accepts(Answer.rating(1)));
+        assertFalse(LABELS.accepts(Answer.label(12)));
+        assertFalse(SCALE.accepts(Answer.label(10)));
+        assertFalse(SCALE.accepts(Answer.rating(6)));
+        assertFalse(new Taxonomy(TaxonomyKind.SCALE, List.of(), null, null).accepts(Answer.rating(1)));
+    }
+
+    @Test
     void answer_exactlyOneOfLabelOrRating() {
         assertEquals(10L, Answer.label(10).labelId());
         assertEquals(3, Answer.rating(3).rating());
