@@ -5,13 +5,19 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import arbiter.data.json.JsonStore;
 import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
+import arbiter.model.project.OutputFormat;
 import arbiter.model.project.Split;
+import arbiter.model.project.TaxonomyKind;
 import arbiter.service.AuthService;
+import arbiter.service.CorpusService;
+import arbiter.service.ProjectService;
 import arbiter.workspace.ResolvedSource;
 import arbiter.workspace.SourceResolver;
 import arbiter.workspace.WorkspacePaths;
@@ -32,6 +38,11 @@ public final class TestWorkspace {
 
     private final WorkspacePaths paths;
     private final JsonStore store;
+
+    /** The owner's session that {@link #newProject} and {@link #newSplits} use, signed in on first use. */
+    private AuthService owner;
+    private int projectCount;
+    private int sourceCount;
 
     private TestWorkspace(WorkspacePaths paths, JsonStore store) {
         this.paths = paths;
@@ -98,6 +109,37 @@ public final class TestWorkspace {
         }
     }
 
+    /**
+     * Creates a project of this kind, with no labels or range, through {@link ProjectService} as the owner.
+     *
+     * @return the project's identifier
+     */
+    public long newProject(TaxonomyKind kind) {
+        projectCount++;
+        return new ProjectService(store, owner()).create("Project " + projectCount, null, kind, OutputFormat.CSV)
+                .getId();
+    }
+
+    /**
+     * Registers this many new files in a project, then generates one split for each of its files not yet in a
+     * split, through {@link CorpusService} as the owner.
+     *
+     * @return the new splits' identifiers in creation order
+     */
+    public List<Long> newSplits(long projectId, int count) {
+        List<Path> files = new ArrayList<>();
+        for (int file = 0; file < count; file++) {
+            sourceCount++;
+            files.add(paths.root().resolve(writeSource("items/item-" + sourceCount + ".txt", "Item " + sourceCount)
+                    .storedPath()));
+        }
+        CorpusService corpus = new CorpusService(store, owner(), paths);
+        corpus.register(projectId, files);
+        return corpus.generateSplits(projectId, "1", corpus.previewSplits(projectId, "1")).stream()
+                .map(Split::getId)
+                .toList();
+    }
+
     /** Adds a split holding one new item to a project and assigns it to this annotator, not started. */
     public void assignNewSplit(long projectId, long annotatorId) {
         ResolvedSource source = writeSource("later/item.txt", "A later synthetic item");
@@ -132,6 +174,13 @@ public final class TestWorkspace {
         if (setup.needsBootstrap()) {
             setup.bootstrapOwner(OWNER, PASSWORD);
         }
+    }
+
+    private AuthService owner() {
+        if (owner == null) {
+            owner = signInOwner();
+        }
+        return owner;
     }
 
     private static Assignment notStarted(long splitId, long annotatorId) {
