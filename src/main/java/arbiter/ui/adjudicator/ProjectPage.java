@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.project.Item;
@@ -23,6 +25,7 @@ import javafx.collections.FXCollections;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Labeled;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
@@ -32,8 +35,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 /**
- * One project's page, where its files are registered and unregistered before its first assignment, its
- * splits are generated and deleted, and annotators are assigned to them.
+ * One project's page, where its files are registered and unregistered and its taxonomy is set up before its first
+ * assignment, its splits are generated and deleted, and annotators are assigned to them.
  */
 final class ProjectPage {
     private static final String REGISTER_FAILED = "The files could not be registered";
@@ -85,6 +88,9 @@ final class ProjectPage {
             return;
         }
         boolean frozen = splits.stream().anyMatch(SplitSummary::assigned);
+        Button taxonomy = new Button("Taxonomy");
+        taxonomy.setOnAction(event -> content.getChildren().setAll(new TaxonomyView(owner, corpus, project,
+                this::show).content()));
         Button add = new Button("Add files...");
         add.setDisable(frozen);
         add.setOnAction(event -> addFiles());
@@ -94,7 +100,7 @@ final class ProjectPage {
         Label error = Components.errorText();
         Button generate = new Button("Generate splits");
         generate.setOnAction(event -> generateSplits(itemsPerSplit.getText(), error));
-        content.getChildren().setAll(Components.page(back, Components.pageTitle(project.name()), add,
+        content.getChildren().setAll(Components.page(back, Components.pageTitle(project.name()), taxonomy, add,
                 Components.hint("Files can be added or unregistered only before the project's first assignment."),
                 itemTable(items, splits, frozen),
                 Components.hint("Generate splits shuffles the files not yet in a split into new splits. "
@@ -178,6 +184,25 @@ final class ProjectPage {
         reload.run();
     }
 
+    /**
+     * Runs a check or change from a form and returns its result. A {@link ProjectException} is shown in
+     * {@code error}, under the form, where the input can be corrected. An {@link AuthException} or
+     * {@link JsonStoreException} is shown in a dialog headed {@code failure}. Either way nothing changed.
+     *
+     * @return the result, or empty if the action failed
+     */
+    static <T> Optional<T> runInline(Window owner, String failure, Labeled error, Supplier<T> action) {
+        error.setText("");
+        try {
+            return Optional.of(action.get());
+        } catch (ProjectException e) {
+            error.setText(ErrorMessages.of(e));
+        } catch (AuthException | JsonStoreException e) {
+            Dialogs.showError(owner, failure, e);
+        }
+        return Optional.empty();
+    }
+
     private void addFiles() {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Choose files to register");
@@ -215,17 +240,12 @@ final class ProjectPage {
     }
 
     private void generateSplits(String itemsPerSplit, Label error) {
-        error.setText("");
-        List<Integer> sizes;
-        try {
-            sizes = corpus.previewSplits(project.id(), itemsPerSplit);
-        } catch (ProjectException e) {
-            error.setText(ErrorMessages.of(e));
-            return;
-        } catch (AuthException | JsonStoreException e) {
-            Dialogs.showError(owner, GENERATE_FAILED, e);
+        Optional<List<Integer>> previewed = runInline(owner, GENERATE_FAILED, error, () -> corpus.previewSplits(
+                project.id(), itemsPerSplit));
+        if (previewed.isEmpty()) {
             return;
         }
+        List<Integer> sizes = previewed.get();
         String heading = sizes.size() == 1 ? "Generate 1 split?" : "Generate " + sizes.size() + " splits?";
         boolean confirmed = Dialogs.confirm(owner, heading, describeSizes(sizes), "Generate splits");
         if (!confirmed) {

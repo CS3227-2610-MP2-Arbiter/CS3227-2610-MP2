@@ -24,12 +24,16 @@ import org.junit.jupiter.api.io.TempDir;
 import arbiter.data.json.JsonStore;
 import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
+import arbiter.model.project.TaxonomyKind;
 import arbiter.model.user.AccountStatus;
 import arbiter.model.user.Role;
 import arbiter.testing.ClassificationWorkflow;
 import arbiter.testing.TestWorkspace;
 
-/** Integration checks for assigning annotators to a split's places and the freezes that follow (#32). */
+/**
+ * Integration checks for assigning annotators to a split's places and the freezes that follow (#32), and for the
+ * taxonomy a project's first assignment needs (#26).
+ */
 class AssignmentServiceTest {
     private static final String MISSING_SPLIT = "This split no longer exists";
 
@@ -83,9 +87,10 @@ class AssignmentServiceTest {
         long first = annotator("first");
         long second = annotator("second");
         long third = annotator("third");
-        ClassificationWorkflow.single("pos").items(3).assign("first").seed(workspace);
-        ClassificationWorkflow.single("pos").items(2).assign("first", "pos").assign("second").seed(workspace);
-        ClassificationWorkflow.single("pos").items(1).assign("first", "pos").assign("second", "pos").seed(workspace);
+        ClassificationWorkflow.single("pos", "neg").items(3).assign("first").seed(workspace);
+        ClassificationWorkflow.single("pos", "neg").items(2).assign("first", "pos").assign("second").seed(workspace);
+        ClassificationWorkflow.single("pos", "neg").items(1).assign("first", "pos").assign("second", "pos")
+                .seed(workspace);
         long splitId = newSplit(4).splitId();
 
         List<AnnotatorLoad> offered = service().options(splitId).offered();
@@ -335,6 +340,53 @@ class AssignmentServiceTest {
     }
 
     @Test
+    void checkAndAssign_singleProjectLabels_rejectedUntilTwo() {
+        long first = annotator("first");
+        // Another project's first assignment does not exempt this one.
+        ClassificationWorkflow.single("yes", "no").assign("other").seed(workspace);
+        long projectId = workspace.newProject(TaxonomyKind.SINGLE);
+        long splitId = workspace.newSplits(projectId, 1).getFirst();
+        AssignmentService service = service();
+        String message = "The project needs at least two labels before its first assignment";
+
+        assertRequestRejected(service, splitId, "1", List.of(first), message);
+        corpus().addLabel(projectId, "pos", null);
+        assertRequestRejected(service, splitId, "1", List.of(first), message);
+        corpus().addLabel(projectId, "neg", null);
+
+        assertEquals(1, service.check(splitId, "1", List.of(first)));
+        assertEquals(1, service.assign(splitId, "1", List.of(first)).size());
+    }
+
+    @Test
+    void checkAndAssign_scaleProjectRange_rejectedUntilSaved() {
+        long first = annotator("first");
+        long projectId = workspace.newProject(TaxonomyKind.SCALE);
+        long splitId = workspace.newSplits(projectId, 1).getFirst();
+        AssignmentService service = service();
+
+        assertRequestRejected(service, splitId, "1", List.of(first),
+                "The project needs a saved range before its first assignment");
+        corpus().saveRange(projectId, "1", "5");
+
+        assertEquals(1, service.check(splitId, "1", List.of(first)));
+        assertEquals(1, service.assign(splitId, "1", List.of(first)).size());
+    }
+
+    @Test
+    void checkAndAssign_projectAlreadyAssigned_taxonomyReadinessSkipped() {
+        long first = annotator("first");
+        long projectId = workspace.newProject(TaxonomyKind.SINGLE);
+        List<Long> splitIds = workspace.newSplits(projectId, 2);
+        // Before #26, a project could have its first assignment without any labels.
+        workspace.assignSplit(splitIds.get(0), "earlier");
+        AssignmentService service = service();
+
+        assertEquals(1, service.check(splitIds.get(1), "1", List.of(first)));
+        assertEquals(1, service.assign(splitIds.get(1), "1", List.of(first)).size());
+    }
+
+    @Test
     void assign_firstAssignment_projectFrozenAlsoAfterReopenAndDeactivation() {
         long first = annotator("first");
         ClassificationWorkflow flow = newSplit(2);
@@ -437,7 +489,7 @@ class AssignmentServiceTest {
 
     /** Seeds a project whose one split holds this many items and has no assignment. */
     private ClassificationWorkflow newSplit(int items) {
-        return ClassificationWorkflow.single("pos").items(items).seed(workspace);
+        return ClassificationWorkflow.single("pos", "neg").items(items).seed(workspace);
     }
 
     private AssignmentService service() {

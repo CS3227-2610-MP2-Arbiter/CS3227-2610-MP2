@@ -6,6 +6,12 @@ package arbiter.model.project;
  * <p>{@code projectId} links these settings to their project. {@code Project} holds no reference back.
  */
 public class TaxonomySettings {
+    /** The lowest value a SCALE range may include (#26). */
+    public static final int LOWEST_SCALE_VALUE = -10;
+
+    /** The highest value a SCALE range may include (#26). */
+    public static final int HIGHEST_SCALE_VALUE = 10;
+
     /** Persistent identifier. */
     private Long id;
 
@@ -15,10 +21,10 @@ public class TaxonomySettings {
     /** Whether the label set is a pick-one list or a numeric scale, fixed when the project is created (rule 4). */
     private TaxonomyKind kind;
 
-    /** Lowest value of a SCALE taxonomy, null otherwise. */
+    /** Lowest value of a SCALE project's saved range, null if no range is saved. */
     private Integer scaleMin;
 
-    /** Highest value of a SCALE taxonomy, null otherwise. */
+    /** Highest value of a SCALE project's saved range, null if no range is saved. */
     private Integer scaleMax;
 
     /** Creates an empty TaxonomySettings. */

@@ -284,7 +284,8 @@ class ProjectServiceTest {
 
     @Test
     void delete_notStartedAssignment_rejectedAndNothingChanged() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2).assign("annotator").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("pos", "neg").items(2).assign("annotator")
+                .seed(workspace);
         ProjectService service = ownerService();
         byte[] before = workspace.dataFileBytes();
 
@@ -295,7 +296,7 @@ class ProjectServiceTest {
 
     @Test
     void delete_assignedAnnotatorDisabled_rejectedAndNothingChanged() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2)
+        ClassificationWorkflow flow = ClassificationWorkflow.single("pos", "neg").items(2)
                 .assign("annotator", "pos")
                 .disabled("annotator")
                 .seed(workspace);
@@ -309,7 +310,8 @@ class ProjectServiceTest {
 
     @Test
     void delete_assignedProjectAfterRestart_rejectedAndNothingChanged() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2).assign("annotator").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("pos", "neg").items(2).assign("annotator")
+                .seed(workspace);
         byte[] before = workspace.dataFileBytes();
         JsonStore reopened = JsonStore.open(workspace.paths());
         AuthService auth = new AuthService(reopened);

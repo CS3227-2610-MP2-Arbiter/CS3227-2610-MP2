@@ -22,10 +22,14 @@ import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.Item;
 import arbiter.model.project.Split;
 import arbiter.model.project.SplitItem;
+import arbiter.model.project.TaxonomyKind;
 import arbiter.model.user.Role;
 import arbiter.model.user.User;
 import arbiter.service.AuthException;
+import arbiter.service.CorpusService;
 import arbiter.service.CurrentUser;
+import arbiter.service.SplitSummary;
+import arbiter.service.TaxonomySummary;
 import arbiter.workspace.ResolvedSource;
 import arbiter.workspace.SourceResolver;
 
@@ -69,7 +73,7 @@ class TestWorkspaceTest {
     @Test
     void signIn_seededAccounts_signedInWithTheirRole() {
         TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
-        ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow.single("positive", "negative").assign("alice").seed(workspace);
 
         assertEquals(Role.ADJUDICATOR, workspace.signIn(TestWorkspace.OWNER).requireAdjudicator().role());
         assertEquals(Role.ANNOTATOR, workspace.signIn("alice").currentUser().orElseThrow().role());
@@ -104,6 +108,40 @@ class TestWorkspaceTest {
 
         assertFalse(Arrays.equals(before, workspace.dataFileBytes()));
         assertArrayEquals(Files.readAllBytes(workspace.paths().dataFile()), workspace.dataFileBytes());
+    }
+
+    @Test
+    void newProject_eachKind_createdWithoutLabelsOrRange() {
+        TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
+
+        long single = workspace.newProject(TaxonomyKind.SINGLE);
+        long scale = workspace.newProject(TaxonomyKind.SCALE);
+
+        CorpusService corpus = new CorpusService(workspace.store(), workspace.signInOwner(), workspace.paths());
+        assertEquals(new TaxonomySummary(TaxonomyKind.SINGLE, List.of(), null, null, false), corpus.taxonomy(single));
+        assertEquals(new TaxonomySummary(TaxonomyKind.SCALE, List.of(), null, null, false), corpus.taxonomy(scale));
+    }
+
+    @Test
+    void newSplits_calledTwice_oneUnassignedSplitPerNewReadableFile() {
+        TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
+        long projectId = workspace.newProject(TaxonomyKind.SINGLE);
+        List<Long> earlier = workspace.newSplits(projectId, 1);
+
+        List<Long> later = workspace.newSplits(projectId, 2);
+
+        List<SplitSummary> splits = new CorpusService(workspace.store(), workspace.signInOwner(), workspace.paths())
+                .listSplits(projectId);
+        assertEquals(3, splits.size());
+        assertEquals(List.of(splits.get(0).id()), earlier);
+        assertEquals(List.of(splits.get(1).id(), splits.get(2).id()), later);
+        for (SplitSummary split : splits) {
+            assertEquals(1, split.itemIds().size());
+            assertFalse(split.assigned());
+            Item item = workspace.store().read(session -> session.items().findById(split.itemIds().getFirst()))
+                    .orElseThrow();
+            new SourceResolver(workspace.paths()).resolve(item.getPath(), item.getContentHash());
+        }
     }
 
     @Test

@@ -78,15 +78,18 @@ class ClassificationWorkflowTest {
     }
 
     @Test
-    void start_emptyOrRepeatedLabelsOrInvertedScale_exceptionThrown() {
+    void start_emptyOrRepeatedLabelsOrScaleTheAppCannotSave_exceptionThrown() {
         assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single());
         assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single("positive", "positive"));
         assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(4, 3));
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(3, 3));
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(-11, 0));
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.scale(0, 11));
     }
 
     @Test
-    void start_singleValueScaleAndOneOfEach_seeded() {
-        ClassificationWorkflow flow = ClassificationWorkflow.scale(3, 3).items(1).annotationsPerItem(1)
+    void start_narrowestScaleAndOneOfEach_seeded() {
+        ClassificationWorkflow flow = ClassificationWorkflow.scale(3, 4).items(1).annotationsPerItem(1)
                 .assign("alice", 3).seed(workspace);
 
         assertEquals(3, answerOf(flow.itemId(0), flow.annotatorId("alice")).orElseThrow().getScaleValue());
@@ -115,8 +118,8 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_assignedWithoutK_kIsAssigneeCount() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").assign("bob")
-                .seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .assign("bob").seed(workspace);
 
         Split split = read(session -> session.splits().findById(flow.splitId())).orElseThrow();
         assertEquals(2, split.getAnnotationsPerItem());
@@ -124,7 +127,7 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_kAboveAssignees_unfilledPlacesKept() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").annotationsPerItem(3)
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").annotationsPerItem(3)
                 .assign("alice").assign("bob").seed(workspace);
 
         assertEquals(3, read(session -> session.splits().findById(flow.splitId())).orElseThrow()
@@ -134,8 +137,16 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_assigneesAboveK_exceptionThrownAndNothingWritten() {
-        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive").annotationsPerItem(1)
-                .assign("alice").assign("bob");
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative")
+                .annotationsPerItem(1).assign("alice").assign("bob");
+
+        assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
+        assertUntouched();
+    }
+
+    @Test
+    void seed_oneLabelWithAssignee_exceptionThrownAndNothingWritten() {
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive").assign("alice");
 
         assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
         assertUntouched();
@@ -155,7 +166,7 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_answerCount_setsAssignmentStatus() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2)
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2)
                 .assign("none").assign("some", "positive").assign("all", "positive", "positive").seed(workspace);
 
         assertEquals(AssignmentStatus.NOT_STARTED, statusOf(flow, "none"));
@@ -165,7 +176,7 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_moreAnswersThanItems_exceptionThrownAndNothingWritten() {
-        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive").items(1)
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative").items(1)
                 .assign("alice", "positive", "positive");
 
         assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
@@ -217,7 +228,7 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_disabledAssignee_keepsAssignmentAndAnswersButCannotSignIn() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice", "positive")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice", "positive")
                 .disabled("alice").seed(workspace);
 
         User alice = read(session -> session.users().findById(flow.annotatorId("alice"))).orElseThrow();
@@ -319,8 +330,8 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_resolutionWithFewerThanKAnswers_exceptionThrownAndNothingWritten() {
-        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive").annotationsPerItem(2)
-                .assign("alice", "positive").assign("bob").majority(0, "positive");
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative")
+                .annotationsPerItem(2).assign("alice", "positive").assign("bob").majority(0, "positive");
 
         assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
         assertUntouched();
@@ -335,9 +346,9 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_resolutionOutsideItems_exceptionThrown() {
-        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single("positive").items(2)
-                .assign("alice", "positive", "positive").majority(2, "positive").seed(workspace));
-        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single("positive")
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single("positive", "negative")
+                .items(2).assign("alice", "positive", "positive").majority(2, "positive").seed(workspace));
+        assertThrows(IllegalArgumentException.class, () -> ClassificationWorkflow.single("positive", "negative")
                 .assign("alice", "positive").majority(-1, "positive").seed(workspace));
     }
 
@@ -354,7 +365,8 @@ class ClassificationWorkflowTest {
 
     @Test
     void seed_twoWorkflowsInOneWorkspace_accountsReusedAndEarlierSourcesKept() {
-        ClassificationWorkflow first = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow first = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         ClassificationWorkflow second = ClassificationWorkflow.scale(1, 5).assign("alice").seed(workspace);
 
         assertEquals(first.annotatorId("alice"), second.annotatorId("alice"));
@@ -369,7 +381,7 @@ class ClassificationWorkflowTest {
         workspace.store().write(session -> session.users().save(Records.user("carol",
                 Role.ADJUDICATOR)));
 
-        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive").assign("carol");
+        ClassificationWorkflow.Builder builder = ClassificationWorkflow.single("positive", "negative").assign("carol");
 
         assertThrows(IllegalArgumentException.class, () -> builder.seed(workspace));
     }
