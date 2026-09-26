@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -13,12 +15,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import arbiter.model.project.Assignment;
 import arbiter.model.project.AssignmentStatus;
 import arbiter.model.project.SplitItem;
 import arbiter.testing.ClassificationWorkflow;
+import arbiter.testing.Records;
 import arbiter.testing.TestWorkspace;
+import arbiter.workspace.SourceFailure;
 
-/** Integration checks for the annotator's own assignments and progress (#12). */
+/** Integration checks for the annotator's own assignments and progress (#12) and their queue (#13). */
 class AnnotationServiceTest {
     @TempDir
     Path temporary;
@@ -51,44 +56,18 @@ class AnnotationServiceTest {
         AssignmentProgress alice = service("alice").forCurrentUser().getFirst();
 
         assertEquals(new AssignmentProgress(flow.assignmentId("alice"), "Synthetic project", "Batch 1",
-                AssignmentStatus.IN_PROGRESS, 1, 3, flow.itemId(1)), alice);
+                AssignmentStatus.IN_PROGRESS, 1, 3), alice);
         assertFalse(alice.finished());
     }
 
     @Test
-    void forCurrentUser_nothingAnswered_nextIsTheFirstFileInSavedOrder() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
-                .seed(workspace);
-        reverseSplitOrder(flow);
-
-        AssignmentProgress alice = service("alice").forCurrentUser().getFirst();
-
-        assertEquals(0, alice.submitted());
-        assertEquals(flow.itemId(2), alice.nextItemId());
-    }
-
-    @Test
-    void forCurrentUser_answeredFileLastInSavedOrder_nextIsFirstUnanswered() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice", "positive")
-                .seed(workspace);
-        // Alice answered item 0, which the reversed order puts last, so the next file is the new first one.
-        reverseSplitOrder(flow);
-
-        AssignmentProgress alice = service("alice").forCurrentUser().getFirst();
-
-        assertEquals(1, alice.submitted());
-        assertEquals(flow.itemId(2), alice.nextItemId());
-    }
-
-    @Test
-    void forCurrentUser_everyFileAnswered_finishedWithNoNextFile() {
+    void forCurrentUser_everyFileAnswered_finished() {
         ClassificationWorkflow.single("positive").items(2).assign("alice", "positive", "positive").seed(workspace);
 
         AssignmentProgress alice = service("alice").forCurrentUser().getFirst();
 
         assertEquals(AssignmentStatus.SUBMITTED, alice.status());
         assertEquals(2, alice.submitted());
-        assertNull(alice.nextItemId());
         assertTrue(alice.finished());
     }
 
@@ -119,11 +98,11 @@ class AnnotationServiceTest {
         ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
         AuthService signedOut = workspace.signIn("alice");
         signedOut.logout();
+        AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
+        AnnotationService nobody = new AnnotationService(workspace.store(), signedOut, workspace.paths());
 
-        assertThrows(AuthException.class, () -> new AnnotationService(workspace.store(), workspace.signInOwner())
-                .forCurrentUser());
-        assertThrows(AuthException.class, () -> new AnnotationService(workspace.store(), signedOut)
-                .forCurrentUser());
+        assertThrows(AuthException.class, owner::forCurrentUser);
+        assertThrows(AuthException.class, nobody::forCurrentUser);
     }
 
     @Test
@@ -136,8 +115,164 @@ class AnnotationServiceTest {
         assertThrows(AuthException.class, alice::forCurrentUser);
     }
 
+    @Test
+    void forCurrentUserQueue_firstFileAnswered_nextFileWithItsTextAndPosition() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice", "positive")
+                .seed(workspace);
+
+        QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertEquals(1, queue.assignment().submitted());
+        assertEquals(3, queue.assignment().total());
+        assertEquals(new QueueItem(flow.itemId(1), "Synthetic item 2 of corpus 1", null), queue.current());
+        assertTrue(queue.current().readable());
+        assertFalse(queue.assignment().finished());
+    }
+
+    @Test
+    void forCurrentUserQueue_savedOrderDiffersFromIdentifiers_opensAtFirstFileInSavedOrder() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
+                .seed(workspace);
+        reverseSplitOrder(flow);
+
+        QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertEquals(flow.itemId(2), queue.current().itemId());
+    }
+
+    @Test
+    void forCurrentUserQueue_answeredFileLastInSavedOrder_opensAtFirstUnansweredFile() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice", "positive")
+                .seed(workspace);
+        // Alice answered item 0, which the reversed order puts last, so the queue opens at the new first file.
+        reverseSplitOrder(flow);
+
+        QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertEquals(1, queue.assignment().submitted());
+        assertEquals(flow.itemId(2), queue.current().itemId());
+    }
+
+    @Test
+    void forCurrentUserQueue_restartBeforeAndAfterAnAnswerIsStored_resumesAtFirstUnansweredFile() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+                .seed(workspace);
+        long assignmentId = flow.assignmentId("alice");
+
+        long beforeFirst = service("alice").forCurrentUser(assignmentId).current().itemId();
+        long beforeRestart = service("alice").forCurrentUser(assignmentId).current().itemId();
+        // Stands in for Submit & next (#17), which is not built yet.
+        workspace.store().write(session -> session.annotations().insert(Records.answer(flow.itemId(0), assignmentId,
+                flow.annotatorId("alice"), flow.labelId("positive"))));
+        long afterRestart = service("alice").forCurrentUser(assignmentId).current().itemId();
+
+        assertEquals(flow.itemId(0), beforeFirst);
+        assertEquals(flow.itemId(0), beforeRestart);
+        assertEquals(flow.itemId(1), afterRestart);
+    }
+
+    @Test
+    void forCurrentUserQueue_everyFileAnswered_finishedWithNoFile() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2)
+                .assign("alice", "positive", "positive").seed(workspace);
+
+        QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertTrue(queue.assignment().finished());
+        assertNull(queue.current());
+        assertEquals(2, queue.assignment().submitted());
+    }
+
+    @Test
+    void forCurrentUserQueue_storedAsSubmittedWithAFileLeft_finishedWithoutReopening() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice", "positive")
+                .seed(workspace);
+        workspace.store().write(session -> {
+            Assignment assignment = session.assignments().findById(flow.assignmentId("alice")).orElseThrow();
+            assignment.setStatus(AssignmentStatus.SUBMITTED);
+            return session.assignments().save(assignment);
+        });
+
+        QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertTrue(queue.assignment().finished());
+        assertNull(queue.current());
+        assertEquals(1, queue.assignment().submitted());
+    }
+
+    @Test
+    void forCurrentUserQueue_everyFileAnsweredButNotSubmitted_inconsistentStateRefused() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice", "positive")
+                .seed(workspace);
+        workspace.store().write(session -> {
+            Assignment assignment = session.assignments().findById(flow.assignmentId("alice")).orElseThrow();
+            assignment.setStatus(AssignmentStatus.IN_PROGRESS);
+            return session.assignments().save(assignment);
+        });
+        AnnotationService alice = service("alice");
+        long assignmentId = flow.assignmentId("alice");
+
+        assertThrows(IllegalStateException.class, () -> alice.forCurrentUser(assignmentId));
+    }
+
+    @Test
+    void forCurrentUserQueue_anotherAnnotatorsAnswers_doNotMoveThePosition() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
+                .assign("bob", "positive", "positive").seed(workspace);
+
+        QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
+
+        assertEquals(0, queue.assignment().submitted());
+        assertEquals(flow.itemId(0), queue.current().itemId());
+    }
+
+    @Test
+    void forCurrentUserQueue_anotherAnnotatorsAssignment_refusedExactlyLikeAMissingOne() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").assign("bob")
+                .seed(workspace);
+        AnnotationService alice = service("alice");
+
+        long bobs = flow.assignmentId("bob");
+
+        ProjectException foreign = assertThrows(ProjectException.class, () -> alice.forCurrentUser(bobs));
+        ProjectException missing = assertThrows(ProjectException.class, () -> alice.forCurrentUser(999_999L));
+
+        assertEquals(missing.getMessage(), foreign.getMessage());
+    }
+
+    @Test
+    void forCurrentUserQueue_changedSource_errorInsteadOfText() throws IOException {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        Files.writeString(workspace.paths().root().resolve("media/corpus-1/item-1.txt"), "Edited after import");
+
+        QueueItem current = service("alice").forCurrentUser(flow.assignmentId("alice")).current();
+
+        assertFalse(current.readable());
+        assertNull(current.text());
+        assertEquals(SourceFailure.HASH_MISMATCH, current.failure());
+    }
+
+    @Test
+    void forCurrentUserQueue_missingSource_errorInsteadOfText() throws IOException {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        Files.delete(workspace.paths().root().resolve("media/corpus-1/item-1.txt"));
+
+        QueueItem current = service("alice").forCurrentUser(flow.assignmentId("alice")).current();
+
+        assertFalse(current.readable());
+        assertEquals(SourceFailure.MISSING, current.failure());
+    }
+
+    @Test
+    void forCurrentUserQueue_adjudicator_rejected() {
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
+
+        assertThrows(AuthException.class, () -> owner.forCurrentUser(flow.assignmentId("alice")));
+    }
+
     private AnnotationService service(String username) {
-        return new AnnotationService(workspace.store(), workspace.signIn(username));
+        return new AnnotationService(workspace.store(), workspace.signIn(username), workspace.paths());
     }
 
     private void reverseSplitOrder(ClassificationWorkflow flow) {

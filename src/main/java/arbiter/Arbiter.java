@@ -7,7 +7,6 @@ import arbiter.data.json.JsonStore;
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.user.Role;
 import arbiter.service.AnnotationService;
-import arbiter.service.AssignmentProgress;
 import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.AuthService;
@@ -86,7 +85,7 @@ public class Arbiter extends Application {
         projects = new ProjectService(store, auth);
         corpus = new CorpusService(store, auth, workspace.paths());
         assignments = new AssignmentService(store, auth);
-        annotations = new AnnotationService(store, auth);
+        annotations = new AnnotationService(store, auth, workspace.paths());
         showAuth(stage);
     }
 
@@ -107,7 +106,7 @@ public class Arbiter extends Application {
     private void showShell(Stage stage, CurrentUser user) {
         ScreenRegistry screens = new ScreenRegistry();
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
-                new MySplitsScreen(stage, annotations, assignment -> openQueue(stage, assignment)).content()));
+                new MySplitsScreen(stage, annotations).content()));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
                 new ProjectsScreen(stage, projects, corpus, assignments).content()));
         screens.register(new ScreenRoute("adjudicator-accounts", "Accounts", Role.ADJUDICATOR, () ->
@@ -116,12 +115,6 @@ public class Arbiter extends Application {
             auth.logout();
             showAuth(stage);
         }).show();
-    }
-
-    private static void openQueue(Stage stage, AssignmentProgress assignment) {
-        // The queue arrives with #13; until then, say which file it will open at.
-        Dialogs.showSuccess(stage, assignment.splitName(), "The queue for this split arrives with the next "
-                + "update. It will open at file " + (assignment.submitted() + 1) + " of " + assignment.total() + ".");
     }
 
     @Override
