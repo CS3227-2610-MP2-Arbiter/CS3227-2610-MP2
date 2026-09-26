@@ -10,7 +10,7 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 
 1. Launch Arbiter. On first run the workspace wizard asks you to choose a [workspace](Glossary.md) folder.
 2. During setup, create the workspace's adjudicator account.
-3. The adjudicator creates annotator accounts on the [Accounts](#accounts) screen and gives each annotator their username and password.
+3. The adjudicator creates annotator accounts on the [Accounts](#accounts) screen and gives each annotator their username and password. There is no self-signup and no email: an annotator who forgets their password asks the adjudicator, who sets a new one directly ([rule 12](UserFlows.md#3-rules-both-tracks-share)). The adjudicator's own password cannot be recovered, so keep it safe.
 4. Sign in. Arbiter opens your role's home ([#5]): [Projects](#projects) for the adjudicator, and [My splits](#my-splits) for annotators.
 
 If the workspace is already in use, close its other Arbiter instance and try again ([#61](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61)).
@@ -23,8 +23,8 @@ The accepted V1 behaviour behind each planned task is specified in [User Flows](
 
 | I want to... | Role | Issue |
 | --- | --- | --- |
-| Label plain-text items | Annotator | [#13], [#14] |
-| Track my split progress | Annotator | [#18] |
+| Label plain-text items | Annotator | [My splits](#my-splits) ([#13], [#14], [#17]) |
+| Track my split progress | Annotator | [My splits](#my-splits) ([#18]) |
 | Create or deactivate annotator accounts | Adjudicator | [#31] |
 | Replace an annotator's forgotten password | Adjudicator | [#23] |
 | Create or delete a project | Adjudicator | [#24], [#30] |
@@ -56,15 +56,25 @@ You can register or unregister files, or change the taxonomy, only before the pr
 
 ## My splits
 
-My splits is an annotator's home screen. It lists only your own assignments, unfinished ones first, each with its project and split, its status, and how many of its files you have answered and how many remain. The split's own screen shows the same counts, and they change as soon as you submit.
+My splits is an annotator's home screen. It lists only your own [assignments](Glossary.md), unfinished ones first. Each card shows the project and split, its status, and how many of its files you have answered and how many remain. Each file is one [item](Glossary.md) of the split.
 
-- **Start or continue a split.** Choose **Start** or **Continue** on its card. The split opens at the first file you have not answered, in its saved order, showing the file's text and its position, such as "File 3 of 10". Restarting Arbiter brings you back to the same file. **Back to My splits** returns to the list.
-- **Choose an answer.** Under the file, pick one label, whose description is shown beneath it, or type a whole number within the rating range shown. **Submit & next** stays disabled until the answer is valid. Your choice is not saved until you submit, and closing Arbiter first discards it ([rule 18](UserFlows.md#3-rules-both-tracks-share)). Until the adjudicator has set up a project's labels or rating range ([#26]), its files cannot be answered.
-- **Submit & next.** Choose **Submit & next** to save your answer and move on to the next file. A submitted answer cannot be reopened or changed, by you or the adjudicator ([rules 13 and 18](UserFlows.md#3-rules-both-tracks-share)). When every file has your answer, the split is finished. If submitting fails, nothing is saved and your choice stays on screen; if the file changed on disk after it was shown, the split says so instead.
-- **A file that cannot be read.** If a file is missing or has changed since it was registered, the split says so instead of showing its text, and the file cannot be answered until your adjudicator restores it ([rule 21](UserFlows.md#3-rules-both-tracks-share)). File names and folders are never shown to annotators, because they can hint at a label.
-- **Finished splits** show that every file has your answer and cannot be reopened.
+![My splits, showing a split in progress, one not started and one finished](images/annotator-my-splits.png)
 
-You never see another annotator's assignments, answers or progress ([rule 1](UserFlows.md#3-rules-both-tracks-share)).
+- **Start or continue a split.** Choose **Start** or **Continue** on its card. The split opens at the first file you have not answered, in its saved order, showing the file's text, its position such as "File 2 of 3", and the same progress counts as the card. **Back to My splits** returns to the list.
+- **Choose an answer.** For a label project, pick one label; its description is shown beneath it. For a rating project, type a whole number within the range shown. **Submit & next** stays disabled until the answer is valid.
+
+  ![A file with three labels, one of them chosen](images/annotator-queue-single.png)
+
+  ![A file with a rating from 1 to 5 entered](images/annotator-queue-scale.png)
+
+- **Submit & next.** Choose **Submit & next** to save your answer and move on to the next file. A submitted answer cannot be reopened or changed, by you or the adjudicator ([rules 13 and 18](UserFlows.md#3-rules-both-tracks-share)). When every file has your answer, the split is finished; its card says so and cannot be reopened. If submitting fails, nothing is saved and your choice stays on screen. If the file changed on disk after it was shown, the split says so instead.
+- **Closing and coming back.** Your choice is not saved until you submit, so closing Arbiter first discards it ([rule 18](UserFlows.md#3-rules-both-tracks-share)). When you come back, the split opens at the first file you have not answered.
+- **A file that cannot be read.** If a file is missing or has changed since it was registered, the split says so instead of showing its text. The file cannot be answered until your adjudicator restores it ([rule 21](UserFlows.md#3-rules-both-tracks-share)).
+- **A project that is not set up yet.** Until the adjudicator has set up a project's labels or rating range, its files cannot be answered.
+
+### What you never see
+
+Annotation is blind ([rule 1](UserFlows.md#3-rules-both-tracks-share)). You see only your own assignments, answers and progress, never another annotator's, and never an item's resolved answer. File names and folders are hidden too, because they can hint at a label.
 
 ## Accounts
 
@@ -79,6 +89,7 @@ Accounts lists every account with its role and [status](Glossary.md#fixed-value-
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
 [#14]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/14
+[#17]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/17
 [#18]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/18
 [#23]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/23
 [#24]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/24
