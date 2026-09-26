@@ -17,6 +17,7 @@ import arbiter.workspace.SourceFailure;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
@@ -25,13 +26,16 @@ import javafx.stage.Window;
  * completion once every file is answered.
  *
  * <p>Under the file, the annotator chooses an answer (#14), and Submit &amp; next is enabled only while it is
- * valid. Nothing here moves between files; the queue moves forward only when an answer is submitted (#17).
+ * valid. Choosing it submits the answer and shows the next file (#17); nothing else moves between files.
  */
 public final class QueueScreen {
+    private static final String SUBMIT_FAILED = "Your answer could not be submitted";
+
     private final Window owner;
     private final AnnotationService annotations;
     private final long assignmentId;
     private final Runnable onBack;
+    private final StackPane content = new StackPane();
 
     /**
      * Creates the screen, whose dialogs belong to {@code owner}.
@@ -47,31 +51,44 @@ public final class QueueScreen {
 
     /** Returns the screen's content, showing where the assignment stands now. */
     public Node content() {
-        Button back = new Button("Back to My splits");
-        back.setOnAction(event -> onBack.run());
+        show();
+        return content;
+    }
+
+    /** Shows where the assignment stands now, read afresh, so the screen always matches what is stored. */
+    private void show() {
         QueueView view;
         try {
             view = annotations.forCurrentUser(assignmentId);
         } catch (ProjectException | AuthException | JsonStoreException e) {
             Dialogs.showError(owner, "This split could not be opened", e);
-            return Components.page(Components.pageTitle("This split could not be opened"), back);
+            content.getChildren().setAll(Components.page(Components.pageTitle("This split could not be opened"),
+                    backButton()));
+            return;
         }
+        render(view);
+    }
+
+    /** Shows this view of the assignment. */
+    private void render(QueueView view) {
+        Button back = backButton();
         AssignmentProgress assignment = view.assignment();
         Node title = Components.pageTitle(assignment.projectName() + ": " + assignment.splitName());
         if (assignment.finished()) {
-            return Components.page(title, Components.text("You have answered every file in this split."), back);
+            content.getChildren().setAll(Components.page(title,
+                    Components.text("You have answered every file in this split."), back));
+            return;
         }
         QueueItem current = view.current();
         Button submit = new Button("Submit & next");
         submit.setDefaultButton(true);
-        submit.setOnAction(event -> Dialogs.showSuccess(owner, "Submit & next",
-                "Submitting answers is not available yet, so your choice was not saved."));
         Node file;
         Node answer;
         if (current.readable()) {
             AnnotationEditor editor = new AnnotationEditor(view.taxonomy());
-            // Enabled only while the choice is valid (#14); nothing is stored until submission (#17).
+            // Enabled only while the choice is valid (#14); nothing is stored until it is submitted (#17).
             submit.disableProperty().bind(editor.answerProperty().isNull());
+            submit.setOnAction(event -> submit(submit, editor, current.itemId()));
             file = ItemView.of(current.text());
             answer = editor.view();
         } else {
@@ -80,9 +97,34 @@ public final class QueueScreen {
             answer = new VBox();
         }
         // The page scrolls as a whole, so neither a long file nor many labels can push Submit & next out of reach.
-        return Components.scrollingPage(title,
+        content.getChildren().setAll(Components.scrollingPage(title,
                 Components.text("File " + (assignment.submitted() + 1) + " of " + assignment.total()), file, answer,
-                submit, back);
+                submit, back));
+    }
+
+    private void submit(Button submit, AnnotationEditor editor, long itemId) {
+        // Disabled until the outcome is known, so a double-click cannot submit twice.
+        submit.disableProperty().unbind();
+        submit.setDisable(true);
+        try {
+            // submit returns where the queue stands after its own action, so it is shown without reading again.
+            render(annotations.submit(assignmentId, itemId, editor.answerProperty().get()));
+        } catch (ProjectException e) {
+            // Something changed since the file was shown, most likely the file itself on disk, so show the queue
+            // as it now stands.
+            Dialogs.showError(owner, SUBMIT_FAILED, e);
+            show();
+        } catch (AuthException | JsonStoreException e) {
+            // Nothing was stored, so the choice stays on screen to submit again (rule 18).
+            Dialogs.showError(owner, SUBMIT_FAILED, e);
+            submit.disableProperty().bind(editor.answerProperty().isNull());
+        }
+    }
+
+    private Button backButton() {
+        Button back = new Button("Back to My splits");
+        back.setOnAction(event -> onBack.run());
+        return back;
     }
 
     /** Explains an unreadable file without naming it, since a file's name can hint at its label. */

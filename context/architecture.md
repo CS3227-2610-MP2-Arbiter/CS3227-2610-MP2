@@ -27,7 +27,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 ### Blindness (rule 1)
 
-- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or another annotator's work.
+- Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or another annotator's work. Submission goes through `AnnotationService.submit(...)`, which returns only the annotator's own queue; automatic resolution ([#27]) belongs inside its action.
 - Do not rely on package separation for blindness.
 - The blindness test ([#11]) must cover every annotator-facing code path, including new ones.
 - `AnnotatorBlindnessTest` treats every class under `arbiter.ui` except `arbiter.ui.adjudicator` as annotator-facing, shared components included, and fails if their calls reach another annotator's answers, a resolved result, cross-annotator progress or an adjudicator screen. A shared component therefore never loads or accepts a `Resolution`, even in adjudicator mode; the adjudicator's screen passes it plain values such as a `Label`. Service reads it trusts are listed in that test; adding one is a reviewed change, and its scoping must be tested by its feature.
@@ -89,4 +89,5 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 [#10]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/10
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
+[#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
 [#61]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61

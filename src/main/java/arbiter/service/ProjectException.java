@@ -6,4 +6,9 @@ public class ProjectException extends RuntimeException {
     public ProjectException(String message) {
         super(message);
     }
+
+    /** Creates a rejection whose message can be shown, caused by a failure that is logged but not shown. */
+    public ProjectException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
