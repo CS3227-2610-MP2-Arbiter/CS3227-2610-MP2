@@ -8,6 +8,8 @@ import java.util.Objects;
 
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.project.Item;
+import arbiter.service.AssignmentOptions;
+import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.CorpusService;
 import arbiter.service.ProjectException;
@@ -30,17 +32,19 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 /**
- * One project's page, where its files are registered and unregistered before its first assignment, and its
- * splits are generated and deleted.
+ * One project's page, where its files are registered and unregistered before its first assignment, its
+ * splits are generated and deleted, and annotators are assigned to them.
  */
 final class ProjectPage {
     private static final String REGISTER_FAILED = "The files could not be registered";
     private static final String UNREGISTER_FAILED = "The file could not be unregistered";
     private static final String GENERATE_FAILED = "The splits could not be generated";
     private static final String DELETE_SPLIT_FAILED = "The split could not be deleted";
+    private static final String OPEN_ASSIGN_FAILED = "The annotators could not be loaded";
 
     private final Window owner;
     private final CorpusService corpus;
+    private final AssignmentService assignments;
     private final ProjectSummary project;
     private final Runnable showList;
     private final StackPane content = new StackPane();
@@ -50,9 +54,11 @@ final class ProjectPage {
      *
      * @param showList shows the project list again
      */
-    ProjectPage(Window owner, CorpusService corpus, ProjectSummary project, Runnable showList) {
+    ProjectPage(Window owner, CorpusService corpus, AssignmentService assignments, ProjectSummary project,
+            Runnable showList) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.corpus = Objects.requireNonNull(corpus, "corpus");
+        this.assignments = Objects.requireNonNull(assignments, "assignments");
         this.project = Objects.requireNonNull(project, "project");
         this.showList = Objects.requireNonNull(showList, "showList");
     }
@@ -78,8 +84,7 @@ final class ProjectPage {
             content.getChildren().setAll(empty);
             return;
         }
-        // A project's assignments cannot change on this page, so the list's count stays current.
-        boolean frozen = project.assignmentCount() > 0;
+        boolean frozen = splits.stream().anyMatch(SplitSummary::assigned);
         Button add = new Button("Add files...");
         add.setDisable(frozen);
         add.setOnAction(event -> addFiles());
@@ -94,7 +99,7 @@ final class ProjectPage {
                 itemTable(items, splits, frozen),
                 Components.hint("Generate splits shuffles the files not yet in a split into new splits. "
                         + "A split can be deleted only before its first assignment."),
-                itemsPerSplit, generate, error, splitTable(splits)));
+                itemsPerSplit, generate, error, splitTable(splits, frozen)));
     }
 
     private TableView<Item> itemTable(List<Item> items, List<SplitSummary> splits, boolean frozen) {
@@ -120,15 +125,57 @@ final class ProjectPage {
         return places;
     }
 
-    private TableView<SplitSummary> splitTable(List<SplitSummary> splits) {
+    /** Returns the splits table, where {@code frozen} says whether the project has had its first assignment. */
+    private TableView<SplitSummary> splitTable(List<SplitSummary> splits, boolean frozen) {
         TableView<SplitSummary> table = new TableView<>(FXCollections.observableArrayList(splits));
         table.getColumns().setAll(List.of(Components.column("Name", SplitSummary::name),
                 Components.column("Files", split -> split.itemIds().size()),
+                Components.column("Annotators", split -> split.assigned()
+                        ? split.assignmentCount() + " of " + split.annotationsPerItem() : "None"),
+                Components.buttonColumn("Assign", SplitSummary::full, split -> showAssignForm(split, frozen)),
                 Components.buttonColumn("Delete", SplitSummary::assigned, this::deleteSplit)));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         table.setPlaceholder(Components.hint("No splits are generated yet."));
         VBox.setVgrow(table, Priority.ALWAYS);
         return table;
+    }
+
+    /** Shows the form that assigns annotators to a split, where {@code frozen} is as the page loaded it. */
+    private void showAssignForm(SplitSummary split, boolean frozen) {
+        AssignmentOptions options;
+        try {
+            options = assignments.options(split.id());
+        } catch (ProjectException e) {
+            // The page was out of date, so the reload below shows why.
+            Dialogs.showError(owner, OPEN_ASSIGN_FAILED, e);
+            show();
+            return;
+        } catch (AuthException | JsonStoreException e) {
+            // Nothing changed, so the page is still current, and reloading would likely report this again.
+            Dialogs.showError(owner, OPEN_ASSIGN_FAILED, e);
+            return;
+        }
+        content.getChildren().setAll(new AssignForm(owner, assignments, split, frozen, options, this::show).content());
+    }
+
+    /**
+     * Runs a change the adjudicator asked for, then {@code reload} to show its result. A {@link ProjectException}
+     * means the screen was out of date, so the user is told why and the reload brings it up to date. After an
+     * {@link AuthException} or {@link JsonStoreException} nothing changed, so the user is told and the screen is
+     * left as it is, since reloading would likely report the failure again.
+     *
+     * @param failure the heading of the error dialog, naming what failed
+     */
+    static void commit(Window owner, String failure, Runnable change, Runnable reload) {
+        try {
+            change.run();
+        } catch (ProjectException e) {
+            Dialogs.showError(owner, failure, e);
+        } catch (AuthException | JsonStoreException e) {
+            Dialogs.showError(owner, failure, e);
+            return;
+        }
+        reload.run();
     }
 
     private void addFiles() {
@@ -164,17 +211,7 @@ final class ProjectPage {
         if (!confirmed) {
             return;
         }
-        try {
-            corpus.unregister(item.getId());
-        } catch (ProjectException e) {
-            // The page was out of date, so the reload below shows why.
-            Dialogs.showError(owner, UNREGISTER_FAILED, e);
-        } catch (AuthException | JsonStoreException e) {
-            // Nothing changed, so the page is still current, and reloading would likely report this again.
-            Dialogs.showError(owner, UNREGISTER_FAILED, e);
-            return;
-        }
-        show();
+        commit(owner, UNREGISTER_FAILED, () -> corpus.unregister(item.getId()), this::show);
     }
 
     private void generateSplits(String itemsPerSplit, Label error) {
@@ -194,17 +231,7 @@ final class ProjectPage {
         if (!confirmed) {
             return;
         }
-        try {
-            corpus.generateSplits(project.id(), itemsPerSplit, sizes);
-        } catch (ProjectException e) {
-            // The page was out of date, so the reload below shows why.
-            Dialogs.showError(owner, GENERATE_FAILED, e);
-        } catch (AuthException | JsonStoreException e) {
-            // Nothing changed, so the page is still current, and reloading would likely report this again.
-            Dialogs.showError(owner, GENERATE_FAILED, e);
-            return;
-        }
-        show();
+        commit(owner, GENERATE_FAILED, () -> corpus.generateSplits(project.id(), itemsPerSplit, sizes), this::show);
     }
 
     /**
@@ -220,7 +247,8 @@ final class ProjectPage {
         return plural(sizes.size() - 1, "split") + " of " + plural(size, "file") + " and 1 of " + last + ".";
     }
 
-    private static String plural(int count, String noun) {
+    /** Returns a count of a noun, such as "1 file" or "2 files". */
+    static String plural(long count, String noun) {
         return count == 1 ? "1 " + noun : count + " " + noun + "s";
     }
 
@@ -230,16 +258,6 @@ final class ProjectPage {
         if (!confirmed) {
             return;
         }
-        try {
-            corpus.deleteSplit(split.id());
-        } catch (ProjectException e) {
-            // The page was out of date, so the reload below shows why.
-            Dialogs.showError(owner, DELETE_SPLIT_FAILED, e);
-        } catch (AuthException | JsonStoreException e) {
-            // Nothing changed, so the page is still current, and reloading would likely report this again.
-            Dialogs.showError(owner, DELETE_SPLIT_FAILED, e);
-            return;
-        }
-        show();
+        commit(owner, DELETE_SPLIT_FAILED, () -> corpus.deleteSplit(split.id()), this::show);
     }
 }

@@ -7,6 +7,7 @@ import java.util.Objects;
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.project.OutputFormat;
 import arbiter.model.project.TaxonomyKind;
+import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.CorpusService;
 import arbiter.service.ProjectException;
@@ -39,13 +40,16 @@ public final class ProjectsScreen {
     private final Window owner;
     private final ProjectService projects;
     private final CorpusService corpus;
+    private final AssignmentService assignments;
     private final StackPane content = new StackPane();
 
     /** Creates the screen, whose dialogs belong to {@code owner}. */
-    public ProjectsScreen(Window owner, ProjectService projects, CorpusService corpus) {
+    public ProjectsScreen(Window owner, ProjectService projects, CorpusService corpus,
+            AssignmentService assignments) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.projects = Objects.requireNonNull(projects, "projects");
         this.corpus = Objects.requireNonNull(corpus, "corpus");
+        this.assignments = Objects.requireNonNull(assignments, "assignments");
     }
 
     /** Returns the screen's content, showing the current project list. */
@@ -147,7 +151,7 @@ public final class ProjectsScreen {
     }
 
     private void open(ProjectSummary project) {
-        content.getChildren().setAll(new ProjectPage(owner, corpus, project, this::showList).content());
+        content.getChildren().setAll(new ProjectPage(owner, corpus, assignments, project, this::showList).content());
     }
 
     private static RadioButton choice(ToggleGroup group, Enum<?> value) {
