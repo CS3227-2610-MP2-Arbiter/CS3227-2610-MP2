@@ -11,6 +11,7 @@ import arbiter.service.AuthService;
 import arbiter.service.CorpusService;
 import arbiter.service.CurrentUser;
 import arbiter.service.ProjectService;
+import arbiter.ui.adjudicator.AccountsScreen;
 import arbiter.ui.adjudicator.ProjectsScreen;
 import arbiter.ui.shared.AppShell;
 import arbiter.ui.shared.AuthScreen;
@@ -102,6 +103,8 @@ public class Arbiter extends Application {
                 Components.emptyState("My splits", "Your assigned splits will appear here.")));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
                 new ProjectsScreen(stage, projects, corpus).content()));
+        screens.register(new ScreenRoute("adjudicator-accounts", "Accounts", Role.ADJUDICATOR, () ->
+                new AccountsScreen(stage, auth).content()));
         new AppShell(stage, user, screens, () -> {
             auth.logout();
             showAuth(stage);
