@@ -1,6 +1,6 @@
 package arbiter.model.project;
 
-/** One answer an annotator can choose. A project's labels are its taxonomy. */
+/** One answer an annotator can choose. A SINGLE project's labels, or a SCALE project's range, form its taxonomy. */
 public class Label {
     /** Persistent identifier. */
     private Long id;
@@ -8,7 +8,7 @@ public class Label {
     /** Project this label belongs to. */
     private Long projectId;
 
-    /** Short stable key shown to annotators and used in exports. */
+    /** Short key shown to annotators and used in exports, fixed once the project is frozen (rule 3). */
     private String key;
 
     /** What the label means and when to use it. */
