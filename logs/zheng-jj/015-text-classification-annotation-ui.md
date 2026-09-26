@@ -12,6 +12,15 @@ Status: Awaiting human verification.
 - The answer rules went into the service-layer `Taxonomy`, not the editor, so [#17]'s enforcement will apply exactly what the screen allowed.
 - The plan was implemented before approval, and the work stays uncommitted under the delivery rule.
 
+- Whimsyturtle's review of PR #80 found five problems:
+  - a page that could cut off its own buttons
+  - number parsing duplicated from [#26]
+  - a `Taxonomy` record duplicating [#26]'s `TaxonomySummary`
+  - an `Answer` record that could hold an invalid state
+  - a rating field that showed an error mid-typing
+
+  All five were fixed. Two of them came from building [#14] before [#26] existed: once [#26] merged, its types and parser should have replaced mine. The lesson: when a blocking issue lands, re-check what it added before building on top.
+
 ## Agent responses and outcomes
 
 - Used `write-plan`, `implement-feature`, `write-test`, `review`, `maintain-docs` and `log`. The plan is `plans/annotation-ui.md`, on branch `feat/annotation-ui` from `main` at d50fd20.

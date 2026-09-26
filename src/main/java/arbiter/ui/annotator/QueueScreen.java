@@ -92,7 +92,8 @@ public final class QueueScreen {
             file = unreadable(current.failure());
             answer = new VBox();
         }
-        content.getChildren().setAll(Components.page(title,
+        // The page scrolls as a whole, so neither a long file nor many labels can push Submit & next out of reach.
+        content.getChildren().setAll(Components.scrollingPage(title,
                 Components.text("File " + (assignment.submitted() + 1) + " of " + assignment.total()), file, answer,
                 submit, back));
     }

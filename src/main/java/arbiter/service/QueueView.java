@@ -8,5 +8,5 @@ package arbiter.service;
  *     assignment is {@link AssignmentProgress#finished() finished}
  * @param taxonomy the project's taxonomy, which an answer to {@code current} must follow (#14)
  */
-public record QueueView(AssignmentProgress assignment, QueueItem current, Taxonomy taxonomy) {
+public record QueueView(AssignmentProgress assignment, QueueItem current, TaxonomySummary taxonomy) {
 }
