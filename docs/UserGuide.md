@@ -57,7 +57,8 @@ You can register or unregister files only before the project's first assignment 
 
 My splits is an annotator's home screen. It lists only your own assignments, unfinished ones first, each with its project and split, its status and how many of its files you have answered.
 
-- **Start or continue a split.** Choose **Start** or **Continue** on its card. The split opens at the first file you have not answered, in its saved order, showing the file's text and its position, such as "File 3 of 10". Restarting Arbiter brings you back to the same file. **Back to My splits** returns to the list. Choosing an answer arrives with [#14], and moving on to the next file with [#17].
+- **Start or continue a split.** Choose **Start** or **Continue** on its card. The split opens at the first file you have not answered, in its saved order, showing the file's text and its position, such as "File 3 of 10". Restarting Arbiter brings you back to the same file. **Back to My splits** returns to the list. Moving on to the next file arrives with [#17].
+- **Choose an answer.** Under the file, pick one label, whose description is shown beneath it, or type a whole number within the rating range shown. **Submit & next** stays disabled until the answer is valid. Your choice is not saved until you submit, and closing Arbiter first discards it ([rule 18](UserFlows.md#3-rules-both-tracks-share)). Submitting arrives with [#17]. Until the adjudicator has set up a project's labels or rating range ([#26]), its files cannot be answered.
 - **A file that cannot be read.** If a file is missing or has changed since it was registered, the split says so instead of showing its text, and the file cannot be answered until your adjudicator restores it ([rule 21](UserFlows.md#3-rules-both-tracks-share)). File names and folders are never shown to annotators, because they can hint at a label.
 - **Finished splits** show that every file has your answer and cannot be reopened.
 
