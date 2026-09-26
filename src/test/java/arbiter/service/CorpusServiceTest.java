@@ -455,7 +455,8 @@ class CorpusServiceTest {
 
     @Test
     void corpusWrites_notStartedAssignment_rejectedAndNothingChanged() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2).assign("annotator").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("pos", "neg").items(2).assign("annotator")
+                .seed(workspace);
         CorpusService service = ownerService();
         Path added = source("added.txt", "An added review");
         byte[] before = workspace.dataFileBytes();
@@ -469,7 +470,7 @@ class CorpusServiceTest {
 
     @Test
     void corpusWrites_assignedAnnotatorDisabled_rejectedAndNothingChanged() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2)
+        ClassificationWorkflow flow = ClassificationWorkflow.single("pos", "neg").items(2)
                 .assign("annotator", "pos")
                 .disabled("annotator")
                 .seed(workspace);
@@ -486,7 +487,8 @@ class CorpusServiceTest {
 
     @Test
     void corpusWrites_assignedProjectAfterRestart_rejectedAndNothingChanged() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("pos").items(2).assign("annotator").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("pos", "neg").items(2).assign("annotator")
+                .seed(workspace);
         Path added = source("added.txt", "An added review");
         byte[] before = workspace.dataFileBytes();
         CorpusService service = serviceOn(JsonStore.open(workspace.paths()));
@@ -518,7 +520,7 @@ class CorpusServiceTest {
 
     @Test
     void corpusWrites_otherProjectAssigned_acceptedAndOtherProjectUnchanged() {
-        ClassificationWorkflow assigned = ClassificationWorkflow.single("pos").items(2).assign("annotator")
+        ClassificationWorkflow assigned = ClassificationWorkflow.single("pos", "neg").items(2).assign("annotator")
                 .seed(workspace);
         ClassificationWorkflow open = ClassificationWorkflow.single("pos").items(2).seed(workspace);
         CorpusService service = ownerService();

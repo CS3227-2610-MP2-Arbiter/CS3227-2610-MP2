@@ -44,7 +44,8 @@ class AnnotationServiceTest {
     void forCurrentUser_annotatorsSharingASplit_eachSeesOnlyTheirOwn() {
         ClassificationWorkflow shared = ClassificationWorkflow.single("positive", "negative").items(2)
                 .assign("alice", "positive").assign("bob", "negative", "negative").seed(workspace);
-        ClassificationWorkflow bobsOther = ClassificationWorkflow.single("positive").assign("bob").seed(workspace);
+        ClassificationWorkflow bobsOther = ClassificationWorkflow.single("positive", "negative").assign("bob")
+                .seed(workspace);
 
         List<AssignmentProgress> alice = service("alice").forCurrentUser();
         List<AssignmentProgress> bob = service("bob").forCurrentUser();
@@ -67,7 +68,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUser_everyFileAnswered_finished() {
-        ClassificationWorkflow.single("positive").items(2).assign("alice", "positive", "positive").seed(workspace);
+        ClassificationWorkflow.single("positive", "negative").items(2).assign("alice", "positive", "positive")
+                .seed(workspace);
 
         AssignmentProgress alice = service("alice").forCurrentUser().getFirst();
 
@@ -78,18 +80,18 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUser_noAssignments_empty() {
-        ClassificationWorkflow.single("positive").annotator("alice").seed(workspace);
+        ClassificationWorkflow.single("positive", "negative").annotator("alice").seed(workspace);
 
         assertEquals(List.of(), service("alice").forCurrentUser());
     }
 
     @Test
     void forCurrentUser_mixedStatuses_unfinishedFirstThenSubmittedEachInAssignmentOrder() {
-        ClassificationWorkflow finishedFirst = ClassificationWorkflow.single("positive").assign("alice", "positive")
-                .seed(workspace);
-        ClassificationWorkflow started = ClassificationWorkflow.single("positive").items(2)
+        ClassificationWorkflow finishedFirst = ClassificationWorkflow.single("positive", "negative")
                 .assign("alice", "positive").seed(workspace);
-        ClassificationWorkflow untouched = ClassificationWorkflow.single("positive").assign("alice")
+        ClassificationWorkflow started = ClassificationWorkflow.single("positive", "negative").items(2)
+                .assign("alice", "positive").seed(workspace);
+        ClassificationWorkflow untouched = ClassificationWorkflow.single("positive", "negative").assign("alice")
                 .seed(workspace);
 
         List<AssignmentProgress> alice = service("alice").forCurrentUser();
@@ -100,7 +102,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUser_adjudicatorOrSignedOut_rejected() {
-        ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow.single("positive", "negative").assign("alice").seed(workspace);
         AuthService signedOut = workspace.signIn("alice");
         signedOut.logout();
         AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
@@ -112,7 +114,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUser_accountDisabledAfterSignIn_rejected() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         AnnotationService alice = service("alice");
 
         workspace.signInOwner().deactivateAnnotator(flow.annotatorId("alice"));
@@ -122,8 +125,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_firstFileAnswered_nextFileWithItsTextAndPosition() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice", "positive")
-                .seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3)
+                .assign("alice", "positive").seed(workspace);
 
         QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
 
@@ -136,7 +139,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_savedOrderDiffersFromIdentifiers_opensAtFirstFileInSavedOrder() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3).assign("alice")
                 .seed(workspace);
         reverseSplitOrder(flow);
 
@@ -147,8 +150,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_answeredFileLastInSavedOrder_opensAtFirstUnansweredFile() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice", "positive")
-                .seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3)
+                .assign("alice", "positive").seed(workspace);
         // Alice answered item 0, which the reversed order puts last, so the queue opens at the new first file.
         reverseSplitOrder(flow);
 
@@ -160,7 +163,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_restartBeforeAndAfterAnAnswerIsStored_resumesAtFirstUnansweredFile() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2).assign("alice")
                 .seed(workspace);
         long assignmentId = flow.assignmentId("alice");
 
@@ -178,7 +181,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_everyFileAnswered_finishedWithNoFile() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2)
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2)
                 .assign("alice", "positive", "positive").seed(workspace);
 
         QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
@@ -190,8 +193,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_storedAsSubmittedWithAFileLeft_finishedWithoutReopening() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice", "positive")
-                .seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2)
+                .assign("alice", "positive").seed(workspace);
         workspace.store().write(session -> {
             Assignment assignment = session.assignments().findById(flow.assignmentId("alice")).orElseThrow();
             assignment.setStatus(AssignmentStatus.SUBMITTED);
@@ -207,7 +210,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_everyFileAnsweredButNotSubmitted_inconsistentStateRefused() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice", "positive")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice", "positive")
                 .seed(workspace);
         workspace.store().write(session -> {
             Assignment assignment = session.assignments().findById(flow.assignmentId("alice")).orElseThrow();
@@ -222,7 +225,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_anotherAnnotatorsAnswers_doNotMoveThePosition() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(3).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(3).assign("alice")
                 .assign("bob", "positive", "positive").seed(workspace);
 
         QueueView queue = service("alice").forCurrentUser(flow.assignmentId("alice"));
@@ -233,8 +236,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_anotherAnnotatorsAssignment_refusedExactlyLikeAMissingOne() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").assign("bob")
-                .seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative")
+                .assign("alice").assign("bob").seed(workspace);
         AnnotationService alice = service("alice");
 
         long bobs = flow.assignmentId("bob");
@@ -247,7 +250,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_changedSource_errorInsteadOfText() throws IOException {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         Files.writeString(workspace.paths().root().resolve("media/corpus-1/item-1.txt"), "Edited after import");
 
         QueueItem current = service("alice").forCurrentUser(flow.assignmentId("alice")).current();
@@ -259,7 +263,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_missingSource_errorInsteadOfText() throws IOException {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         Files.delete(workspace.paths().root().resolve("media/corpus-1/item-1.txt"));
 
         QueueItem current = service("alice").forCurrentUser(flow.assignmentId("alice")).current();
@@ -291,9 +296,11 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_projectWithoutLabelsYet_unanswerable() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         workspace.store().write(session -> {
             session.labels().deleteById(flow.labelId("positive"));
+            session.labels().deleteById(flow.labelId("negative"));
             return null;
         });
 
@@ -304,7 +311,7 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_opening_writesNothing() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").items(2).assign("alice")
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").items(2).assign("alice")
                 .seed(workspace);
         byte[] before = workspace.dataFileBytes();
 
@@ -315,7 +322,8 @@ class AnnotationServiceTest {
 
     @Test
     void forCurrentUserQueue_adjudicator_rejected() {
-        ClassificationWorkflow flow = ClassificationWorkflow.single("positive").assign("alice").seed(workspace);
+        ClassificationWorkflow flow = ClassificationWorkflow.single("positive", "negative").assign("alice")
+                .seed(workspace);
         AnnotationService owner = new AnnotationService(workspace.store(), workspace.signInOwner(), workspace.paths());
 
         assertThrows(AuthException.class, () -> owner.forCurrentUser(flow.assignmentId("alice")));

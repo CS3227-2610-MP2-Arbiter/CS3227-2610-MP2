@@ -5,6 +5,7 @@ import static arbiter.testing.Records.item;
 import static arbiter.testing.Records.label;
 import static arbiter.testing.Records.membership;
 import static arbiter.testing.Records.project;
+import static arbiter.testing.Records.scaleSettings;
 import static arbiter.testing.Records.settings;
 import static arbiter.testing.Records.split;
 import static arbiter.testing.Records.user;
@@ -16,13 +17,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import arbiter.model.project.Item;
+import arbiter.model.project.Label;
 import arbiter.model.project.Split;
 import arbiter.model.project.TaxonomyKind;
+import arbiter.model.project.TaxonomySettings;
 import arbiter.model.user.User;
 import arbiter.workspace.WorkspacePaths;
 import arbiter.workspace.WorkspaceService;
@@ -121,6 +126,65 @@ class JsonStoreIntegrityTest {
     }
 
     @Test
+    void write_scaleRangeWithOnlyOneEnd_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long project = scaleProject(store, 1, 5);
+
+        assertRangeRejected(store, project, null, 5, "scale range with only one end");
+        assertRangeRejected(store, project, 1, null, "scale range with only one end");
+    }
+
+    @Test
+    void write_scaleRangeMinimumNotBelowMaximum_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long project = scaleProject(store, 1, 5);
+
+        assertRangeRejected(store, project, 3, 3, "scale range minimum not below its maximum");
+        assertRangeRejected(store, project, 4, 3, "scale range minimum not below its maximum");
+    }
+
+    @Test
+    void write_scaleRangeOutsideBounds_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long project = scaleProject(store, 1, 5);
+
+        assertRangeRejected(store, project, -11, 0, "scale range outside its bounds");
+        assertRangeRejected(store, project, 0, 11, "scale range outside its bounds");
+    }
+
+    @Test
+    void write_scaleRangeAtBoundsOrOneApart_committed() {
+        JsonStore store = newStore();
+        long project = scaleProject(store, -10, 10);
+        assertEquals(List.of(-10, 10), range(store, project));
+
+        setRange(store, project, 3, 4);
+
+        assertEquals(List.of(3, 4), range(store, project));
+    }
+
+    @Test
+    void write_labelKeyDuplicateIgnoringCase_rejectedWithoutCommit() {
+        JsonStore store = newStore();
+        long[] projects = store.write(session -> {
+            long first = session.projects().save(project("First")).getId();
+            session.taxonomySettings().save(settings(first));
+            session.labels().save(label(first, "Positive", 1));
+            long second = session.projects().save(project("Second")).getId();
+            session.taxonomySettings().save(settings(second));
+            return new long[] {first, second};
+        });
+
+        JsonStoreException rejected = assertThrows(JsonStoreException.class, () -> store.write(session ->
+                session.labels().save(label(projects[0], "pOSITIVE", 2))));
+        store.write(session -> session.labels().save(label(projects[1], "positive", 1)));
+
+        assertEquals("Invalid workspace data: duplicate label key in a project", rejected.getMessage());
+        assertEquals(List.of("Positive"), keys(store, projects[0]));
+        assertEquals(List.of("positive"), keys(store, projects[1]));
+    }
+
+    @Test
     void delete_itemBeforeAssignment_membershipRemoved() {
         JsonStore store = newStore();
         long[] ids = store.write(session -> {
@@ -214,6 +278,48 @@ class JsonStoreIntegrityTest {
             }
             return ids;
         });
+    }
+
+    /** Stores a SCALE project with this range and returns its identifier. */
+    private static long scaleProject(JsonStore store, int minimum, int maximum) {
+        return store.write(session -> {
+            long project = session.projects().save(project("Scale")).getId();
+            session.taxonomySettings().save(scaleSettings(project, minimum, maximum));
+            return project;
+        });
+    }
+
+    /** Saves this range, either end of which may be unset, over the project's stored one. */
+    private static void setRange(JsonStore store, long project, Integer minimum, Integer maximum) {
+        store.write(session -> {
+            TaxonomySettings settings = session.taxonomySettings().findByProject(project).orElseThrow();
+            settings.setScaleMin(minimum);
+            settings.setScaleMax(maximum);
+            return session.taxonomySettings().save(settings);
+        });
+    }
+
+    /** Returns the project's stored range as its minimum, then its maximum. */
+    private static List<Integer> range(JsonStore store, long project) {
+        TaxonomySettings settings = store.read(session -> session.taxonomySettings().findByProject(project))
+                .orElseThrow();
+        return Arrays.asList(settings.getScaleMin(), settings.getScaleMax());
+    }
+
+    /** Asserts that saving this range is rejected for this reason and keeps the project's stored range. */
+    private static void assertRangeRejected(JsonStore store, long project, Integer minimum, Integer maximum,
+            String reason) {
+        List<Integer> before = range(store, project);
+
+        JsonStoreException rejected = assertThrows(JsonStoreException.class, () ->
+                setRange(store, project, minimum, maximum));
+
+        assertEquals("Invalid workspace data: " + reason, rejected.getMessage());
+        assertEquals(before, range(store, project));
+    }
+
+    private static List<String> keys(JsonStore store, long project) {
+        return store.read(session -> session.labels().listByProject(project).stream().map(Label::getKey).toList());
     }
 
     private static void assign(JsonStore store, long splitId, long annotatorId) {
