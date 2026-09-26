@@ -9,6 +9,7 @@ import arbiter.service.AuthException;
 import arbiter.service.ProjectException;
 import arbiter.service.QueueItem;
 import arbiter.service.QueueView;
+import arbiter.ui.shared.AnnotationEditor;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
 import arbiter.ui.shared.ItemView;
@@ -23,7 +24,8 @@ import javafx.stage.Window;
  * One assignment's queue (#13): the first file without the annotator's answer, in saved split order, or
  * completion once every file is answered.
  *
- * <p>Nothing here moves between files; the queue moves forward only when an answer is submitted (#17).
+ * <p>Under the file, the annotator chooses an answer (#14), and Submit &amp; next is enabled only while it is
+ * valid. Nothing here moves between files; the queue moves forward only when an answer is submitted (#17).
  */
 public final class QueueScreen {
     private final Window owner;
@@ -60,9 +62,26 @@ public final class QueueScreen {
             return Components.page(title, Components.text("You have answered every file in this split."), back);
         }
         QueueItem current = view.current();
-        Node file = current.readable() ? ItemView.of(current.text()) : unreadable(current.failure());
+        Button submit = new Button("Submit & next");
+        submit.setDefaultButton(true);
+        submit.setOnAction(event -> Dialogs.showSuccess(owner, "Submit & next",
+                "Submitting answers is not available yet, so your choice was not saved."));
+        Node file;
+        Node answer;
+        if (current.readable()) {
+            AnnotationEditor editor = new AnnotationEditor(view.taxonomy());
+            // Enabled only while the choice is valid (#14); nothing is stored until submission (#17).
+            submit.disableProperty().bind(editor.answerProperty().isNull());
+            file = ItemView.of(current.text());
+            answer = editor.view();
+        } else {
+            submit.setDisable(true);
+            file = unreadable(current.failure());
+            answer = new VBox();
+        }
         return Components.page(title,
-                Components.text("File " + (assignment.submitted() + 1) + " of " + assignment.total()), file, back);
+                Components.text("File " + (assignment.submitted() + 1) + " of " + assignment.total()), file, answer,
+                submit, back);
     }
 
     /** Explains an unreadable file without naming it, since a file's name can hint at its label. */
