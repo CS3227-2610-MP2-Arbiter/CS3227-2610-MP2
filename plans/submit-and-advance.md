@@ -72,6 +72,7 @@ Non-goals, from [#17]: drafts, autosave, flags, Back, skipping, batch submit, co
 - JDK 25 `./gradlew cleanTest check shadowJar --no-daemon` passed: 380 JUnit tests, with 3 existing case-sensitivity tests skipped on macOS.
 
 - After [#26] merged (PR #83), which refuses a SINGLE project's first assignment until it has two labels, the tests here seed two-label projects. The "no labels yet" test deletes both labels after assignment. No production code changed.
+- After #80's review, `submit` switches over the sealed `Answer` (`LabelChoice` or `Rating`) and checks it with `TaxonomySummary.accepts`, which replaced `Taxonomy`. The two `accepts(Answer)` tests this plan added now live in `TaxonomySummaryTest`, leaving 412 JUnit tests.
 ### Human acceptance checks
 
 These need a seeded workspace until [#26].
