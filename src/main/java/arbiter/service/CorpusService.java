@@ -281,7 +281,7 @@ public final class CorpusService {
     }
 
     /**
-     * Returns a project's taxonomy from this session, for the adjudicator's view and the annotator's queue alike.
+     * Returns a project's taxonomy from this session, for the adjudicator's views and the annotator's queue alike.
      *
      * @throws ProjectException if no project has this identifier
      */
