@@ -12,7 +12,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /**
@@ -60,7 +59,6 @@ public final class AnnotationEditor {
             choice.setUserData(label.getId());
             choice.setWrapText(true);
             choice.setMaxWidth(Double.MAX_VALUE);
-            choice.setMinHeight(Region.USE_PREF_SIZE);
             view.getChildren().add(choice);
             if (label.getDescription() != null && !label.getDescription().isBlank()) {
                 view.getChildren().add(Components.hint(label.getDescription()));

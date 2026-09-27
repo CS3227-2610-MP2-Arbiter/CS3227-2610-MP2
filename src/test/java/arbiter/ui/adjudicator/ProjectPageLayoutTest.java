@@ -34,10 +34,11 @@ import javafx.scene.Scene;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
-/** Checks short-window scrolling for the project, progress and annotator pages (#33). */
+/** Checks short-window scrolling for the project, progress, taxonomy and annotator pages (#33). */
 class ProjectPageLayoutTest {
     private static boolean toolkitStarted;
 
@@ -101,7 +102,8 @@ class ProjectPageLayoutTest {
                 }
                 double splitTopAfterScroll = splits.localToScene(splits.getBoundsInLocal()).getMinY();
                 double splitBottomAfterScroll = splits.localToScene(splits.getBoundsInLocal()).getMaxY();
-                root.resize(800, 900);
+                // Taller than the whole page, so the tables share the spare height.
+                root.resize(800, 1600);
                 root.layout();
                 return new Layout(itemHeight, splitHeight, viewportHeight, contentHeight,
                         splitTopAfterScroll, splitBottomAfterScroll, items.getHeight(), splits.getHeight());
@@ -178,6 +180,40 @@ class ProjectPageLayoutTest {
     }
 
     @Test
+    void taxonomy_shortWindow_descriptionKeepsItsHeight(@TempDir Path temporary) throws Exception {
+        TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
+        ClassificationWorkflow flow = ClassificationWorkflow.single("yes", "no", "maybe", "unsure").items(2)
+                .seed(workspace);
+        AuthService auth = workspace.signInOwner();
+        ProjectSummary summary = new ProjectService(workspace.store(), auth).list().stream()
+                .filter(row -> row.id() == flow.projectId()).findFirst().orElseThrow();
+
+        FutureTask<DescriptionLayout> task = new FutureTask<>(() -> {
+            Stage hiddenOwner = new Stage();
+            try {
+                StackPane page = (StackPane) new TaxonomyView(hiddenOwner,
+                        new CorpusService(workspace.store(), auth, workspace.paths()), summary, () -> { }).content();
+                StackPane root = new StackPane(page);
+                Scene scene = new Scene(root, 520, 320);
+                Styles.apply(scene);
+                root.resize(520, 320);
+                root.applyCss();
+                root.layout();
+                TextArea description = (TextArea) root.lookup(".text-area");
+                return new DescriptionLayout(description.getHeight(),
+                        description.prefHeight(description.getWidth()));
+            } finally {
+                hiddenOwner.close();
+            }
+        });
+        Platform.runLater(task);
+        DescriptionLayout layout = task.get(15, TimeUnit.SECONDS);
+
+        assertTrue(layout.actualHeight() + 1 >= layout.preferredHeight(),
+                "The description box was squeezed below its preferred height: " + layout);
+    }
+
+    @Test
     void queue_narrowWindow_wrappedLabelChoicesKeepTheirHeight(@TempDir Path temporary) throws Exception {
         TestWorkspace workspace = TestWorkspace.create(temporary.resolve("workspace"));
         String[] labels = new String[6];
@@ -229,6 +265,9 @@ class ProjectPageLayoutTest {
 
     private record ProgressLayout(List<Double> tableHeights, double viewportHeight, double contentHeight,
             double annotatorTopAfterScroll, double annotatorBottomAfterScroll) {
+    }
+
+    private record DescriptionLayout(double actualHeight, double preferredHeight) {
     }
 
     private record ChoiceLayout(double actualChoiceHeight, double preferredChoiceHeight,

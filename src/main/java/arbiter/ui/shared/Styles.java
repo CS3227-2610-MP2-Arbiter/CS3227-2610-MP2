@@ -50,15 +50,12 @@ public final class Styles {
     /** The wrapping row of actions on an adjudicator's project page. */
     public static final String PROJECT_ACTIONS = "project-actions";
 
-    /** JavaFX's built-in table class, used for the minimum usable table height. */
-    public static final String TABLE_VIEW = "table-view";
-
     /** One item in a list of cards, such as one of an annotator's assignments. */
     public static final String CARD = "card";
 
     /** Every style class above, each of which has a rule in the stylesheet. */
     public static final List<String> CLASSES = List.of(TOP_BAR, APP_TITLE, NAVIGATION, PAGE_TITLE, HINT, ERROR_TEXT,
-            FORM, FORM_SCROLL, EMPTY_STATE, PAGE, PROJECT_ACTIONS, TABLE_VIEW, CARD);
+            FORM, FORM_SCROLL, EMPTY_STATE, PAGE, PROJECT_ACTIONS, CARD);
 
     private Styles() {
     }
