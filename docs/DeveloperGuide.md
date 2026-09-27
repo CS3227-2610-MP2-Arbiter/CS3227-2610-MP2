@@ -47,7 +47,7 @@ Dependencies point downward only, and neither role package imports the other - t
 
 The roles are two views on one workflow, not two applications. The annotator submits a label or integer scale rating, and the adjudicator consumes those immutable answers to monitor work, settle label disputes and export the result. Two places make the coupling unavoidable:
 
-- **Manual resolution** ([#34]) shows submitted labels side by side, so the adjudicator's read-only view must render the same taxonomy choices the annotators used.
+- **Manual resolution** ([#34]) shows an item's submitted labels together, so the adjudicator's read-only view must render the same taxonomy choices the annotators used.
 - **Adjudicators pick labels too.** Supplying a classification label in [#34] uses the annotator's label picker, recorded as a separate decision rather than an edit.
 
 Building the roles as separate silos would duplicate the classification controls and risk showing or storing the same taxonomy differently. So `AnnotationEditor` and `ItemView` live in `arbiter.ui.shared` and are used by both roles, with a role difference as a mode flag rather than a second implementation. Every rule about the data lives in `arbiter.service`, which both roles call, so no rule is implemented twice with two different answers.
