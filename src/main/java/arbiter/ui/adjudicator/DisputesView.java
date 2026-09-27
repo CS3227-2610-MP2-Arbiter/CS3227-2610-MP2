@@ -83,7 +83,7 @@ final class DisputesView {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         table.setPlaceholder(Components.hint("This project has no disputes."));
         VBox.setVgrow(table, Priority.ALWAYS);
-        content.getChildren().setAll(Components.page(back, Components.pageTitle(title),
+        content.getChildren().setAll(Components.scrollingPage(back, Components.pageTitle(title),
                 Components.hint("A decided file stays listed, and its decision can be replaced."), table));
     }
 

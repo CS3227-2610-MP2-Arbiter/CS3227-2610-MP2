@@ -59,6 +59,15 @@
     -fx-spacing: 12;
 }
 
+.project-actions {
+    -fx-hgap: 12;
+    -fx-vgap: 8;
+}
+
+.table-view {
+    -fx-min-height: 160px;
+}
+
 .card {
     -fx-padding: 12 16 12 16;
     -fx-spacing: 6;

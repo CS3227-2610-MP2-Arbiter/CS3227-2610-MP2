@@ -94,7 +94,7 @@ public final class ProjectsScreen {
                 Components.buttonColumn("Delete", project -> project.assignmentCount() > 0, this::delete)));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(table, Priority.ALWAYS);
-        content.getChildren().setAll(Components.page(Components.pageTitle("Projects"), create,
+        content.getChildren().setAll(Components.scrollingPage(Components.pageTitle("Projects"), create,
                 Components.hint("A project can be deleted only before its first assignment."), table));
     }
 
@@ -157,8 +157,8 @@ public final class ProjectsScreen {
     }
 
     private void open(ProjectSummary project) {
-        content.getChildren().setAll(new ProjectPage(owner, corpus, assignments, resolutions, exports, project,
-                this::showList).content());
+        content.getChildren().setAll(new ProjectPage(owner, projects, corpus, assignments, resolutions, exports,
+                project, this::showList).content());
     }
 
     private static RadioButton choice(ToggleGroup group, Enum<?> value) {

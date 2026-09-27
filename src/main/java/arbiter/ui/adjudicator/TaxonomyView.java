@@ -88,7 +88,7 @@ final class TaxonomyView {
         } else {
             addRange(controls, taxonomy);
         }
-        content.getChildren().setAll(Components.page(controls.toArray(Node[]::new)));
+        content.getChildren().setAll(Components.scrollingPage(controls.toArray(Node[]::new)));
     }
 
     /** Adds the labels table and, before the freeze, the form that adds or edits a label. */

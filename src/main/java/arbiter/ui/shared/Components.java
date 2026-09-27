@@ -61,6 +61,7 @@ public final class Components {
     public static ScrollPane scrollingPage(Node... controls) {
         ScrollPane scroll = styled(new ScrollPane(page(controls)), Styles.FORM_SCROLL);
         scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
         return scroll;
     }
 
