@@ -138,11 +138,15 @@ public final class ProjectService {
         TaxonomyKind kind = session.taxonomySettings().findByProject(id).orElseThrow().getKind();
         List<Item> items = session.items().listByProject(id);
         List<Split> splits = session.splits().listByProject(id);
-        long unresolved = items.stream()
+        return new ProjectSummary(id, project.getName(), kind, project.getOutputFormat(), items.size(),
+                splits.size(), assignmentCount(session, splits), unresolvedCount(session, items));
+    }
+
+    /** Counts the items that have no resolution in this session, as the project list and the export report them. */
+    static long unresolvedCount(RepositorySession session, List<Item> items) {
+        return items.stream()
                 .filter(item -> session.resolutions().findByItem(item.getId()).isEmpty())
                 .count();
-        return new ProjectSummary(id, project.getName(), kind, project.getOutputFormat(), items.size(),
-                splits.size(), assignmentCount(session, splits), unresolved);
     }
 
     private static long assignmentCount(RepositorySession session, List<Split> splits) {

@@ -169,7 +169,13 @@ public final class JsonStore {
         }
     }
 
-    private static void publishAtomically(Path target, byte[] bytes) throws IOException {
+    /**
+     * Replaces a file with these bytes, written in full to a temporary file beside it and then moved over it in one
+     * atomic move, so a reader sees the old file or the new one, never part of one.
+     *
+     * @throws IOException if the bytes cannot be written or the file cannot be replaced; the file is then unchanged
+     */
+    public static void publishAtomically(Path target, byte[] bytes) throws IOException {
         Path temporary = Files.createTempFile(target.getParent(), ".arbiter-", ".tmp");
         try {
             try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.WRITE,
