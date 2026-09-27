@@ -13,6 +13,7 @@ import arbiter.service.CorpusService;
 import arbiter.service.ProjectException;
 import arbiter.service.ProjectService;
 import arbiter.service.ProjectSummary;
+import arbiter.service.ResolutionService;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
 import arbiter.ui.shared.ErrorMessages;
@@ -41,15 +42,17 @@ public final class ProjectsScreen {
     private final ProjectService projects;
     private final CorpusService corpus;
     private final AssignmentService assignments;
+    private final ResolutionService resolutions;
     private final StackPane content = new StackPane();
 
     /** Creates the screen, whose dialogs belong to {@code owner}. */
     public ProjectsScreen(Window owner, ProjectService projects, CorpusService corpus,
-            AssignmentService assignments) {
+            AssignmentService assignments, ResolutionService resolutions) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.projects = Objects.requireNonNull(projects, "projects");
         this.corpus = Objects.requireNonNull(corpus, "corpus");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
+        this.resolutions = Objects.requireNonNull(resolutions, "resolutions");
     }
 
     /** Returns the screen's content, showing the current project list. */
@@ -151,7 +154,8 @@ public final class ProjectsScreen {
     }
 
     private void open(ProjectSummary project) {
-        content.getChildren().setAll(new ProjectPage(owner, corpus, assignments, project, this::showList).content());
+        content.getChildren().setAll(new ProjectPage(owner, corpus, assignments, resolutions, project,
+                this::showList).content());
     }
 
     private static RadioButton choice(ToggleGroup group, Enum<?> value) {
