@@ -135,7 +135,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 - JavaFX is used under the [GPL v2 with the Classpath Exception](https://openjfx.io/).
 - JUnit 5 is used under the [Eclipse Public License 2.0](https://junit.org/junit5/).
 - Gradle and the Shadow plugin produce the release jar.
-- Jackson provides JSON serialization for the workspace snapshot.
+- Jackson provides JSON serialization for the workspace snapshot, and writes the JSON and CSV exports.
 - The skill-and-workflow structure was developed by this team for this project; the per-task skills in `.codex/skills/` are our own.
 
 [Back to home](index.md)
