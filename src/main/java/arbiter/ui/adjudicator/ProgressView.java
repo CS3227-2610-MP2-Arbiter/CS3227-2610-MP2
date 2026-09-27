@@ -2,7 +2,7 @@ package arbiter.ui.adjudicator;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.LongConsumer;
+import java.util.function.BiConsumer;
 
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.project.TaxonomyKind;
@@ -10,6 +10,7 @@ import arbiter.service.AuthException;
 import arbiter.service.ProjectException;
 import arbiter.service.ProjectProgress;
 import arbiter.service.ProjectService;
+import arbiter.service.SplitSummary;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
 import javafx.collections.FXCollections;
@@ -27,12 +28,20 @@ final class ProgressView {
     private final ProjectService projects;
     private final long projectId;
     private final Runnable showPage;
-    private final LongConsumer showAssign;
+    private final BiConsumer<SplitSummary, Boolean> showAssign;
     private final Runnable showDisputes;
     private final StackPane content = new StackPane();
 
+    /**
+     * Creates the view for one project's progress.
+     *
+     * @param showPage shows the project page again, reloaded
+     * @param showAssign opens the form that assigns annotators to a split, given whether the split's project was
+     *     frozen (rule 3) when this view loaded
+     * @param showDisputes opens the project's dispute list
+     */
     ProgressView(Window owner, ProjectService projects, long projectId, Runnable showPage,
-            LongConsumer showAssign, Runnable showDisputes) {
+            BiConsumer<SplitSummary, Boolean> showAssign, Runnable showDisputes) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.projects = Objects.requireNonNull(projects, "projects");
         this.projectId = projectId;
@@ -65,7 +74,8 @@ final class ProgressView {
         disputes.setDisable(progress.kind() != TaxonomyKind.SINGLE);
         disputes.setOnAction(event -> showDisputes.run());
 
-        TableView<ProjectProgress.SplitProgress> splits = splitTable(progress.splits());
+        boolean frozen = progress.splits().stream().anyMatch(split -> split.summary().assigned());
+        TableView<ProjectProgress.SplitProgress> splits = splitTable(progress.splits(), frozen);
         TableView<ProjectProgress.AssignmentProgressRow> assignments = assignmentTable();
         splits.getSelectionModel().selectedItemProperty().addListener((ignored, previous, selected) ->
                 assignments.setItems(FXCollections.observableArrayList(
@@ -86,17 +96,17 @@ final class ProgressView {
                 Components.text("Annotators"), annotatorTable(progress.annotators())));
     }
 
-    private TableView<ProjectProgress.SplitProgress> splitTable(List<ProjectProgress.SplitProgress> rows) {
+    /** Returns the splits table, where {@code frozen} says whether the project has had its first assignment. */
+    private TableView<ProjectProgress.SplitProgress> splitTable(List<ProjectProgress.SplitProgress> rows,
+            boolean frozen) {
         TableView<ProjectProgress.SplitProgress> table = new TableView<>(FXCollections.observableArrayList(rows));
         table.getColumns().setAll(List.of(
-                Components.wrappingColumn("Split", ProjectProgress.SplitProgress::name),
-                Components.wrappingColumn("Files", split -> Long.toString(split.itemCount())),
-                Components.wrappingColumn("Places", split -> split.annotationsPerItem() == null
-                        ? "Not assigned yet" : split.assignedPlaces() + " of "
-                                + split.annotationsPerItem() + " (" + split.vacantPlaces() + " vacant)"),
+                Components.wrappingColumn("Split", split -> split.summary().name()),
+                Components.wrappingColumn("Files", split -> Integer.toString(split.summary().itemIds().size())),
+                Components.wrappingColumn("Places", split -> places(split.summary())),
                 Components.wrappingColumn("Answers", split -> count(split.submitted(), split.total())),
-                Components.buttonColumn("Assign", split -> split.annotationsPerItem() != null
-                        && split.vacantPlaces() == 0, split -> showAssign.accept(split.splitId()))));
+                Components.buttonColumn("Assign", split -> split.summary().full(),
+                        split -> showAssign.accept(split.summary(), frozen))));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         table.setPlaceholder(Components.hint("No splits are generated yet."));
         table.setPrefHeight(240);
@@ -127,6 +137,12 @@ final class ProgressView {
         table.setPlaceholder(Components.hint("No annotators are assigned yet."));
         table.setPrefHeight(240);
         return table;
+    }
+
+    /** Describes a split's taken and vacant places (rule 19), such as "2 of 3 (1 vacant)". */
+    private static String places(SplitSummary split) {
+        return split.assigned() ? split.assignmentCount() + " of " + split.annotationsPerItem() + " ("
+                + split.vacantPlaces() + " vacant)" : "Not assigned yet";
     }
 
     private static String count(long submitted, long total) {

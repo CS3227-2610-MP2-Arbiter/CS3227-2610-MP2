@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongConsumer;
+import java.util.function.BiConsumer;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,6 +24,7 @@ import arbiter.service.ExportService;
 import arbiter.service.ProjectService;
 import arbiter.service.ProjectSummary;
 import arbiter.service.ResolutionService;
+import arbiter.service.SplitSummary;
 import arbiter.testing.ClassificationWorkflow;
 import arbiter.testing.TestWorkspace;
 import arbiter.ui.annotator.QueueScreen;
@@ -138,7 +139,7 @@ class ProjectPageLayoutTest {
             Stage hiddenOwner = new Stage();
             try {
                 Runnable noNavigation = () -> { };
-                LongConsumer noAssignment = ignored -> { };
+                BiConsumer<SplitSummary, Boolean> noAssignment = (split, frozen) -> { };
                 StackPane page = (StackPane) new ProgressView(hiddenOwner, projects, flow.projectId(),
                         noNavigation, noAssignment, noNavigation).content();
                 StackPane root = new StackPane(page);

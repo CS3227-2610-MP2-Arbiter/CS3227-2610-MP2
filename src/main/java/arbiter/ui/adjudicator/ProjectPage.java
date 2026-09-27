@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import arbiter.data.json.JsonStoreException;
@@ -168,7 +169,8 @@ final class ProjectPage {
                 Components.column("Files", split -> split.itemIds().size()),
                 Components.column("Annotators", split -> split.assigned()
                         ? split.assignmentCount() + " of " + split.annotationsPerItem() : "None"),
-                Components.buttonColumn("Assign", SplitSummary::full, split -> showAssignForm(split, frozen)),
+                Components.buttonColumn("Assign", SplitSummary::full, split -> showAssignForm(split, frozen,
+                        this::show)),
                 Components.buttonColumn("Delete", SplitSummary::assigned, this::deleteSplit)));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         table.setPlaceholder(Components.hint("No splits are generated yet."));
@@ -176,17 +178,17 @@ final class ProjectPage {
         return table;
     }
 
-    /** Shows the form that assigns annotators to a split, where {@code frozen} is as the page loaded it. */
-    private void showAssignForm(SplitSummary split, boolean frozen) {
-        showAssignForm(split, frozen, this::show);
-    }
-
+    /**
+     * Shows the form that assigns annotators to a split, where {@code frozen} is as the screen opening it loaded it.
+     *
+     * @param returnTo shows that screen again, reloaded
+     */
     private void showAssignForm(SplitSummary split, boolean frozen, Runnable returnTo) {
         AssignmentOptions options;
         try {
             options = assignments.options(split.id());
         } catch (ProjectException e) {
-            // The page was out of date, so the reload below shows why.
+            // The screen was out of date, so reloading it shows why.
             Dialogs.showError(owner, OPEN_ASSIGN_FAILED, e);
             returnTo.run();
             return;
@@ -199,30 +201,15 @@ final class ProjectPage {
     }
 
     private void showProgress() {
-        content.getChildren().setAll(new ProgressView(owner, projects, project.id(), this::show,
-                this::showAssignFromProgress, () -> showDisputes(this::showProgress)).content());
+        BiConsumer<SplitSummary, Boolean> assign = (split, frozen) -> showAssignForm(split, frozen, this::showProgress);
+        Runnable disputes = () -> showDisputes(this::showProgress);
+        content.getChildren().setAll(new ProgressView(owner, projects, project.id(), this::show, assign, disputes)
+                .content());
     }
 
+    /** Shows the project's dispute list, whose Back runs {@code returnTo}. */
     private void showDisputes(Runnable returnTo) {
         content.getChildren().setAll(new DisputesView(owner, resolutions, project, returnTo).content());
-    }
-
-    private void showAssignFromProgress(long splitId) {
-        List<SplitSummary> splits;
-        try {
-            splits = corpus.listSplits(project.id());
-        } catch (AuthException | JsonStoreException e) {
-            Dialogs.showError(owner, OPEN_ASSIGN_FAILED, e);
-            return;
-        }
-        SplitSummary selected = splits.stream().filter(split -> split.id() == splitId).findFirst().orElse(null);
-        if (selected == null) {
-            Dialogs.showError(owner, OPEN_ASSIGN_FAILED, new ProjectException("This split no longer exists"));
-            showProgress();
-            return;
-        }
-        boolean frozen = splits.stream().anyMatch(SplitSummary::assigned);
-        showAssignForm(selected, frozen, this::showProgress);
     }
 
     /**

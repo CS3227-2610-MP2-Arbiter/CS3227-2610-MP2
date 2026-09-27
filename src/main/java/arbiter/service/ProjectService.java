@@ -177,15 +177,15 @@ public final class ProjectService {
     }
 
     private static ProjectProgress.SplitProgress summarizeSplit(RepositorySession session, Split split) {
-        long itemCount = session.splitItems().listBySplit(split.getId()).size();
+        SplitSummary summary = CorpusService.summarize(session, split);
+        long itemCount = summary.itemIds().size();
         List<ProjectProgress.AssignmentProgressRow> assignments = session.assignments().listBySplit(split.getId())
                 .stream().sorted(Comparator.comparing(Assignment::getId))
                 .map(assignment -> summarizeAssignment(session, split, assignment, itemCount))
                 .toList();
         long submitted = assignments.stream().mapToLong(ProjectProgress.AssignmentProgressRow::submitted).sum();
         long total = itemCount * assignments.size();
-        return new ProjectProgress.SplitProgress(split.getId(), split.getName(), itemCount,
-                split.getAnnotationsPerItem(), assignments.size(), submitted, total, assignments);
+        return new ProjectProgress.SplitProgress(summary, submitted, total, assignments);
     }
 
     private static ProjectProgress.AssignmentProgressRow summarizeAssignment(RepositorySession session, Split split,

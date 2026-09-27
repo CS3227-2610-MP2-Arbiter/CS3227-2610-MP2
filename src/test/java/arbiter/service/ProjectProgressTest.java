@@ -66,11 +66,11 @@ class ProjectProgressTest {
         assertEquals(0, progress.unresolvedDisputeCount());
         assertTrue(progress.annotators().isEmpty());
         ProjectProgress.SplitProgress split = progress.splits().getFirst();
-        assertEquals(flow.splitId(), split.splitId());
-        assertEquals(2, split.itemCount());
-        assertNull(split.annotationsPerItem());
-        assertEquals(0, split.assignedPlaces());
-        assertEquals(0, split.vacantPlaces());
+        assertEquals(flow.splitId(), split.summary().id());
+        assertEquals(2, split.summary().itemIds().size());
+        assertNull(split.summary().annotationsPerItem());
+        assertEquals(0, split.summary().assignmentCount());
+        assertNull(split.summary().vacantPlaces());
         assertEquals(0, split.total());
         assertTrue(split.assignments().isEmpty());
         assertArrayEquals(before, workspace.dataFileBytes());
@@ -100,11 +100,11 @@ class ProjectProgressTest {
         assertEquals(2, progress.splits().size());
 
         ProjectProgress.SplitProgress first = progress.splits().getFirst();
-        assertEquals(flow.splitId(), first.splitId());
-        assertEquals(10, first.itemCount());
-        assertEquals(Integer.valueOf(3), first.annotationsPerItem());
-        assertEquals(2, first.assignedPlaces());
-        assertEquals(1, first.vacantPlaces());
+        assertEquals(flow.splitId(), first.summary().id());
+        assertEquals(10, first.summary().itemIds().size());
+        assertEquals(Integer.valueOf(3), first.summary().annotationsPerItem());
+        assertEquals(2, first.summary().assignmentCount());
+        assertEquals(Integer.valueOf(1), first.summary().vacantPlaces());
         assertEquals(13, first.submitted());
         assertEquals(20, first.total());
         assertEquals(AssignmentStatus.IN_PROGRESS, assignment(first, flow.annotatorId("alice")).status());
@@ -114,10 +114,10 @@ class ProjectProgressTest {
         assertEquals(10, assignment(first, flow.annotatorId("bob")).submitted());
 
         ProjectProgress.SplitProgress second = progress.splits().get(1);
-        assertEquals(secondSplit, second.splitId());
-        assertEquals(2, second.itemCount());
-        assertEquals(2, second.assignedPlaces());
-        assertEquals(0, second.vacantPlaces());
+        assertEquals(secondSplit, second.summary().id());
+        assertEquals(2, second.summary().itemIds().size());
+        assertEquals(2, second.summary().assignmentCount());
+        assertEquals(Integer.valueOf(0), second.summary().vacantPlaces());
         assertEquals(0, second.submitted());
         assertEquals(4, second.total());
         assertEquals(AssignmentStatus.NOT_STARTED, assignment(second, flow.annotatorId("alice")).status());

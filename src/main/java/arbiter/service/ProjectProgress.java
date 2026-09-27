@@ -16,17 +16,12 @@ public record ProjectProgress(long projectId, String projectName, TaxonomyKind k
         annotators = List.copyOf(annotators);
     }
 
-    /** Progress on one split, with its saved k or null before its first assignment. */
-    public record SplitProgress(long splitId, String name, long itemCount, Integer annotationsPerItem,
-            int assignedPlaces, long submitted, long total, List<AssignmentProgressRow> assignments) {
+    /** Progress on one split, with the split as the project page summarizes it, including its k and places. */
+    public record SplitProgress(SplitSummary summary, long submitted, long total,
+            List<AssignmentProgressRow> assignments) {
         /** Keeps assignment rows from being changed after the snapshot is returned. */
         public SplitProgress {
             assignments = List.copyOf(assignments);
-        }
-
-        /** Returns unfilled k places; an unset k has no known number of places yet. */
-        public int vacantPlaces() {
-            return annotationsPerItem == null ? 0 : annotationsPerItem - assignedPlaces;
         }
     }
 
