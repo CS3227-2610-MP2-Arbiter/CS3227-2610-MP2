@@ -1,22 +1,27 @@
 package arbiter.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
 import arbiter.data.json.JsonStore;
 import arbiter.data.json.RepositorySession;
+import arbiter.model.project.Assignment;
 import arbiter.model.project.Item;
 import arbiter.model.project.OutputFormat;
 import arbiter.model.project.Project;
 import arbiter.model.project.Split;
 import arbiter.model.project.TaxonomyKind;
 import arbiter.model.project.TaxonomySettings;
+import arbiter.model.user.User;
 
 /**
- * Creates, lists and deletes projects (#24, #30).
+ * Creates, lists and deletes projects (#24, #30), and reads adjudicator progress (#33).
  *
  * <p>Every method first requires the signed-in adjudicator through {@link AuthService#requireAdjudicator},
  * so anyone else gets its {@link AuthException}. Nothing here changes a project's taxonomy kind or output
@@ -92,6 +97,18 @@ public final class ProjectService {
     }
 
     /**
+     * Returns #33's adjudicator-only progress from one repository snapshot. The answer denominator covers only
+     * assigned split-item pairs; answers from disabled accounts remain counted.
+     *
+     * @throws AuthException if the caller is not the signed-in adjudicator
+     * @throws ProjectException if no project has this identifier
+     */
+    public ProjectProgress progress(long projectId) {
+        auth.requireAdjudicator();
+        return store.read(session -> readProgress(session, projectId));
+    }
+
+    /**
      * Deletes a project and every stored record it owns in one committed action, leaving its source files
      * and every account untouched (rule 5).
      *
@@ -142,6 +159,57 @@ public final class ProjectService {
                 splits.size(), assignmentCount(session, splits), unresolvedCount(session, items));
     }
 
+    private static ProjectProgress readProgress(RepositorySession session, long projectId) {
+        Project project = session.projects().findById(projectId)
+                .orElseThrow(() -> new ProjectException("This project no longer exists"));
+        TaxonomyKind kind = session.taxonomySettings().findByProject(projectId).orElseThrow().getKind();
+        List<Item> items = session.items().listByProject(projectId);
+        List<ProjectProgress.SplitProgress> splits = session.splits().listByProject(projectId).stream()
+                .sorted(Comparator.comparing(Split::getId))
+                .map(split -> summarizeSplit(session, split))
+                .toList();
+        long submitted = splits.stream().mapToLong(ProjectProgress.SplitProgress::submitted).sum();
+        long total = splits.stream().mapToLong(ProjectProgress.SplitProgress::total).sum();
+        long disputes = kind == TaxonomyKind.SINGLE ? items.stream()
+                .filter(item -> ResolutionService.isUnresolvedDispute(session, item.getId())).count() : 0;
+        return new ProjectProgress(projectId, project.getName(), kind, items.size(), submitted, total,
+                unresolvedCount(session, items), disputes, splits, summarizeAnnotators(splits));
+    }
+
+    private static ProjectProgress.SplitProgress summarizeSplit(RepositorySession session, Split split) {
+        long itemCount = session.splitItems().listBySplit(split.getId()).size();
+        List<ProjectProgress.AssignmentProgressRow> assignments = session.assignments().listBySplit(split.getId())
+                .stream().sorted(Comparator.comparing(Assignment::getId))
+                .map(assignment -> summarizeAssignment(session, split, assignment, itemCount))
+                .toList();
+        long submitted = assignments.stream().mapToLong(ProjectProgress.AssignmentProgressRow::submitted).sum();
+        long total = itemCount * assignments.size();
+        return new ProjectProgress.SplitProgress(split.getId(), split.getName(), itemCount,
+                split.getAnnotationsPerItem(), assignments.size(), submitted, total, assignments);
+    }
+
+    private static ProjectProgress.AssignmentProgressRow summarizeAssignment(RepositorySession session, Split split,
+            Assignment assignment, long itemCount) {
+        User annotator = session.users().findById(assignment.getAnnotatorId()).orElseThrow();
+        long submitted = session.annotations().listByAssignment(assignment.getId()).size();
+        return new ProjectProgress.AssignmentProgressRow(assignment.getId(), split.getId(), split.getName(),
+                annotator.getId(), annotator.getUsername(), annotator.getAccountStatus(), assignment.getStatus(),
+                submitted, itemCount);
+    }
+
+    private static List<ProjectProgress.AnnotatorProgress> summarizeAnnotators(
+            List<ProjectProgress.SplitProgress> splits) {
+        Map<Long, List<ProjectProgress.AssignmentProgressRow>> byAnnotator = new LinkedHashMap<>();
+        for (ProjectProgress.SplitProgress split : splits) {
+            for (ProjectProgress.AssignmentProgressRow assignment : split.assignments()) {
+                byAnnotator.computeIfAbsent(assignment.annotatorId(), ignored -> new ArrayList<>()).add(assignment);
+            }
+        }
+        return byAnnotator.entrySet().stream()
+                .map(entry -> summarizeAnnotator(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
     /** Counts the items that have no resolution in this session, as the project list and the export report them. */
     static long unresolvedCount(RepositorySession session, List<Item> items) {
         return items.stream()
@@ -151,5 +219,13 @@ public final class ProjectService {
 
     private static long assignmentCount(RepositorySession session, List<Split> splits) {
         return splits.stream().mapToLong(split -> session.assignments().listBySplit(split.getId()).size()).sum();
+    }
+
+    private static ProjectProgress.AnnotatorProgress summarizeAnnotator(long id,
+            List<ProjectProgress.AssignmentProgressRow> assignments) {
+        ProjectProgress.AssignmentProgressRow first = assignments.getFirst();
+        long submitted = assignments.stream().mapToLong(ProjectProgress.AssignmentProgressRow::submitted).sum();
+        long total = assignments.stream().mapToLong(ProjectProgress.AssignmentProgressRow::total).sum();
+        return new ProjectProgress.AnnotatorProgress(id, first.username(), first.accountStatus(), submitted, total);
     }
 }
