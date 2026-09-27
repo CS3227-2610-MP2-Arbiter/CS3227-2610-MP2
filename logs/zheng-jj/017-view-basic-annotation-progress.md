@@ -1,6 +1,6 @@
 # View basic annotation progress
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -25,7 +25,8 @@ Status: Awaiting human verification.
 - Not verified: the running app. The plan lists two human checks.
 - The owner approved the plan and delivery on 26 September 2026.
 - The owner approved delivery of the review fix on 26 September 2026.
-- Pending: human acceptance, teammate review and CI.
+- Whimsyturtle approved PR #82, and it merged on 26 September 2026. The in-app checks listed in the plan were not recorded separately.
+- The owner marked this summary human verified on 27 September 2026.
 
 [#12]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/12
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
