@@ -2,7 +2,7 @@
 
 **Issue:** [#33] - Basic project progress dashboard
 **Branch:** `feat/project-progress`, from `main` at `4bb3b05`
-**Status:** Implemented and accepted by the human; delivery pending.
+**Status:** Implemented and accepted by the human; PR [#89] ready for review.
 
 The behavior and exclusions live in [#33]. This plan records the implementation choice and verification, using rules 1, 2, 13 and 19 in [UserFlows](../docs/UserFlows.md#3-rules-both-tracks-share).
 
@@ -36,8 +36,7 @@ Add a read-only **Progress** view on each adjudicator project page. Its project 
 - Automated verification passed under JDK 25: offline `check shadowJar` completed with 459 tests passed, six existing platform skips, clean Checkstyle reports and a rebuilt jar. All eight focused progress tests and three JavaFX layout regressions passed. See the [task log](../logs/Whimsyturtle/027-monitor-basic-project-progress.md) for the detailed run record.
 - During acceptance, the project page's file and split tables collapsed at a small window height. The affected table pages now scroll, tables retain usable height, and wrapped annotation choices retain their full height. The task log records the reproduction.
 - The owner requested a compact project-page action row. **Taxonomy**, **Progress**, **Export** and **Disputes** now share a wrapping row, which was included in human acceptance testing.
-- The human reported acceptance testing passed on 27 September 2026. The User Guide and architecture context were updated after acceptance. Their edits remain uncommitted by request.
-- Draft PR [#89] contains the pushed implementation; the documentation, plan and log updates are local and outside that PR until committed.
+- The human reported acceptance testing passed on 27 September 2026. The User Guide, architecture context, plan and log updates were included in commit `53589d9` on PR [#89].
 
 [#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
 [#89]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/pull/89
