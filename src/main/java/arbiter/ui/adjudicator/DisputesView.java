@@ -27,8 +27,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 /**
- * The view on a SINGLE project's page that lists its disputes and the items the adjudicator has decided, and
- * compares one item's anonymous answers so a decision can be saved or replaced (#34).
+ * The view, opened from a SINGLE project's page or its progress view, that lists its disputes and the items the
+ * adjudicator has decided, and compares one item's anonymous answers so a decision can be saved or replaced (#34).
  */
 final class DisputesView {
     private static final String LOAD_FAILED = "The disputes could not be loaded";
@@ -38,19 +38,19 @@ final class DisputesView {
     private final Window owner;
     private final ResolutionService resolutions;
     private final ProjectSummary project;
-    private final Runnable showPage;
+    private final Runnable returnTo;
     private final StackPane content = new StackPane();
 
     /**
      * Creates the view for a project as the project list showed it.
      *
-     * @param showPage shows the project page again, reloaded
+     * @param returnTo shows the screen that opened this view again, reloaded
      */
-    DisputesView(Window owner, ResolutionService resolutions, ProjectSummary project, Runnable showPage) {
+    DisputesView(Window owner, ResolutionService resolutions, ProjectSummary project, Runnable returnTo) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.resolutions = Objects.requireNonNull(resolutions, "resolutions");
         this.project = Objects.requireNonNull(project, "project");
-        this.showPage = Objects.requireNonNull(showPage, "showPage");
+        this.returnTo = Objects.requireNonNull(returnTo, "returnTo");
     }
 
     /** Returns the view's content, showing the project's current dispute list. */
@@ -61,7 +61,7 @@ final class DisputesView {
 
     private void show() {
         Button back = new Button("Back");
-        back.setOnAction(event -> showPage.run());
+        back.setOnAction(event -> returnTo.run());
         String title = "Disputes in " + project.name();
         List<DisputeSummary> disputes;
         try {
