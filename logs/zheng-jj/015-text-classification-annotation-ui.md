@@ -1,6 +1,6 @@
 # Text classification annotation UI
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
@@ -34,7 +34,8 @@ Status: Awaiting human verification.
 - Not verified: the editor in a running app, which needs [#26] or a seeded workspace. The plan lists four human checks.
 - The owner approved the plan and delivery on 26 September 2026.
 - The owner approved delivery of the review fixes on 26 September 2026.
-- Pending: human acceptance, teammate review and CI.
+- Whimsyturtle approved PR #80, and it merged on 26 September 2026. The in-app checks listed in the plan were not recorded separately.
+- The owner marked this summary human verified on 27 September 2026.
 
 [#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
 [#14]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/14
