@@ -84,6 +84,22 @@ run {
     standardInput = System.in
 }
 
+// The release: the jar and its run scripts in one folder, zipped (#42).
+tasks.register('releaseZip', Zip) {
+    description = 'Packages the release jar with its run scripts as build/distributions/arbiter.zip.'
+    group = 'distribution'
+    archiveFileName = 'arbiter.zip'
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+    into('arbiter') {
+        from(tasks.named('shadowJar'))
+        from('scripts') {
+            filePermissions {
+                unix('rwxr-xr-x')
+            }
+        }
+    }
+}
+
 tasks.register('seedDemo', JavaExec) {
     description = 'Seeds a new demo workspace for the smoke checklist (docs/SmokeChecklist.md).'
     group = 'application'
