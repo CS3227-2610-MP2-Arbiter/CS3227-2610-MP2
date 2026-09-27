@@ -24,6 +24,7 @@ Status: Awaiting human verification.
 - Every issue reference in the guide has a matching link definition, and every image path exists.
 - Not run locally: the Jekyll build, which is not installed here. The Pages workflow builds the site on the pull request.
 - The owner approved delivery, and a review request, on 26 September 2026.
+- On 28 September 2026 the owner noted that a later merge (#89) had changed the shared page layout and the screenshots might be stale. They were re-rendered from `main` at `6db6fc6` with the same program and came out byte-identical to the committed images, so none changed. The layout change only lets a page's table take spare height, and the annotator screens have none.
 - Pending: human acceptance (comparing the screenshots with the running app), teammate review and the Pages build.
 
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
