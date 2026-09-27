@@ -15,6 +15,8 @@ import arbiter.service.AssignmentOptions;
 import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.CorpusService;
+import arbiter.service.ExportService;
+import arbiter.service.ExportSummary;
 import arbiter.service.ProjectException;
 import arbiter.service.ProjectSummary;
 import arbiter.service.ResolutionService;
@@ -38,8 +40,8 @@ import javafx.stage.Window;
 
 /**
  * One project's page, where its files are registered and unregistered and its taxonomy is set up before its first
- * assignment, its splits are generated and deleted, annotators are assigned to them, and its disputes are
- * resolved.
+ * assignment, its splits are generated and deleted, annotators are assigned to them, its disputes are resolved,
+ * and its dataset is exported.
  */
 final class ProjectPage {
     private static final String REGISTER_FAILED = "The files could not be registered";
@@ -47,11 +49,13 @@ final class ProjectPage {
     private static final String GENERATE_FAILED = "The splits could not be generated";
     private static final String DELETE_SPLIT_FAILED = "The split could not be deleted";
     private static final String OPEN_ASSIGN_FAILED = "The annotators could not be loaded";
+    private static final String EXPORT_FAILED = "The project could not be exported";
 
     private final Window owner;
     private final CorpusService corpus;
     private final AssignmentService assignments;
     private final ResolutionService resolutions;
+    private final ExportService exports;
     private final ProjectSummary project;
     private final Runnable showList;
     private final StackPane content = new StackPane();
@@ -62,11 +66,12 @@ final class ProjectPage {
      * @param showList shows the project list again
      */
     ProjectPage(Window owner, CorpusService corpus, AssignmentService assignments, ResolutionService resolutions,
-            ProjectSummary project, Runnable showList) {
+            ExportService exports, ProjectSummary project, Runnable showList) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.corpus = Objects.requireNonNull(corpus, "corpus");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
         this.resolutions = Objects.requireNonNull(resolutions, "resolutions");
+        this.exports = Objects.requireNonNull(exports, "exports");
         this.project = Objects.requireNonNull(project, "project");
         this.showList = Objects.requireNonNull(showList, "showList");
     }
@@ -101,6 +106,8 @@ final class ProjectPage {
         disputes.setDisable(!single);
         disputes.setOnAction(event -> content.getChildren().setAll(new DisputesView(owner, resolutions, project,
                 this::show).content()));
+        Button export = new Button("Export");
+        export.setOnAction(event -> exportDataset());
         Button add = new Button("Add files...");
         add.setDisable(frozen);
         add.setOnAction(event -> addFiles());
@@ -110,7 +117,8 @@ final class ProjectPage {
         Label error = Components.errorText();
         Button generate = new Button("Generate splits");
         generate.setOnAction(event -> generateSplits(itemsPerSplit.getText(), error));
-        content.getChildren().setAll(Components.page(back, Components.pageTitle(project.name()), taxonomy, disputes,
+        content.getChildren().setAll(Components.page(back, Components.pageTitle(project.name()), taxonomy, export,
+                disputes,
                 Components.hint(single ? "Disputes lists the files whose answers have no majority label, for you to "
                         + "decide." : "A scale project has no disputes, because its ratings always resolve to their "
                         + "mean."), add,
@@ -292,5 +300,37 @@ final class ProjectPage {
             return;
         }
         commit(owner, DELETE_SPLIT_FAILED, () -> corpus.deleteSplit(split.id()), this::show);
+    }
+
+    /** Previews the project's export, and writes it once the adjudicator confirms (#37). */
+    private void exportDataset() {
+        ExportSummary preview;
+        try {
+            preview = exports.preview(project.id());
+        } catch (ProjectException | AuthException | JsonStoreException e) {
+            // Nothing changed, so the page is still current, and reloading would likely report this again.
+            Dialogs.showError(owner, EXPORT_FAILED, e);
+            return;
+        }
+        boolean confirmed = Dialogs.confirm(owner, "Export " + project.name() + "?", "The export will list "
+                + describeCounts(preview) + ". It will be written to " + preview.file()
+                + ", replacing any earlier export.", "Export");
+        if (!confirmed) {
+            return;
+        }
+        try {
+            ExportSummary written = exports.export(project.id());
+            Dialogs.showSuccess(owner, "Project exported", "The export lists " + describeCounts(written)
+                    + ". It was written to " + written.file() + ".");
+        } catch (ProjectException | SourceException | AuthException | JsonStoreException e) {
+            // Nothing was written or stored, so the page is still current.
+            Dialogs.showError(owner, EXPORT_FAILED, e);
+        }
+    }
+
+    /** Summarises an export's counts, such as "2 resolved files and 1 unresolved file". */
+    private static String describeCounts(ExportSummary summary) {
+        return plural(summary.resolvedCount(), "resolved file") + " and "
+                + plural(summary.unresolvedCount(), "unresolved file");
     }
 }
