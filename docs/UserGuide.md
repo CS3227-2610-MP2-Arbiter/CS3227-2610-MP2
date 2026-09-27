@@ -40,7 +40,7 @@ Instructions for each screen are added below as it is released.
 
 ## Projects
 
-Projects is the adjudicator's home screen. It lists every [project](Glossary.md) with its taxonomy kind, output format and counts. A file stops counting as **Unresolved** once its *k*th answer settles it automatically ([rule 10](UserFlows.md#3-rules-both-tracks-share)); a label [dispute](Glossary.md) stays unresolved until manual resolution ([#34]) is released.
+Projects is the adjudicator's home screen. It lists every [project](Glossary.md) with its taxonomy kind, output format and counts. A file stops counting as **Unresolved** once its *k*th answer settles it automatically ([rule 10](UserFlows.md#3-rules-both-tracks-share)) or you decide its label [dispute](Glossary.md).
 
 - **Create a project.** Choose **New project**, enter a unique name and an optional description, and pick a [taxonomy kind and output format](Glossary.md#fixed-value-sets). Neither can be changed later ([rule 4](UserFlows.md#3-rules-both-tracks-share)).
 - **Delete a project.** Choose **Delete** on its row and confirm. You can delete a project only before its first assignment, and its source files in `media/` are kept ([rule 5](UserFlows.md#3-rules-both-tracks-share)).
@@ -51,6 +51,7 @@ Projects is the adjudicator's home screen. It lists every [project](Glossary.md)
 - **Generate splits.** On the project page, enter the number of files per split, choose **Generate splits** and confirm the sizes shown. Arbiter shuffles the files not yet in a split into new splits, and the **Split** column shows each file's split and position ([rule 7](UserFlows.md#3-rules-both-tracks-share)).
 - **Delete a split.** Choose **Delete** on its row and confirm. Its files return to those not yet in a split. You can delete a split only before its first assignment ([rule 14](UserFlows.md#3-rules-both-tracks-share)).
 - **Assign annotators.** On the project page, choose **Assign** on a split's row. The form lists the split's annotators and the active annotators you can add, each with their unfinished assignments and files. With the split's first assignment, enter [*k*](Glossary.md), which cannot be changed afterwards. Tick one or more annotators, choose **Assign** and confirm. The **Annotators** column shows how many of the split's *k* places are taken. Assignments cannot be removed or moved, and a deactivated annotator keeps their place ([rule 19](UserFlows.md#3-rules-both-tracks-share)).
+- **Resolve a dispute.** On a `SINGLE` project's page, choose **Disputes** to list its [disputes](Glossary.md), followed by the files you have decided. Choose **Open** to see a file's text and its submitted labels without the annotators' names, pick any of the project's labels and choose **Save**. You can replace your own decision later, but not an automatic one, and submitted answers never change ([rule 13](UserFlows.md#3-rules-both-tracks-share)). If the file is missing or has changed, nothing can be saved until it is restored ([rule 21](UserFlows.md#3-rules-both-tracks-share)).
 
 You can register or unregister files, or change the taxonomy, only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)).
 

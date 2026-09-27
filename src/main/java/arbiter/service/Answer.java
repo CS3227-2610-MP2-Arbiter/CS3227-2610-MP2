@@ -1,8 +1,8 @@
 package arbiter.service;
 
 /**
- * An annotator's current choice for one file (#14): one label or one rating, and nothing else can be built. It is
- * only screen state until submission (#17) stores it.
+ * The current choice for one file (#14): one label or one rating, and nothing else can be built. It is only screen
+ * state until an annotator submits it (#17) or the adjudicator saves it as a decision (#34).
  */
 public sealed interface Answer permits Answer.LabelChoice, Answer.Rating {
     /**

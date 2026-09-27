@@ -7,8 +7,9 @@ import arbiter.model.project.Label;
 import arbiter.model.project.TaxonomyKind;
 
 /**
- * A project's taxonomy as the adjudicator's taxonomy view (#26) and the annotator's queue (#14) show it, with the
- * rules for a valid answer, which the annotator's screen and submission (#17) both apply.
+ * A project's taxonomy as the adjudicator's taxonomy view (#26), the annotator's queue (#14) and the dispute
+ * comparison (#34) show it, with the rules for a valid answer, which the answer picker, submission (#17) and manual
+ * resolution (#34) apply.
  *
  * @param kind the project's taxonomy kind
  * @param labels the project's stored labels in order, which {@link CorpusService} adds only to a SINGLE project

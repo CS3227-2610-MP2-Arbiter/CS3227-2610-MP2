@@ -18,9 +18,9 @@ import javafx.scene.layout.VBox;
  * The controls for choosing one answer from a project's taxonomy (#14): one label for SINGLE, or one whole
  * number within the range for SCALE.
  *
- * <p>It holds only the current, unsubmitted choice, which is screen state and is lost if the screen closes
- * (rule 18). It takes the taxonomy as plain values, so it never loads anything, and whether a choice is valid is
- * decided by {@link TaxonomySummary}, the same rules submission (#17) applies.
+ * <p>It holds only the current choice until it is submitted or saved, which is screen state and is lost if the
+ * screen closes (rule 18). It takes the taxonomy as plain values, so it never loads anything, and whether a choice
+ * is valid is decided by {@link TaxonomySummary}, the same rules submission (#17) applies.
  */
 public final class AnnotationEditor {
     private final TaxonomySummary taxonomy;

@@ -10,12 +10,14 @@ import java.util.function.Supplier;
 
 import arbiter.data.json.JsonStoreException;
 import arbiter.model.project.Item;
+import arbiter.model.project.TaxonomyKind;
 import arbiter.service.AssignmentOptions;
 import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.CorpusService;
 import arbiter.service.ProjectException;
 import arbiter.service.ProjectSummary;
+import arbiter.service.ResolutionService;
 import arbiter.service.SplitSummary;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
@@ -36,7 +38,8 @@ import javafx.stage.Window;
 
 /**
  * One project's page, where its files are registered and unregistered and its taxonomy is set up before its first
- * assignment, its splits are generated and deleted, and annotators are assigned to them.
+ * assignment, its splits are generated and deleted, annotators are assigned to them, and its disputes are
+ * resolved.
  */
 final class ProjectPage {
     private static final String REGISTER_FAILED = "The files could not be registered";
@@ -48,6 +51,7 @@ final class ProjectPage {
     private final Window owner;
     private final CorpusService corpus;
     private final AssignmentService assignments;
+    private final ResolutionService resolutions;
     private final ProjectSummary project;
     private final Runnable showList;
     private final StackPane content = new StackPane();
@@ -57,11 +61,12 @@ final class ProjectPage {
      *
      * @param showList shows the project list again
      */
-    ProjectPage(Window owner, CorpusService corpus, AssignmentService assignments, ProjectSummary project,
-            Runnable showList) {
+    ProjectPage(Window owner, CorpusService corpus, AssignmentService assignments, ResolutionService resolutions,
+            ProjectSummary project, Runnable showList) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.corpus = Objects.requireNonNull(corpus, "corpus");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
+        this.resolutions = Objects.requireNonNull(resolutions, "resolutions");
         this.project = Objects.requireNonNull(project, "project");
         this.showList = Objects.requireNonNull(showList, "showList");
     }
@@ -91,6 +96,11 @@ final class ProjectPage {
         Button taxonomy = new Button("Taxonomy");
         taxonomy.setOnAction(event -> content.getChildren().setAll(new TaxonomyView(owner, corpus, project,
                 this::show).content()));
+        boolean single = project.kind() == TaxonomyKind.SINGLE;
+        Button disputes = new Button("Disputes");
+        disputes.setDisable(!single);
+        disputes.setOnAction(event -> content.getChildren().setAll(new DisputesView(owner, resolutions, project,
+                this::show).content()));
         Button add = new Button("Add files...");
         add.setDisable(frozen);
         add.setOnAction(event -> addFiles());
@@ -100,7 +110,10 @@ final class ProjectPage {
         Label error = Components.errorText();
         Button generate = new Button("Generate splits");
         generate.setOnAction(event -> generateSplits(itemsPerSplit.getText(), error));
-        content.getChildren().setAll(Components.page(back, Components.pageTitle(project.name()), taxonomy, add,
+        content.getChildren().setAll(Components.page(back, Components.pageTitle(project.name()), taxonomy, disputes,
+                Components.hint(single ? "Disputes lists the files whose answers have no majority label, for you to "
+                        + "decide." : "A scale project has no disputes, because its ratings always resolve to their "
+                        + "mean."), add,
                 Components.hint("Files can be added or unregistered only before the project's first assignment."),
                 itemTable(items, splits, frozen),
                 Components.hint("Generate splits shuffles the files not yet in a split into new splits. "
