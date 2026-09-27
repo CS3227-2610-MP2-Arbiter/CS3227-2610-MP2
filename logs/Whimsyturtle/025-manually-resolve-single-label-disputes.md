@@ -1,6 +1,6 @@
 # Manually resolve single-label disputes
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
