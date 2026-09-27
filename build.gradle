@@ -14,6 +14,19 @@ repositories {
     mavenCentral()
 }
 
+// The demo corpus and its seed action (#41). Nothing in main depends on it, so the release jar and
+// normal startup never include it.
+sourceSets {
+    demo {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+    test {
+        compileClasspath += sourceSets.demo.output
+        runtimeClasspath += sourceSets.demo.output
+    }
+}
+
 dependencies {
     String jUnitVersion = '5.14.4'
 
@@ -69,6 +82,19 @@ shadowJar {
 
 run {
     standardInput = System.in
+}
+
+tasks.register('seedDemo', JavaExec) {
+    description = 'Seeds a new demo workspace for the smoke checklist (docs/SmokeChecklist.md).'
+    group = 'application'
+    classpath = sourceSets.demo.runtimeClasspath
+    mainClass = 'arbiter.demo.DemoWorkspace'
+    jvmArgs = ['--enable-native-access=ALL-UNNAMED']
+    def folder = file(project.findProperty('demoWorkspace') ?: 'build/demo-workspace')
+    args = [folder.absolutePath]
+    doLast {
+        println "Demo workspace created in ${folder}. Open it in Arbiter and sign in as described in docs/SmokeChecklist.md."
+    }
 }
 
 checkstyle {

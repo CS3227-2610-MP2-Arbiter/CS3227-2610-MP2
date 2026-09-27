@@ -12,6 +12,7 @@ This guide describes how Arbiter is designed, how the team works on it, and how 
 - **Run:** `./gradlew run`
 - **Test and check style:** `./gradlew check`
 - **Build the release jar:** `./gradlew shadowJar` produces `build/libs/arbiter.jar`
+- **Seed a demo workspace:** `./gradlew seedDemo` creates one in `build/demo-workspace`, or in the folder given by `-PdemoWorkspace=<folder>`; the [Smoke Checklist](SmokeChecklist.md) describes it
 
 On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
@@ -126,7 +127,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 | Repository | `src/test/java` | Temporary JSON workspace per test; [#11] adds shared fixtures |
 | Blindness | `src/test/java` | Fails if annotator code can reach another annotator's work |
 | Shared component | `src/test/java` | Classification editor modes, tested once where the component lives |
-| Acceptance | Manual | A human walks the agreed scenarios |
+| Acceptance | Manual | A human walks the agreed scenarios, and the [Smoke Checklist](SmokeChecklist.md) end to end before a release |
 
 ## Acknowledgements
 
