@@ -601,7 +601,8 @@ public final class CorpusService {
                 .orElse(0);
     }
 
-    private static SplitSummary summarize(RepositorySession session, Split split) {
+    /** Returns a split as the project page and progress view show it, read in this session. */
+    static SplitSummary summarize(RepositorySession session, Split split) {
         List<Long> itemIds = session.splitItems().listBySplit(split.getId()).stream()
                 .map(SplitItem::getItemId)
                 .toList();

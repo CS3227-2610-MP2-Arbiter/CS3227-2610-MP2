@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import arbiter.data.json.JsonStoreException;
@@ -18,12 +19,14 @@ import arbiter.service.CorpusService;
 import arbiter.service.ExportService;
 import arbiter.service.ExportSummary;
 import arbiter.service.ProjectException;
+import arbiter.service.ProjectService;
 import arbiter.service.ProjectSummary;
 import arbiter.service.ResolutionService;
 import arbiter.service.SplitSummary;
 import arbiter.ui.shared.Components;
 import arbiter.ui.shared.Dialogs;
 import arbiter.ui.shared.ErrorMessages;
+import arbiter.ui.shared.Styles;
 import arbiter.workspace.SourceException;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
@@ -32,7 +35,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -40,8 +45,8 @@ import javafx.stage.Window;
 
 /**
  * One project's page, where its files are registered and unregistered and its taxonomy is set up before its first
- * assignment, its splits are generated and deleted, annotators are assigned to them, its disputes are resolved,
- * and its dataset is exported.
+ * assignment, its splits are generated and deleted, annotators are assigned to them, progress and disputes are
+ * viewed, and its dataset is exported.
  */
 final class ProjectPage {
     private static final String REGISTER_FAILED = "The files could not be registered";
@@ -52,6 +57,7 @@ final class ProjectPage {
     private static final String EXPORT_FAILED = "The project could not be exported";
 
     private final Window owner;
+    private final ProjectService projects;
     private final CorpusService corpus;
     private final AssignmentService assignments;
     private final ResolutionService resolutions;
@@ -65,9 +71,10 @@ final class ProjectPage {
      *
      * @param showList shows the project list again
      */
-    ProjectPage(Window owner, CorpusService corpus, AssignmentService assignments, ResolutionService resolutions,
-            ExportService exports, ProjectSummary project, Runnable showList) {
+    ProjectPage(Window owner, ProjectService projects, CorpusService corpus, AssignmentService assignments,
+            ResolutionService resolutions, ExportService exports, ProjectSummary project, Runnable showList) {
         this.owner = Objects.requireNonNull(owner, "owner");
+        this.projects = Objects.requireNonNull(projects, "projects");
         this.corpus = Objects.requireNonNull(corpus, "corpus");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
         this.resolutions = Objects.requireNonNull(resolutions, "resolutions");
@@ -101,13 +108,17 @@ final class ProjectPage {
         Button taxonomy = new Button("Taxonomy");
         taxonomy.setOnAction(event -> content.getChildren().setAll(new TaxonomyView(owner, corpus, project,
                 this::show).content()));
+        Button progress = new Button("Progress");
+        progress.setOnAction(event -> showProgress());
         boolean single = project.kind() == TaxonomyKind.SINGLE;
         Button disputes = new Button("Disputes");
         disputes.setDisable(!single);
-        disputes.setOnAction(event -> content.getChildren().setAll(new DisputesView(owner, resolutions, project,
-                this::show).content()));
+        disputes.setOnAction(event -> showDisputes(this::show));
         Button export = new Button("Export");
         export.setOnAction(event -> exportDataset());
+        FlowPane actions = new FlowPane(taxonomy, progress, export, disputes);
+        actions.getStyleClass().add(Styles.PROJECT_ACTIONS);
+        actions.setMinHeight(Region.USE_PREF_SIZE);
         Button add = new Button("Add files...");
         add.setDisable(frozen);
         add.setOnAction(event -> addFiles());
@@ -117,8 +128,7 @@ final class ProjectPage {
         Label error = Components.errorText();
         Button generate = new Button("Generate splits");
         generate.setOnAction(event -> generateSplits(itemsPerSplit.getText(), error));
-        content.getChildren().setAll(Components.page(back, Components.pageTitle(project.name()), taxonomy, export,
-                disputes,
+        content.getChildren().setAll(Components.scrollingPage(back, Components.pageTitle(project.name()), actions,
                 Components.hint(single ? "Disputes lists the files whose answers have no majority label, for you to "
                         + "decide." : "A scale project has no disputes, because its ratings always resolve to their "
                         + "mean."), add,
@@ -159,7 +169,8 @@ final class ProjectPage {
                 Components.column("Files", split -> split.itemIds().size()),
                 Components.column("Annotators", split -> split.assigned()
                         ? split.assignmentCount() + " of " + split.annotationsPerItem() : "None"),
-                Components.buttonColumn("Assign", SplitSummary::full, split -> showAssignForm(split, frozen)),
+                Components.buttonColumn("Assign", SplitSummary::full, split -> showAssignForm(split, frozen,
+                        this::show)),
                 Components.buttonColumn("Delete", SplitSummary::assigned, this::deleteSplit)));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         table.setPlaceholder(Components.hint("No splits are generated yet."));
@@ -167,22 +178,38 @@ final class ProjectPage {
         return table;
     }
 
-    /** Shows the form that assigns annotators to a split, where {@code frozen} is as the page loaded it. */
-    private void showAssignForm(SplitSummary split, boolean frozen) {
+    /**
+     * Shows the form that assigns annotators to a split, where {@code frozen} is as the screen opening it loaded it.
+     *
+     * @param returnTo shows that screen again, reloaded
+     */
+    private void showAssignForm(SplitSummary split, boolean frozen, Runnable returnTo) {
         AssignmentOptions options;
         try {
             options = assignments.options(split.id());
         } catch (ProjectException e) {
-            // The page was out of date, so the reload below shows why.
+            // The screen was out of date, so reloading it shows why.
             Dialogs.showError(owner, OPEN_ASSIGN_FAILED, e);
-            show();
+            returnTo.run();
             return;
         } catch (AuthException | JsonStoreException e) {
             // Nothing changed, so the page is still current, and reloading would likely report this again.
             Dialogs.showError(owner, OPEN_ASSIGN_FAILED, e);
             return;
         }
-        content.getChildren().setAll(new AssignForm(owner, assignments, split, frozen, options, this::show).content());
+        content.getChildren().setAll(new AssignForm(owner, assignments, split, frozen, options, returnTo).content());
+    }
+
+    private void showProgress() {
+        BiConsumer<SplitSummary, Boolean> assign = (split, frozen) -> showAssignForm(split, frozen, this::showProgress);
+        Runnable disputes = () -> showDisputes(this::showProgress);
+        content.getChildren().setAll(new ProgressView(owner, projects, project.id(), this::show, assign, disputes)
+                .content());
+    }
+
+    /** Shows the project's dispute list, whose Back runs {@code returnTo}. */
+    private void showDisputes(Runnable returnTo) {
+        content.getChildren().setAll(new DisputesView(owner, resolutions, project, returnTo).content());
     }
 
     /**

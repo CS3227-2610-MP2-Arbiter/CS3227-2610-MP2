@@ -57,11 +57,12 @@ public final class Components {
         return styled(new VBox(controls), Styles.PAGE);
     }
 
-    /** Returns a screen's content of these controls, laid out from the top, which scrolls if it is taller. */
+    /**
+     * Returns a screen's content of these controls, laid out from the top, which scrolls if it is taller. A control
+     * set to grow, such as a table, takes any spare height.
+     */
     public static ScrollPane scrollingPage(Node... controls) {
-        ScrollPane scroll = styled(new ScrollPane(page(controls)), Styles.FORM_SCROLL);
-        scroll.setFitToWidth(true);
-        return scroll;
+        return scrolling(page(controls));
     }
 
     /** Returns a card of these controls, one item in a list of cards. */
@@ -73,14 +74,7 @@ public final class Components {
     public static ScrollPane form(Node... controls) {
         VBox form = styled(new VBox(controls), Styles.FORM);
         form.setAlignment(Pos.CENTER_LEFT);
-        StackPane centred = new StackPane(form);
-        ScrollPane scroll = styled(new ScrollPane(centred), Styles.FORM_SCROLL);
-        scroll.setFitToWidth(true);
-        // Filling at least the visible height centres a short form. Fitting it to that height instead would
-        // squeeze a tall one, cutting off its wrapped text, and could hide the scroll bar it needs.
-        centred.minHeightProperty().bind(Bindings.createDoubleBinding(() -> scroll.getViewportBounds().getHeight(),
-                scroll.viewportBoundsProperty()));
-        return scroll;
+        return scrolling(new StackPane(form));
     }
 
     /** Returns a form's buttons: {@code confirm}, and Cancel, which runs {@code cancel} and answers Escape. */
@@ -143,6 +137,19 @@ public final class Components {
             }
         });
         return column;
+    }
+
+    /**
+     * Returns a scroll pane of {@code content}, which fills at least the visible height, centring a short form or
+     * growing a page's table, and scrolls if it is taller. Fitting it to that height instead would squeeze a tall
+     * one, cutting off its wrapped text, and could hide the scroll bar it needs.
+     */
+    private static ScrollPane scrolling(Region content) {
+        ScrollPane scroll = styled(new ScrollPane(content), Styles.FORM_SCROLL);
+        scroll.setFitToWidth(true);
+        content.minHeightProperty().bind(Bindings.createDoubleBinding(() -> scroll.getViewportBounds().getHeight(),
+                scroll.viewportBoundsProperty()));
+        return scroll;
     }
 
     private static Label wrapping(String text) {

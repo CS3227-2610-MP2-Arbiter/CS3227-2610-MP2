@@ -59,6 +59,11 @@
     -fx-spacing: 12;
 }
 
+.project-actions {
+    -fx-hgap: 12;
+    -fx-vgap: 8;
+}
+
 .card {
     -fx-padding: 12 16 12 16;
     -fx-spacing: 6;

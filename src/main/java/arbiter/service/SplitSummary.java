@@ -23,4 +23,9 @@ public record SplitSummary(long id, String name, List<Long> itemIds, int assignm
     public boolean full() {
         return annotationsPerItem != null && assignmentCount >= annotationsPerItem;
     }
+
+    /** Returns how many of the split's k places are not taken (rule 19), or null before its first assignment. */
+    public Integer vacantPlaces() {
+        return annotationsPerItem == null ? null : annotationsPerItem - assignmentCount;
+    }
 }

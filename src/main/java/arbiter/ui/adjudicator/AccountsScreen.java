@@ -67,7 +67,7 @@ public final class AccountsScreen {
                 Components.buttonColumn("Deactivate", unchangeable, this::deactivate)));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(table, Priority.ALWAYS);
-        content.getChildren().setAll(Components.page(Components.pageTitle("Accounts"), create,
+        content.getChildren().setAll(Components.scrollingPage(Components.pageTitle("Accounts"), create,
                 Components.hint("Only an active annotator's password can be reset. Deactivation is permanent."),
                 table));
     }

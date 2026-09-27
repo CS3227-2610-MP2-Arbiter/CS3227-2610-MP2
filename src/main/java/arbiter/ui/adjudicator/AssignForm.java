@@ -20,8 +20,8 @@ import javafx.scene.control.TextField;
 import javafx.stage.Window;
 
 /**
- * The form on a project's page that assigns annotators to one split (#32), showing the split's k, its assignees
- * and the annotators it can take with their load, then asking to confirm.
+ * The form, opened from a project's page or its progress view, that assigns annotators to one split (#32), showing
+ * the split's k, its assignees and the annotators it can take with their load, then asking to confirm.
  */
 final class AssignForm {
     private static final String ASSIGN_FAILED = "The annotators could not be assigned";
@@ -31,23 +31,23 @@ final class AssignForm {
     private final SplitSummary split;
     private final boolean frozen;
     private final AssignmentOptions options;
-    private final Runnable showPage;
+    private final Runnable returnTo;
 
     /**
-     * Creates the form for a split as the project page listed it.
+     * Creates the form for a split as the screen opening it listed it.
      *
-     * @param frozen whether the split's project was frozen (rule 3) when the page loaded
+     * @param frozen whether the split's project was frozen (rule 3) when that screen loaded
      * @param options what {@link AssignmentService#options} returned for the split
-     * @param showPage shows the project page again, reloaded
+     * @param returnTo shows that screen again, reloaded
      */
     AssignForm(Window owner, AssignmentService assignments, SplitSummary split, boolean frozen,
-            AssignmentOptions options, Runnable showPage) {
+            AssignmentOptions options, Runnable returnTo) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
         this.split = Objects.requireNonNull(split, "split");
         this.frozen = frozen;
         this.options = Objects.requireNonNull(options, "options");
-        this.showPage = Objects.requireNonNull(showPage, "showPage");
+        this.returnTo = Objects.requireNonNull(returnTo, "returnTo");
     }
 
     /** Returns the form's content. */
@@ -84,7 +84,7 @@ final class AssignForm {
         assign.setDefaultButton(true);
         assign.setDisable(choices.isEmpty());
         assign.setOnAction(event -> assign(annotationsPerItem.getText(), chosen(choices), error));
-        controls.add(Components.formActions(assign, showPage));
+        controls.add(Components.formActions(assign, returnTo));
         controls.add(error);
         return Components.form(controls.toArray(Node[]::new));
     }
@@ -127,6 +127,6 @@ final class AssignForm {
             return;
         }
         ProjectPage.commit(owner, ASSIGN_FAILED, () -> assignments.assign(split.id(), annotationsPerItem,
-                annotatorIds), showPage);
+                annotatorIds), returnTo);
     }
 }

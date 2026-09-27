@@ -223,6 +223,11 @@ public final class ResolutionService {
                 resolution)) : Optional.empty();
     }
 
+    /** Returns whether an item is in the undecided part of #34's dispute list in the current read snapshot. */
+    static boolean isUnresolvedDispute(RepositorySession session, long itemId) {
+        return find(session, itemId).filter(listed -> listed.resolution() == null).isPresent();
+    }
+
     private static ListedItem require(RepositorySession session, long itemId) {
         return find(session, itemId).orElseThrow(() -> new ProjectException(NOT_LISTED));
     }
