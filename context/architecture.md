@@ -51,6 +51,7 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - Only `DiagnosticLog` logs, only `Dialogs` builds dialogs, and colours, fonts and spacing live in `arbiter.css` behind `Styles`. No code sets inline styles, prints to `System.out` or `System.err`, or calls `printStackTrace`; `UiConventionTest` enforces all of this.
 - No text is cut off. Show a message or data in a label from `Components`, which wraps, or in a dialog from `Dialogs`, which grows to fit; any other control that shows such text, such as a check box, sets it to wrap. Build forms with `Components.form`, which scrolls rather than squeezing them.
 - Controllers call services and bind results to the view. They hold no business rules and do not access repositories directly.
+- `arbiter.ui.adjudicator.ProgressView` displays the project progress snapshot and reloads it through `ProjectService` ([#33]).
 
 ### General
 
@@ -74,11 +75,11 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 
 - `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
 - `WorkspaceService`: first-run setup and paths; `WorkspaceLock` owns the file lock ([#61]).
-- `ProjectService`: creating, listing and pre-assignment deletion of projects (rule 5). It has no way to change a project's kind or format (rule 4).
+- `ProjectService`: creating, listing and pre-assignment deletion of projects (rule 5). It has no way to change a project's kind or format (rule 4). Its `progress` method checks the adjudicator session and builds one read-only repository snapshot; `unresolvedCount` is shared with the project list ([#33]).
 - `CorpusService`: listing, registering and pre-assignment unregistering of a project's items (rules 3, 5), splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
 - `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
-- `ResolutionService`: automatic and manual classification resolution (rule 10).
+- `ResolutionService`: automatic and manual classification resolution (rule 10); its unresolved-dispute predicate supplies the progress snapshot's dispute count ([#33]).
 - `ExportService`: the only code that writes a dataset in an output format. Annotators persist canonical annotations and never choose a format.
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
@@ -90,4 +91,5 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 [#11]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/11
 [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
+[#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
 [#61]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61
