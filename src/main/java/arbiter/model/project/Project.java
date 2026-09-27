@@ -17,7 +17,7 @@ public class Project {
     /** What the project is for. */
     private String description;
 
-    /** Format the finished dataset is written in. */
+    /** Format the project's dataset is exported in. */
     private OutputFormat outputFormat;
 
     /** When the project was created. */

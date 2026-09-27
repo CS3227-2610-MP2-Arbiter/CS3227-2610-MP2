@@ -10,6 +10,7 @@ import arbiter.model.project.TaxonomyKind;
 import arbiter.service.AssignmentService;
 import arbiter.service.AuthException;
 import arbiter.service.CorpusService;
+import arbiter.service.ExportService;
 import arbiter.service.ProjectException;
 import arbiter.service.ProjectService;
 import arbiter.service.ProjectSummary;
@@ -43,16 +44,18 @@ public final class ProjectsScreen {
     private final CorpusService corpus;
     private final AssignmentService assignments;
     private final ResolutionService resolutions;
+    private final ExportService exports;
     private final StackPane content = new StackPane();
 
     /** Creates the screen, whose dialogs belong to {@code owner}. */
     public ProjectsScreen(Window owner, ProjectService projects, CorpusService corpus,
-            AssignmentService assignments, ResolutionService resolutions) {
+            AssignmentService assignments, ResolutionService resolutions, ExportService exports) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.projects = Objects.requireNonNull(projects, "projects");
         this.corpus = Objects.requireNonNull(corpus, "corpus");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
         this.resolutions = Objects.requireNonNull(resolutions, "resolutions");
+        this.exports = Objects.requireNonNull(exports, "exports");
     }
 
     /** Returns the screen's content, showing the current project list. */
@@ -154,7 +157,7 @@ public final class ProjectsScreen {
     }
 
     private void open(ProjectSummary project) {
-        content.getChildren().setAll(new ProjectPage(owner, corpus, assignments, resolutions, project,
+        content.getChildren().setAll(new ProjectPage(owner, corpus, assignments, resolutions, exports, project,
                 this::showList).content());
     }
 

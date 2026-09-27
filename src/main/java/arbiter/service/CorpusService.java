@@ -67,9 +67,14 @@ public final class CorpusService {
      */
     public List<Item> list(long projectId) {
         auth.requireAdjudicator();
-        return store.read(session -> session.items().listByProject(projectId).stream()
+        return store.read(session -> itemsOf(session, projectId));
+    }
+
+    /** Returns a project's items from this session in registration order, as its page lists them and it exports. */
+    static List<Item> itemsOf(RepositorySession session, long projectId) {
+        return session.items().listByProject(projectId).stream()
                 .sorted(Comparator.comparing(Item::getId))
-                .toList());
+                .toList();
     }
 
     /**

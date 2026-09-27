@@ -12,6 +12,7 @@ import arbiter.service.AuthException;
 import arbiter.service.AuthService;
 import arbiter.service.CorpusService;
 import arbiter.service.CurrentUser;
+import arbiter.service.ExportService;
 import arbiter.service.ProjectService;
 import arbiter.service.ResolutionService;
 import arbiter.ui.adjudicator.AccountsScreen;
@@ -42,6 +43,7 @@ public class Arbiter extends Application {
     private AssignmentService assignments;
     private AnnotationService annotations;
     private ResolutionService resolutions;
+    private ExportService exports;
 
     @Override
     public void start(Stage stage) {
@@ -89,6 +91,7 @@ public class Arbiter extends Application {
         assignments = new AssignmentService(store, auth);
         annotations = new AnnotationService(store, auth, workspace.paths());
         resolutions = new ResolutionService(store, auth, workspace.paths());
+        exports = new ExportService(store, auth, workspace.paths());
         showAuth(stage);
     }
 
@@ -111,7 +114,7 @@ public class Arbiter extends Application {
         screens.register(new ScreenRoute("annotator-home", "My splits", Role.ANNOTATOR, () ->
                 new MySplitsScreen(stage, annotations).content()));
         screens.register(new ScreenRoute("adjudicator-home", "Projects", Role.ADJUDICATOR, () ->
-                new ProjectsScreen(stage, projects, corpus, assignments, resolutions).content()));
+                new ProjectsScreen(stage, projects, corpus, assignments, resolutions, exports).content()));
         screens.register(new ScreenRoute("adjudicator-accounts", "Accounts", Role.ADJUDICATOR, () ->
                 new AccountsScreen(stage, auth).content()));
         new AppShell(stage, user, screens, () -> {
