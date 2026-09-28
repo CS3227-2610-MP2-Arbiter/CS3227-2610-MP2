@@ -28,7 +28,7 @@ jobs:
 
   # The build job above uses a JDK with JavaFX bundled in, so the JDK's own modules win over the
   # jar's and its natives are never exercised. This job runs the release the way a marker would, on
-  # each platform: a plain JDK with nothing but the jar to supply JavaFX, started by its run script.
+  # each platform: a plain JDK with nothing but the jar to supply JavaFX, started with java -jar.
   release:
     name: Release on ${{ matrix.platform }}
     strategy:
@@ -50,14 +50,9 @@ jobs:
           distribution: 'temurin'
           java-version: '25'
 
-      - name: Build and unpack the release
+      - name: Build the release jar
         shell: bash
-        run: |
-          set -euo pipefail
-          ./gradlew releaseZip
-          # A space in the path checks the scripts quote it.
-          mkdir -p "$RUNNER_TEMP/release dir"
-          unzip -q build/distributions/arbiter.zip -d "$RUNNER_TEMP/release dir"
+        run: ./gradlew shadowJar
 
       - name: Check the bundled JavaFX natives are arm64
         if: runner.os == 'macOS'
@@ -87,35 +82,16 @@ jobs:
           fi
           echo "$count macOS natives, all arm64"
 
-      - name: Check the run script refuses an old Java
+      - name: Smoke-launch the release jar
         if: runner.os != 'Windows'
         shell: bash
         run: |
           set -uo pipefail
-          old="$(mktemp -d)"
-          mkdir "$old/bin"
-          printf '#!/bin/sh\necho "    java.specification.version = 21" >&2\n' > "$old/bin/java"
-          chmod +x "$old/bin/java"
-          if output="$(JAVA_HOME="$old" "$RUNNER_TEMP/release dir/arbiter/arbiter.sh" 2>&1)"; then
-            echo "::error::The run script started with Java 21"
-            exit 1
-          fi
-          echo "$output"
-          case "$output" in
-            *"needs Java 25 or later"*"Java 21"*) ;;
-            *) echo "::error::The run script did not explain the Java version"; exit 1 ;;
-          esac
-
-      - name: Smoke-launch the release with its run script
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          set -uo pipefail
-          cd "$RUNNER_TEMP/release dir/arbiter"
+          cd build/libs
           if [ "$RUNNER_OS" = "Linux" ]; then
-            xvfb-run -a ./arbiter.sh > launch.log 2>&1 &
+            xvfb-run -a java -jar arbiter.jar > launch.log 2>&1 &
           else
-            ./arbiter.sh > launch.log 2>&1 &
+            java -jar arbiter.jar > launch.log 2>&1 &
           fi
           app=$!
           sleep 25
@@ -135,12 +111,12 @@ jobs:
           echo "The app stayed open with no startup failures"
           cat launch.log
 
-      - name: Smoke-launch the release with its run script
+      - name: Smoke-launch the release jar
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Set-Location "$env:RUNNER_TEMP\release dir\arbiter"
-          $app = Start-Process -FilePath cmd.exe -ArgumentList '/c', 'arbiter.bat' -PassThru `
+          Set-Location build\libs
+          $app = Start-Process -FilePath java -ArgumentList '-jar', 'arbiter.jar' -PassThru `
               -RedirectStandardOutput launch.log -RedirectStandardError launch.err
           Start-Sleep -Seconds 25
           $running = -not $app.HasExited
