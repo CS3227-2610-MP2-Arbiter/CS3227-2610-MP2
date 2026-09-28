@@ -11,7 +11,7 @@ This guide describes how Arbiter is designed, how the team works on it, and how 
 - **JDK 25.** The Gradle wrapper downloads everything else, including JavaFX.
 - **Run:** `./gradlew run`
 - **Test and check style:** `./gradlew check`
-- **Build the release jar:** `./gradlew shadowJar` produces `build/libs/arbiter.jar`
+- **Build the release jar:** `./gradlew shadowJar` produces `build/libs/arbiter.jar`; the [README](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2#running-a-release) says how to run it
 - **Seed a demo workspace:** `./gradlew seedDemo` creates one in a new or empty folder, `build/demo-workspace` or the one given by `-PdemoWorkspace=<folder>`; the [Smoke Checklist](SmokeChecklist.md) describes it
 
 On Windows use `.\gradlew.bat` instead of `./gradlew`.
@@ -223,7 +223,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 
 **Markdown.** Never hard-wrap `.md` files: a paragraph, bullet or table row is one line, however many sentences it holds, and the viewer wraps it. The Java line limit does not apply.
 
-**CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and pull request, since the deliverable is a desktop jar that must launch on all three. A second job catches the release jar failing to start on Apple Silicon. A separate workflow publishes the `docs/` folder to GitHub Pages.
+**CI.** GitHub Actions runs `./gradlew check shadowJar` on Linux, macOS and Windows for every push and pull request, since the deliverable is a desktop jar that must launch on all three. A second job builds the release jar on each platform and starts it with `java -jar` on a plain JDK, whose JavaFX comes only from the jar, so it catches missing or wrong-architecture natives; on macOS it also checks the natives are Apple Silicon builds. A separate workflow publishes the `docs/` folder to GitHub Pages.
 
 **Definition of done.** Behaviour implemented and reachable from the UI, `./gradlew check` passing (JUnit and Checkstyle), new logic unit-tested, data-store code tested against temporary JSON workspaces, user-visible wording matching the shared rules in `docs/UserFlows.md`, and a PR reviewed by the other person.
 

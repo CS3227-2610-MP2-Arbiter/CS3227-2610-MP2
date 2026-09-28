@@ -27,11 +27,15 @@ jobs:
         run: ./gradlew check shadowJar
 
   # The build job above uses a JDK with JavaFX bundled in, so the JDK's own modules win over the
-  # jar's and its natives are never exercised. This job runs the release jar the way a marker would:
-  # a plain JDK on an Apple Silicon Mac, with nothing but the jar to supply JavaFX.
-  apple-silicon-jar:
-    name: Release jar on Apple Silicon
-    runs-on: macos-latest
+  # jar's and its natives are never exercised. This job runs the release the way a marker would, on
+  # each platform: a plain JDK with nothing but the jar to supply JavaFX, started with java -jar.
+  release:
+    name: Release on ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
 
     steps:
       - name: Setup repository
@@ -47,9 +51,12 @@ jobs:
           java-version: '25'
 
       - name: Build the release jar
+        shell: bash
         run: ./gradlew shadowJar
 
       - name: Check the bundled JavaFX natives are arm64
+        if: runner.os == 'macOS'
+        shell: bash
         run: |
           set -euo pipefail
           if [ "$(uname -m)" != "arm64" ]; then
@@ -75,23 +82,33 @@ jobs:
           fi
           echo "$count macOS natives, all arm64"
 
+      # One step for every platform, so the check cannot drift between shells. Besides the app exiting,
+      # it fails on a missing native, an uncaught exception, or anything DiagnosticLog records, whose
+      # console lines start "SEVERE: Failed:" or "WARNING: Failed:".
       - name: Smoke-launch the release jar
+        shell: pwsh
+        working-directory: build/libs
         run: |
-          set -uo pipefail
-          java -jar build/libs/arbiter.jar > launch.log 2>&1 &
-          app=$!
-          sleep 25
-          if ! kill -0 "$app" 2>/dev/null; then
-            wait "$app" || true
-            echo "::error::The app exited instead of staying open"
-            cat launch.log
-            exit 1
-          fi
-          kill "$app"
-          if grep -qiE 'UnsatisfiedLinkError|incompatible architecture' launch.log; then
-            echo "::error::JavaFX failed to load its native libraries"
-            cat launch.log
-            exit 1
-          fi
-          echo "The app stayed open with no native library failures"
-          cat launch.log
+          # Linux runners have no display, so the app gets a virtual one.
+          if ($IsLinux) {
+              $command = 'xvfb-run'; $arguments = '-a', 'java', '-jar', 'arbiter.jar'
+          } else {
+              $command = 'java'; $arguments = '-jar', 'arbiter.jar'
+          }
+          $app = Start-Process -FilePath $command -ArgumentList $arguments -PassThru `
+              -RedirectStandardOutput launch.out -RedirectStandardError launch.err
+          Start-Sleep -Seconds 25
+          $running = -not $app.HasExited
+          if ($running) { $app.Kill($true) }
+          $app.WaitForExit()
+          $log = (Get-Content launch.out, launch.err -Raw -ErrorAction SilentlyContinue) -join "`n"
+          Write-Output $log
+          if (-not $running) {
+              Write-Output "::error::The app exited instead of staying open"
+              exit 1
+          }
+          if ($log -match '(SEVERE|WARNING): Failed:|UnsatisfiedLinkError|incompatible architecture|Exception in') {
+              Write-Output "::error::The app failed while starting"
+              exit 1
+          }
+          Write-Output "The app stayed open with no startup failures"

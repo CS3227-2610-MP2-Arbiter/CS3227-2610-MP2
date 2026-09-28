@@ -1,6 +1,6 @@
 # Developer guide and architecture write-up
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 

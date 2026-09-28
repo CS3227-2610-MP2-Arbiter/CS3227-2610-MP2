@@ -1,6 +1,6 @@
 # Write the annotator user guide
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
