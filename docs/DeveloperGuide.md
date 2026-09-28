@@ -12,6 +12,7 @@ This guide describes how Arbiter is designed, how the team works on it, and how 
 - **Run:** `./gradlew run`
 - **Test and check style:** `./gradlew check`
 - **Build the release jar:** `./gradlew shadowJar` produces `build/libs/arbiter.jar`
+- **Seed a demo workspace:** `./gradlew seedDemo` creates one in a new or empty folder, `build/demo-workspace` or the one given by `-PdemoWorkspace=<folder>`; the [Smoke Checklist](SmokeChecklist.md) describes it
 
 On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
@@ -234,7 +235,7 @@ Each skill declares its input, steps and completion criteria, and states what it
 | Repository | `src/test/java` | Temporary JSON workspace per test; [#11] adds shared fixtures |
 | Blindness | `src/test/java` | Fails if annotator code can reach another annotator's work |
 | Shared component | `src/test/java` | Classification editor modes, tested once where the component lives |
-| Acceptance | Manual | A human walks the agreed scenarios |
+| Acceptance | Manual | A human walks the agreed scenarios, and the [Smoke Checklist](SmokeChecklist.md) end to end before a release |
 
 - **Real storage, temporary folders.** Service tests run against a real `JsonStore` in a JUnit temporary folder, created by `TestWorkspace`, so every test exercises the same transaction, integrity and publication code as the app. `ClassificationWorkflow` seeds a whole project in one call, and refuses a state the app could not reach, such as a resolution that does not follow from the answers.
 - **Refusals leave the data unchanged.** A test of a refused action compares `arbiter.json` byte for byte before and after, which proves the refusal happened inside the write action.

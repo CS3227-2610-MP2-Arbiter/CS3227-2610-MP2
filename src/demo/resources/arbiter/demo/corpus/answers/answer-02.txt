@@ -1,0 +1,2 @@
+Q: Why does the app crash when I export a report?
+A: Have you tried turning it off and on again?

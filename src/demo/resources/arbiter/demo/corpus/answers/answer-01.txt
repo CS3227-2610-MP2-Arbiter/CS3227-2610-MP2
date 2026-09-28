@@ -1,0 +1,2 @@
+Q: How do I reset my password?
+A: Open Settings, choose Account, then Reset password. A link arrives by email within a few minutes; check your spam folder if it does not.
