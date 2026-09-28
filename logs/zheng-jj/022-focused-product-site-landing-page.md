@@ -1,6 +1,6 @@
 # Focused product-site landing page
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
