@@ -19,9 +19,10 @@ Non-goals, from [#45]: the detailed guides themselves.
 
 ## Changes
 
-- **The problem:** one paragraph on why blind, independent answers and adjudication are needed.
+- **The problem:** one paragraph on why blind, independent answers are needed.
 - **The two roles:** one sentence each. Blindness links rule 1 rather than restating it.
-- **How it works:** five numbered steps (set up, assign, submit, resolve, export). Each is one sentence and links the rule that holds its detail (rules 10, 15 and 18).
+- **How it works:** five numbered steps (set up, assign, submit, resolve, export), each linking the rule that holds its detail (rules 4, 10, 15 and 18). The output format is chosen at setup, since it locks at creation, and export writes the project's format. Automatic resolution and settling a *dispute* appear only in the resolve step.
+- **Wording:** the README and the site's tagline in `docs/_config.yml` say Arbiter labels text rather than data.
 - **Documentation:** adds the README's "Running a release" first, since a marker needs it before the guides.
 
 ## Design alternatives considered

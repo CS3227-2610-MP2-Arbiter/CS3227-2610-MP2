@@ -6,20 +6,20 @@ title: Arbiter
 
 Arbiter is an offline Java desktop app for teams that label text.
 
-A label from one person carries that person's mistakes, and people who can see each other's answers stop judging independently. Arbiter collects several blind, independent answers for every item, settles what it can from them automatically, and leaves the label disputes to one adjudicator, so every exported answer comes with the evidence behind it.
+A label from one person carries that person's mistakes, and people who can see each other's answers stop judging independently. Arbiter collects several blind, independent answers for every item and turns them into one dataset in which every answer comes with the evidence behind it.
 
 ## The two roles
 
 - **Annotators** work a blind queue of plain-text items, giving each one a label or an integer rating without ever seeing anyone else's work ([rule 1](UserFlows.md#3-rules-both-tracks-share)).
-- **The adjudicator** owns the workspace: they create the accounts and projects, assign the work, settle label disputes and export the dataset.
+- **The adjudicator** owns the workspace and runs each project, from creating accounts and assigning the work to exporting the dataset.
 
 ## How it works
 
-1. **Set up.** The adjudicator creates a project of one of two kinds, `SINGLE` (choose one label) or `SCALE` (give an integer rating), registers its plain-text files and defines its labels or rating range.
+1. **Set up.** The adjudicator creates a project of one of two kinds, `SINGLE` (choose one label) or `SCALE` (give an integer rating), with CSV or JSON as its output format ([rule 4](UserFlows.md#3-rules-both-tracks-share)). They then register its plain-text files and define its labels or rating range.
 2. **Assign.** Arbiter splits the files into batches, and each batch goes to *k* annotators, so every item collects *k* independent answers.
 3. **Submit.** Annotators answer one item at a time, and **Submit & next** records each answer permanently: nobody can change it afterwards ([rule 18](UserFlows.md#3-rules-both-tracks-share)).
-4. **Resolve.** Arbiter resolves each item it can from the answers, and the adjudicator decides the single-label disputes that remain ([rule 10](UserFlows.md#3-rules-both-tracks-share)).
-5. **Export.** The adjudicator exports the dataset as CSV or JSON, with compact provenance for each current decision ([rule 15](UserFlows.md#3-rules-both-tracks-share)).
+4. **Resolve.** Arbiter resolves each item it can from the answers, and the adjudicator settles each remaining [dispute](Glossary.md) ([rule 10](UserFlows.md#3-rules-both-tracks-share)).
+5. **Export.** The adjudicator exports the dataset in the project's format, with compact provenance for each current decision ([rule 15](UserFlows.md#3-rules-both-tracks-share)).
 
 The [Glossary](Glossary.md) defines the terms used throughout, and [User Flows](UserFlows.md) shows both flows and the rules they share. The step-by-step behaviour is in the GitHub issues those pages link to.
 
