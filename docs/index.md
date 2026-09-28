@@ -4,21 +4,28 @@ title: Arbiter
 
 # Arbiter
 
-Arbiter is an offline Java desktop app for teams that label data.
+Arbiter is an offline Java desktop app for teams that label text.
+
+A label from one person carries that person's mistakes, and people who can see each other's answers stop judging independently. Arbiter collects several blind, independent answers for every item, settles what it can from them automatically, and leaves the label disputes to one adjudicator, so every exported answer comes with the evidence behind it.
 
 ## The two roles
 
-- **Annotators** work a blind queue of plain-text items, submitting either one label or an integer scale rating for each item. They never see another annotator's work or the resolved answer.
-- **The adjudicator** owns the workspace. They create annotator accounts, set up text-classification projects and their taxonomies, assign the work, monitor basic progress, settle label disputes and export the dataset.
+- **Annotators** work a blind queue of plain-text items, giving each one a label or an integer rating without ever seeing anyone else's work ([rule 1](UserFlows.md#3-rules-both-tracks-share)).
+- **The adjudicator** owns the workspace: they create the accounts and projects, assign the work, settle label disputes and export the dataset.
 
 ## How it works
 
-An adjudicator registers a plain-text corpus and splits it into batches. Each batch goes to several annotators, so every item collects several independent annotations. Arbiter resolves what it can automatically and the adjudicator decides the remaining label disputes. The result exports as a dataset with compact provenance for each current decision.
+1. **Set up.** The adjudicator creates a project of one of two kinds, `SINGLE` (choose one label) or `SCALE` (give an integer rating), registers its plain-text files and defines its labels or rating range.
+2. **Assign.** Arbiter splits the files into batches, and each batch goes to *k* annotators, so every item collects *k* independent answers.
+3. **Submit.** Annotators answer one item at a time, and **Submit & next** records each answer permanently: nobody can change it afterwards ([rule 18](UserFlows.md#3-rules-both-tracks-share)).
+4. **Resolve.** Arbiter resolves each item it can from the answers, and the adjudicator decides the single-label disputes that remain ([rule 10](UserFlows.md#3-rules-both-tracks-share)).
+5. **Export.** The adjudicator exports the dataset as CSV or JSON, with compact provenance for each current decision ([rule 15](UserFlows.md#3-rules-both-tracks-share)).
 
-See the [Glossary](Glossary.md) for the terms used throughout, and [User Flows](UserFlows.md) for the shape of both flows and the rules they share. The step-by-step behaviour is in the GitHub issues those pages link to.
+The [Glossary](Glossary.md) defines the terms used throughout, and [User Flows](UserFlows.md) shows both flows and the rules they share. The step-by-step behaviour is in the GitHub issues those pages link to.
 
 ## Documentation
 
+- [Running a release](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2#running-a-release)
 - [User guide](UserGuide.md)
 - [Glossary](Glossary.md)
 - [User flows and product context](UserFlows.md)
