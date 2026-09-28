@@ -14,7 +14,7 @@ Non-goals: installers, code signing and, after review, run scripts and a release
 
 ## Proposed changes
 
-- **CI:** the "Release jar on Apple Silicon" job becomes a `release` job on all three platforms. It uses a plain Temurin JDK, whose JavaFX comes only from the jar. It builds the jar, starts it with `java -jar` (Linux under `xvfb-run`), and fails if the app exits within 25 seconds or logs a native-library or uncaught exception. macOS keeps the arm64 natives check. No branch rule requires the old job's name.
+- **CI:** the "Release jar on Apple Silicon" job becomes a `release` job on all three platforms. It uses a plain Temurin JDK, whose JavaFX comes only from the jar. It builds the jar, starts it with `java -jar` (Linux under `xvfb-run`), and fails if the app exits within 25 seconds, logs a native-library or uncaught exception, or records a failure through `DiagnosticLog`. The launch is one PowerShell step on every platform, so the check cannot drift between shells. macOS keeps the arm64 natives check. No branch rule requires the old job's name.
 - **Docs:** a "Running a release" section in the README (requirements, starting the jar, supported architectures). "Setting up" in the Developer Guide links the README from the `shadowJar` command, and its CI paragraph describes the new job. The User Guide's first step links the README.
 
 ## Design alternatives considered

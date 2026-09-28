@@ -82,56 +82,33 @@ jobs:
           fi
           echo "$count macOS natives, all arm64"
 
+      # One step for every platform, so the check cannot drift between shells. Besides the app exiting,
+      # it fails on a missing native, an uncaught exception, or anything DiagnosticLog records, whose
+      # console lines start "SEVERE: Failed:" or "WARNING: Failed:".
       - name: Smoke-launch the release jar
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          set -uo pipefail
-          cd build/libs
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            xvfb-run -a java -jar arbiter.jar > launch.log 2>&1 &
-          else
-            java -jar arbiter.jar > launch.log 2>&1 &
-          fi
-          app=$!
-          sleep 25
-          if ! kill -0 "$app" 2>/dev/null; then
-            wait "$app" || true
-            echo "::error::The app exited instead of staying open"
-            cat launch.log
-            exit 1
-          fi
-          pkill -f arbiter.jar || true
-          kill "$app" 2>/dev/null || true
-          if grep -qiE 'UnsatisfiedLinkError|incompatible architecture|Exception in' launch.log; then
-            echo "::error::The app failed while starting"
-            cat launch.log
-            exit 1
-          fi
-          echo "The app stayed open with no startup failures"
-          cat launch.log
-
-      - name: Smoke-launch the release jar
-        if: runner.os == 'Windows'
         shell: pwsh
+        working-directory: build/libs
         run: |
-          Set-Location build\libs
-          $app = Start-Process -FilePath java -ArgumentList '-jar', 'arbiter.jar' -PassThru `
-              -RedirectStandardOutput launch.log -RedirectStandardError launch.err
+          # Linux runners have no display, so the app gets a virtual one.
+          if ($IsLinux) {
+              $command = 'xvfb-run'; $arguments = '-a', 'java', '-jar', 'arbiter.jar'
+          } else {
+              $command = 'java'; $arguments = '-jar', 'arbiter.jar'
+          }
+          $app = Start-Process -FilePath $command -ArgumentList $arguments -PassThru `
+              -RedirectStandardOutput launch.out -RedirectStandardError launch.err
           Start-Sleep -Seconds 25
           $running = -not $app.HasExited
-          if ($running) { taskkill /T /F /PID $app.Id | Out-Null }
-          $log = (Get-Content launch.log, launch.err -Raw -ErrorAction SilentlyContinue) -join "`n"
+          if ($running) { $app.Kill($true) }
+          $app.WaitForExit()
+          $log = (Get-Content launch.out, launch.err -Raw -ErrorAction SilentlyContinue) -join "`n"
+          Write-Output $log
           if (-not $running) {
               Write-Output "::error::The app exited instead of staying open"
-              Write-Output $log
               exit 1
           }
-          if ($log -match 'UnsatisfiedLinkError|Exception in') {
+          if ($log -match '(SEVERE|WARNING): Failed:|UnsatisfiedLinkError|incompatible architecture|Exception in') {
               Write-Output "::error::The app failed while starting"
-              Write-Output $log
               exit 1
           }
           Write-Output "The app stayed open with no startup failures"
-          Write-Output $log
-          exit 0
