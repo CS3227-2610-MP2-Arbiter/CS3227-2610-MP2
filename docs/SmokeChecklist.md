@@ -12,7 +12,7 @@ Part A builds everything by hand from a fresh workspace. Part B opens a seeded d
 
 The demo corpus is in `src/demo/resources/arbiter/demo/corpus/`: six product reviews in `reviews/` and six answers to support questions in `answers/`. The file names are neutral, so they never hint at a label.
 
-`./gradlew seedDemo` creates a seeded demo workspace in `build/demo-workspace` (add `-PdemoWorkspace=<folder>` for another folder). It refuses a folder that already holds a workspace, so delete the old one or pick a new folder to seed again. It never changes how Arbiter normally starts. It builds the workspace through the same services the screens use, signed in as each account, so it can only reach states the app can reach.
+The command in [Setting up](DeveloperGuide.md#setting-up) seeds a demo workspace. It never changes how Arbiter normally starts, and it builds the workspace through the same services the screens use, signed in as each account, so it can only reach states the app can reach.
 
 Every demo account's password is `demo1234`.
 
@@ -28,7 +28,7 @@ Every demo account's password is `demo1234`.
 
 ## Part A: from a fresh workspace
 
-1. **Owner setup.** Launch Arbiter with `./gradlew run` and create a new workspace in an empty folder, with an owner account. You land on Projects after signing in.
+1. **Owner setup.** Launch Arbiter and create a new workspace in an empty folder, with an owner account. You land on Projects after signing in.
 2. **Accounts.** On Accounts, create two annotators. Both are listed as active annotators.
 3. **Project.** Create a `SINGLE` project with the CSV format.
 4. **Source import.** Copy the six files in `reviews/` into the workspace's `media/` folder. On the project page, choose **Add files...** and select all six. All six are listed.
@@ -43,7 +43,7 @@ Every demo account's password is `demo1234`.
 
 ## Part B: the seeded workspace
 
-1. **Open.** Run `./gradlew seedDemo`, then `./gradlew run`, open `build/demo-workspace` and sign in as `owner`.
+1. **Open.** Seed a new demo workspace, launch Arbiter, open the workspace and sign in as `owner`.
 2. **Configurable *k*.** The **Annotators** column shows 3 of 3 for the Product reviews split and 2 of 2 for the Answer helpfulness split.
 3. **Majority and disputes.** Product reviews shows two unresolved files. Its Disputes screen lists `review-04` and `review-06`, each with three different labels and no annotator names. Resolve one of them.
 4. **Scale averaging and annotation.** Sign in as `bob`. Answer helpfulness shows 4 of 6 files submitted; rate the last two. As `owner`, Answer helpfulness now has no unresolved files.

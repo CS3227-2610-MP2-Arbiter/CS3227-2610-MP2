@@ -12,7 +12,7 @@ This guide describes how Arbiter is designed, how the team works on it, and how 
 - **Run:** `./gradlew run`
 - **Test and check style:** `./gradlew check`
 - **Build the release jar:** `./gradlew shadowJar` produces `build/libs/arbiter.jar`
-- **Seed a demo workspace:** `./gradlew seedDemo` creates one in `build/demo-workspace`, or in the folder given by `-PdemoWorkspace=<folder>`; the [Smoke Checklist](SmokeChecklist.md) describes it
+- **Seed a demo workspace:** `./gradlew seedDemo` creates one in a new or empty folder, `build/demo-workspace` or the one given by `-PdemoWorkspace=<folder>`; the [Smoke Checklist](SmokeChecklist.md) describes it
 
 On Windows use `.\gradlew.bat` instead of `./gradlew`.
 

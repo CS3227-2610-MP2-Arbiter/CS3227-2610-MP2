@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,7 +33,6 @@ import arbiter.workspace.WorkspaceService;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.csv.CsvMapper;
-import tools.jackson.dataformat.csv.CsvReadFeature;
 import tools.jackson.dataformat.csv.CsvSchema;
 
 class DemoWorkspaceTest {
@@ -43,6 +43,15 @@ class DemoWorkspaceTest {
             "media/reviews/review-04.txt", "UNRESOLVED",
             "media/reviews/review-05.txt", "negative MAJORITY",
             "media/reviews/review-06.txt", "UNRESOLVED");
+
+    /** Each answer's mean rating, once both alice and bob have rated it. */
+    private static final Map<String, String> SCALE_MEANS = Map.of(
+            "media/answers/answer-01.txt", "5.0",
+            "media/answers/answer-02.txt", "1.5",
+            "media/answers/answer-03.txt", "4.5",
+            "media/answers/answer-04.txt", "2.0",
+            "media/answers/answer-05.txt", "4.5",
+            "media/answers/answer-06.txt", "2.5");
 
     @TempDir
     Path temp;
@@ -81,15 +90,13 @@ class DemoWorkspaceTest {
             long helpfulness = owner.project(DemoWorkspace.HELPFULNESS);
             assertEquals(List.of(2), owner.annotationsPerItem(helpfulness));
             Map<String, String> outcomes = owner.jsonOutcomes(helpfulness);
-            assertEquals(6, outcomes.size());
+            assertEquals(SCALE_MEANS.keySet(), outcomes.keySet());
             // Which four files bob rated depends on the shuffled split order, but each rated file's mean does not.
-            Map<String, String> means = Map.of("answer-01.txt", "5.0", "answer-02.txt", "1.5",
-                    "answer-03.txt", "4.5", "answer-04.txt", "2.0", "answer-05.txt", "4.5", "answer-06.txt", "2.5");
             int resolved = 0;
             for (Map.Entry<String, String> outcome : outcomes.entrySet()) {
-                String name = Path.of(outcome.getKey()).getFileName().toString();
                 if (!outcome.getValue().equals("UNRESOLVED")) {
-                    assertEquals(means.get(name) + " AUTO_SCALE", outcome.getValue(), name);
+                    assertEquals(SCALE_MEANS.get(outcome.getKey()) + " AUTO_SCALE", outcome.getValue(),
+                            outcome.getKey());
                     resolved++;
                 }
             }
@@ -119,6 +126,32 @@ class DemoWorkspaceTest {
         assertThrows(WorkspaceException.class, () -> DemoWorkspace.seed(paths.root()));
 
         assertArrayEquals(before, Files.readAllBytes(paths.dataFile()));
+    }
+
+    @Test
+    void seed_folderHoldingOtherFiles_refusedAndUnchanged() throws IOException {
+        Path folder = temp.resolve("notes");
+        Path note = folder.resolve("media/reviews/review-01.txt");
+        Files.createDirectories(note.getParent());
+        Files.writeString(note, "my own notes");
+
+        assertThrows(WorkspaceException.class, () -> DemoWorkspace.seed(folder));
+
+        try (Stream<Path> entries = Files.walk(folder)) {
+            assertEquals(List.of(folder, folder.resolve("media"), note.getParent(), note), entries.sorted().toList());
+        }
+        assertEquals("my own notes", Files.readString(note));
+    }
+
+    @Test
+    void seed_emptyFolder_seeded() throws IOException {
+        Path folder = Files.createDirectories(temp.resolve("empty"));
+
+        WorkspacePaths paths = DemoWorkspace.seed(folder);
+
+        try (Owner owner = Owner.signIn(paths)) {
+            assertEquals(REVIEW_OUTCOMES, owner.csvOutcomes(owner.project(DemoWorkspace.REVIEWS)));
+        }
     }
 
     /** The demo owner, signed in to a seeded workspace that it holds the lock of. */
@@ -156,14 +189,13 @@ class DemoWorkspaceTest {
         /** Exports a CSV project and returns each file's answer and method, or its unresolved status. */
         Map<String, String> csvOutcomes(long projectId) throws IOException {
             ExportSummary summary = exports.export(projectId);
-            List<List<String>> rows = new CsvMapper().readerFor(List.class)
-                    .with(CsvSchema.emptySchema().withSkipFirstDataRow(true))
-                    .with(CsvReadFeature.WRAP_AS_ARRAY)
-                    .<List<String>>readValues(Files.readAllBytes(summary.file())).readAll();
+            List<Map<String, String>> rows = new CsvMapper().readerFor(Map.class)
+                    .with(CsvSchema.emptySchema().withHeader())
+                    .<Map<String, String>>readValues(Files.readAllBytes(summary.file())).readAll();
             Map<String, String> outcomes = new TreeMap<>();
-            for (List<String> row : rows) {
-                String outcome = row.get(1).equals("UNRESOLVED") ? "UNRESOLVED" : row.get(2) + " " + row.get(3);
-                outcomes.put(row.get(0), outcome);
+            for (Map<String, String> row : rows) {
+                outcomes.put(row.get("path"), row.get("status").equals("UNRESOLVED") ? "UNRESOLVED"
+                        : row.get("answer") + " " + row.get("method"));
             }
             return outcomes;
         }

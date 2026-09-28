@@ -17,6 +17,8 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 | 4 | `arbiter.model` | Value objects and enums. No queries, no UI logic. | Shared ([#4]) |
 | 5 | `arbiter.workspace` | Workspace paths, the single-writer lock, asset resolution. | Whimsyturtle (paths [#9], lock [#61]); zheng-jj (asset resolution [#10]) |
 
+`arbiter.demo` (zheng-jj, [#41]) seeds the demo workspace and sits outside the layers, in the `demo` source set. The build keeps it out of `main` and the release jar. It changes data only through the services, signed in as the account that would make each change, never through a repository.
+
 ## Rules
 
 ### Shared code
@@ -92,4 +94,5 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 [#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
 [#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
 [#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
+[#41]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/41
 [#61]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61
