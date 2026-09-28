@@ -11,26 +11,26 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 1. Launch Arbiter, as the [README](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2#running-a-release) describes. On first run the workspace wizard asks you to choose a [workspace](Glossary.md) folder.
 2. During setup, create the workspace's sole adjudicator account. Keep its password safe: Arbiter cannot recover or reset it ([rule 12](UserFlows.md#3-rules-both-tracks-share)).
 3. The adjudicator creates annotator accounts on the [Accounts](#accounts) screen and gives each annotator their username and password. There is no self-signup and no email: an annotator who forgets their password asks the adjudicator, who sets a new one directly ([rule 12](UserFlows.md#3-rules-both-tracks-share)).
-4. Sign in. Arbiter opens your role's home ([#5]): [Projects](#projects) for the adjudicator, and [My splits](#my-splits) for annotators.
+4. Sign in. Arbiter opens your role's home: [Projects](#projects) for the adjudicator, and [My splits](#my-splits) for annotators.
 
-If the workspace is already in use, close its other Arbiter instance and try again ([#61](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/61)).
+If the workspace is already in use, close its other Arbiter instance and try again.
 
 If Arbiter says it could not finish something, the details are in the workspace's `logs/arbiter.0.log`. Include that file when you report the problem; it never contains passwords.
 
 ## Quick reference
 
-Choose a task to jump to its instructions. The linked issues specify each feature's behavior.
+Choose a task to jump to its instructions.
 
 | I want to... | Role | Instructions |
 | --- | --- | --- |
-| Label plain-text items | Annotator | [My splits](#my-splits) ([#13], [#14], [#17]) |
-| Track my split progress | Annotator | [My splits](#my-splits) ([#18]) |
-| Create, reset or deactivate annotator accounts | Adjudicator | [Accounts](#accounts) ([#23], [#31]) |
-| Create a project and import files | Adjudicator | [Create a project and register files](#create-a-project-and-register-files) ([#24], [#25], [#30]) |
-| Configure labels or a rating range | Adjudicator | [Set the taxonomy](#set-the-taxonomy) ([#26]) |
-| Make batches and assign annotators | Adjudicator | [Create splits and assign work](#create-splits-and-assign-work) ([#28], [#32]) |
-| Monitor progress and resolve disputes | Adjudicator | [Monitor and resolve](#monitor-and-resolve) ([#33], [#34]) |
-| Export the dataset | Adjudicator | [Export](#export) ([#37]) |
+| Label plain-text items | Annotator | [My splits](#my-splits) |
+| Track my split progress | Annotator | [My splits](#my-splits) |
+| Create, reset or deactivate annotator accounts | Adjudicator | [Accounts](#accounts) |
+| Create a project and import files | Adjudicator | [Create a project and register files](#create-a-project-and-register-files) |
+| Configure labels or a rating range | Adjudicator | [Set the taxonomy](#set-the-taxonomy) |
+| Make batches and assign annotators | Adjudicator | [Create splits and assign work](#create-splits-and-assign-work) |
+| Monitor progress and resolve disputes | Adjudicator | [Monitor and resolve](#monitor-and-resolve) |
+| Export the dataset | Adjudicator | [Export](#export) |
 
 ## Projects
 
@@ -45,14 +45,14 @@ Projects is the adjudicator's home screen. It lists every [project](Glossary.md)
   ![New project form with taxonomy kind and output format choices](images/adjudicator-new-project.png)
 
 - **Delete a project.** Choose **Delete** on its row and confirm. You can delete a project only before its first assignment, and its source files in `media/` are kept ([rule 5](UserFlows.md#3-rules-both-tracks-share)).
-- **Register files.** Put the plain-text `.txt` files in the workspace's `media/` folder, open the project, choose **Add files...** and select them. Wait for **Files registered** before continuing. Arbiter records each file's location and content hash without copying it ([registration in place](Glossary.md), [#25]). If any file is rejected, none from that selection are registered. Correct the file named in the message and try again.
+- **Register files.** Put the plain-text `.txt` files in the workspace's `media/` folder, open the project, choose **Add files...** and select them. Wait for **Files registered** before continuing. Arbiter records each file's location and content hash without copying it ([registration in place](Glossary.md)). If any file is rejected, none from that selection are registered. Correct the file named in the message and try again.
 - **Unregister a file.** On the project page, choose **Unregister** on its row and confirm. The source file stays in `media/`. You can unregister only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)).
 
 ![Project page with its registered files and actions](images/adjudicator-project.png)
 
 ### Set the taxonomy
 
-On the project page, choose **Taxonomy**. For `SINGLE`, enter a key and optional description for each [label](Glossary.md), choose **Save**, then use **Up** and **Down** to order them. For `SCALE`, enter the minimum and maximum whole-number ratings and choose **Save**. The first assignment needs at least two `SINGLE` labels or a saved `SCALE` range ([#26]). You can change the taxonomy only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)).
+On the project page, choose **Taxonomy**. For `SINGLE`, enter a key and optional description for each [label](Glossary.md), choose **Save**, then use **Up** and **Down** to order them. For `SCALE`, enter the minimum and maximum whole-number ratings and choose **Save**. The first assignment needs at least two `SINGLE` labels or a saved `SCALE` range. You can change the taxonomy only before the project's first assignment ([rule 3](UserFlows.md#3-rules-both-tracks-share)).
 
 ![Editable SINGLE taxonomy with ordered labels and a new label form](images/adjudicator-single-taxonomy-editable.png)
 
@@ -65,23 +65,23 @@ On the project page, choose **Taxonomy**. For `SINGLE`, enter a key and optional
 
   ![Project page scrolled to split generation and the split table](images/adjudicator-project-splits.png)
 
-- **Assign annotators.** On the project page, choose **Assign** on a split's row. The form shows the split's assigned annotators and active annotators you can add. On its first assignment, set [*k*](Glossary.md), the number of independent answers per file. Select one or more annotators, choose **Assign** and confirm. You can fill remaining places later, but cannot change *k* or remove or move assignments; deactivation does not free a place ([#32], [rule 19](UserFlows.md#3-rules-both-tracks-share)). Create annotators first on [Accounts](#accounts) if needed.
+- **Assign annotators.** On the project page, choose **Assign** on a split's row. The form shows the split's assigned annotators and active annotators you can add. On its first assignment, set [*k*](Glossary.md), the number of independent answers per file. Select one or more annotators, choose **Assign** and confirm. You can fill remaining places later, but cannot change *k* or remove or move assignments; deactivation does not free a place ([rule 19](UserFlows.md#3-rules-both-tracks-share)). Create annotators first on [Accounts](#accounts) if needed.
 
   ![First assignment form with k and available annotators](images/adjudicator-assign.png)
 
 ### Monitor and resolve
 
-- **Monitor progress.** On the project page, choose **Progress** to see current project, split and annotator counts. Unresolved files include incomplete work; only completed `SINGLE` disagreements appear as disputes ([rule 10](UserFlows.md#3-rules-both-tracks-share)). Select a split to see its assignments, choose **Refresh** to reload, or use **Assign** and, for `SINGLE`, **Disputes** to open those screens ([#33]).
+- **Monitor progress.** On the project page, choose **Progress** to see current project, split and annotator counts. Unresolved files include incomplete work; only completed `SINGLE` disagreements appear as disputes ([rule 10](UserFlows.md#3-rules-both-tracks-share)). Select a split to see its assignments, choose **Refresh** to reload, or use **Assign** and, for `SINGLE`, **Disputes** to open those screens.
 
   ![Project progress with split and annotator counts](images/adjudicator-progress.png)
 
-- **Resolve a dispute.** On a `SINGLE` project's page, choose **Disputes** to list its undecided [disputes](Glossary.md) and files you have decided. Choose **Open** to compare a file's text and submitted labels without annotator names, pick one of the project's labels and choose **Save**. You can replace your own decision, but cannot change an automatic resolution; submitted answers remain fixed ([#34], [rule 13](UserFlows.md#3-rules-both-tracks-share)). Once *k* ratings are submitted, a `SCALE` result is their automatic mean ([rule 10](UserFlows.md#3-rules-both-tracks-share)). If the file is missing or has changed, restore its original content before saving a manual decision ([rule 21](UserFlows.md#3-rules-both-tracks-share)).
+- **Resolve a dispute.** On a `SINGLE` project's page, choose **Disputes** to list its undecided [disputes](Glossary.md) and files you have decided. Choose **Open** to compare a file's text and submitted labels without annotator names, pick one of the project's labels and choose **Save**. You can replace your own decision, but cannot change an automatic resolution; submitted answers remain fixed ([rule 13](UserFlows.md#3-rules-both-tracks-share)). Once *k* ratings are submitted, a `SCALE` result is their automatic mean ([rule 10](UserFlows.md#3-rules-both-tracks-share)). If the file is missing or has changed, restore its original content before saving a manual decision ([rule 21](UserFlows.md#3-rules-both-tracks-share)).
 
   ![Manual SINGLE dispute showing anonymous submitted labels and decision choices](images/adjudicator-dispute-detail.png)
 
 ### Export
 
-On the project page, choose **Export** at any stage. Check the resolved and unresolved counts and destination, then confirm to write the project's `CSV` or `JSON` file under `exports/`, replacing its earlier export. Each resolved item has its path, current answer and [provenance](Glossary.md): submitted answers with annotator names and times, plus the current resolution method and, for a manual decision, its decider and time. Unresolved items have their path and status, without an answer or submissions ([#37], [rule 15](UserFlows.md#3-rules-both-tracks-share)). CSV places submissions in numbered column groups; JSON nests them with the item. If a source is missing or changed, restore it and retry; Arbiter leaves the earlier export untouched ([rule 21](UserFlows.md#3-rules-both-tracks-share)). If another program has the destination open, close it and export again.
+On the project page, choose **Export** at any stage. Check the resolved and unresolved counts and destination, then confirm to write the project's `CSV` or `JSON` file under `exports/`, replacing its earlier export. Each resolved item has its path, current answer and [provenance](Glossary.md): submitted answers with annotator names and times, plus the current resolution method and, for a manual decision, its decider and time. Unresolved items have their path and status, without an answer or submissions ([rule 15](UserFlows.md#3-rules-both-tracks-share)). CSV places submissions in numbered column groups; JSON nests them with the item. If a source is missing or changed, restore it and retry; Arbiter leaves the earlier export untouched ([rule 21](UserFlows.md#3-rules-both-tracks-share)). If another program has the destination open, close it and export again.
 
 ![Export confirmation with resolved and unresolved counts and destination](images/adjudicator-export-confirmation.png)
 
@@ -118,21 +118,3 @@ Accounts lists every account with its role and [status](Glossary.md#fixed-value-
 - **Deactivate an annotator.** Choose **Deactivate** on their row and confirm. They can no longer sign in, and their work and assignments are kept ([rule 19](UserFlows.md#3-rules-both-tracks-share)). Deactivation is permanent.
 
 [Back to home](index.md)
-
-[#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
-[#13]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/13
-[#14]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/14
-[#17]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/17
-[#18]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/18
-[#23]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/23
-[#24]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/24
-[#25]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/25
-[#26]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/26
-[#27]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/27
-[#28]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/28
-[#30]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/30
-[#31]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/31
-[#32]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/32
-[#33]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/33
-[#34]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/34
-[#37]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/37
