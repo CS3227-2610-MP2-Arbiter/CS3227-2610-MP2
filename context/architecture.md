@@ -25,10 +25,15 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 - `AnnotationEditor` holds only the current choice until it is submitted or saved. Adjudicator screens reuse the label picker for resolution and never edit a submission (rule 13).
 - Every rule about the data lives in `arbiter.service`, never in a controller or a repository. Services check setup freezes and the pre-assignment deletion guard (rules 3, 5, 14) inside the write transaction; a disabled control is not enforcement. For a whole project (rules 3 and 5) or one split (rule 14), they use `FirstAssignment` rather than their own check.
 
+### Authorization
+
+- Every public service method that reads or changes records checks the session first, through `AuthService.requireAdjudicator()` or `requireAnnotator()`; only owner setup, login and logout in `AuthService` do not. `ScreenRegistry` routing is navigation, not enforcement. Why: [Authorization and blindness](../docs/DeveloperGuide.md#authorization-and-blindness).
+- Passwords are hashed only by `PasswordHasher`.
+
 ### Blindness (rule 1)
 
 - Annotator-facing code loads annotations only through `AnnotationService.forCurrentUser(...)`, which scopes every read to the session user. That path never loads resolved labels or another annotator's work. Submission goes through `AnnotationService.submit(...)`, which returns only the annotator's own queue; automatic resolution ([#27]) happens inside its action.
-- Do not rely on package separation for blindness.
+- Do not rely on package separation for blindness. Why: [Authorization and blindness](../docs/DeveloperGuide.md#authorization-and-blindness).
 - The blindness test ([#11]) must cover every annotator-facing code path, including new ones.
 - `AnnotatorBlindnessTest` treats every class under `arbiter.ui` except `arbiter.ui.adjudicator` as annotator-facing, shared components included, and fails if their calls reach another annotator's answers, a resolved result, cross-annotator progress or an adjudicator screen. A shared component therefore never loads or accepts a `Resolution`, even in adjudicator mode; the adjudicator's screen passes it plain values such as a `Label`. Service reads it trusts are listed in that test; adding one is a reviewed change, and its scoping must be tested by its feature.
 
@@ -41,6 +46,8 @@ Layers run from 1 (top) to 5 (bottom). Dependencies point downward only, and nei
 
 - `WorkspacePaths.DATA_FILE` names the shared snapshot in rule 11; `JsonStore` opens and validates its version and integrity.
 - Commit each completed logical action immediately (rule 2). Repository calls within one `JsonStore.write` action change a private snapshot; `JsonStore` publishes it with one atomic replacement.
+- Read a source's text for display, and write exports, after a `JsonStore` action returns. A source check that guards a commit, such as the hash check at registration, submission or manual resolution, runs inside that action.
+- A change to the snapshot's shape raises `JsonSnapshot.CURRENT_VERSION` and adds a migration that upgrades and validates the old shape before the first write. Never read another version on a best-effort basis. Why: [Persistence](../docs/DeveloperGuide.md#persistence).
 - Code against the repository interfaces in `arbiter.data`. Their implementations and storage-level validation live in `arbiter.data.json`; business rules remain in services.
 - `WorkspaceSetupDialog` validates layout, acquires `WorkspaceLock`, and uses lock-aware `JsonStore` entry points; `Arbiter` closes the handle when the app closes (rule 11, [#61]).
 
@@ -73,14 +80,14 @@ Model classes are plain value objects in `arbiter.model`, grouped into subpackag
 
 ## Services
 
-- `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and salted-hashing boundary (PBKDF2 or bcrypt with a per-user salt).
+- `AuthService`: sole-owner bootstrap, login/session, annotator accounts and password replacement (rule 12). Bootstrap, annotator creation and replacement share one username/password validation and `PasswordHasher` (PBKDF2 with a per-user salt).
 - `WorkspaceService`: first-run setup and paths; `WorkspaceLock` owns the file lock ([#61]).
 - `ProjectService`: creating, listing and pre-assignment deletion of projects (rule 5). It has no way to change a project's kind or format (rule 4). Its `progress` method checks the adjudicator session and builds one read-only repository snapshot; `unresolvedCount` is shared with the project list ([#33]).
 - `CorpusService`: listing, registering and pre-assignment unregistering of a project's items (rules 3, 5), splits and taxonomy.
 - `AssignmentService`: assignments and the first-assignment freezes (rules 3, 14, 19).
 - `AnnotationService`: atomic submission and queue advancement (rule 18), plus the annotator-scoped read path (rule 1).
 - `ResolutionService`: automatic and manual classification resolution (rule 10); its unresolved-dispute predicate supplies the progress snapshot's dispute count ([#33]).
-- `ExportService`: the only code that writes a dataset in an output format. Annotators persist canonical annotations and never choose a format.
+- `ExportService`: the only code that writes a dataset in an output format. Annotators persist canonical annotations and never choose a format. A new `OutputFormat` follows "Adding an output format" in [Resolution and export](../docs/DeveloperGuide.md#resolution-and-export).
 
 [#4]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/4
 [#5]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/5
