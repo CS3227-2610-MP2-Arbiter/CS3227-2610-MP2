@@ -8,7 +8,7 @@ Arbiter has [two roles](index.md#the-two-roles), and you see a different interfa
 
 ## Getting started
 
-1. Launch Arbiter. On first run the workspace wizard asks you to choose a [workspace](Glossary.md) folder.
+1. Launch Arbiter, as the [README](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2#running-a-release) describes. On first run the workspace wizard asks you to choose a [workspace](Glossary.md) folder.
 2. During setup, create the workspace's adjudicator account.
 3. The adjudicator creates annotator accounts on the [Accounts](#accounts) screen and gives each annotator their username and password. There is no self-signup and no email: an annotator who forgets their password asks the adjudicator, who sets a new one directly ([rule 12](UserFlows.md#3-rules-both-tracks-share)). The adjudicator's own password cannot be recovered, so keep it safe.
 4. Sign in. Arbiter opens your role's home ([#5]): [Projects](#projects) for the adjudicator, and [My splits](#my-splits) for annotators.
