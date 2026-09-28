@@ -1,0 +1,51 @@
+@startuml
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #EFF6FF
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam noteBackgroundColor #F0FDF4
+skinparam noteBorderColor #94A3B8
+hide footbox
+
+participant "Annotator UI" as UI
+participant AnnotationService as Service
+participant AuthService as Auth
+participant JsonStore as Store
+participant SourceResolver as Sources
+
+UI -> Service : submit(...)
+activate Service
+Service -> Auth : requireAnnotator()
+Auth --> Service : current annotator
+Service -> Store : write(action)
+activate Store
+group Write action and publication
+  Store -> Service : run action with repository session
+  activate Service
+  Service -> Service : check ownership, queue and answer
+  Service -> Sources : check current source
+  Sources --> Service : source matches
+  Service -> Service : insert answer; run automatic resolution;\nupdate assignment progress
+  note right of Service
+    Repository changes use the same session.
+    ResolutionService handles automatic resolution.
+  end note
+  Service --> Store : next queue snapshot
+  deactivate Service
+  Store -> Store : validate and publish snapshot
+end
+Store --> Service : committed queue snapshot
+deactivate Store
+opt Next item exists
+  Service -> Sources : read next source for display
+  Sources --> Service : source text
+end
+Service --> UI : own queue view
+deactivate Service
+@enduml

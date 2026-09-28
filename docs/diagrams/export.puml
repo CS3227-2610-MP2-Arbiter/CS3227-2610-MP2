@@ -1,0 +1,29 @@
+@startuml
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam ArrowColor #475569
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #F0FDF4
+skinparam activityDiamondBorderColor #334155
+skinparam partitionBackgroundColor #F8FAFC
+skinparam partitionBorderColor #94A3B8
+
+start
+:Require adjudicator session;
+partition "JsonStore.read action" {
+  :Read project, items, submissions\nand current resolutions;
+  :Prepare export dataset;
+}
+:Check each source with SourceResolver;
+if (Project output format?) then (CSV)
+  :Serialize CSV;
+else (JSON)
+  :Serialize JSON;
+endif
+:Publish file under exports/;
+:Return export summary;
+stop
+@enduml
