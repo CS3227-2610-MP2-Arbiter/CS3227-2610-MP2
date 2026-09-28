@@ -6,9 +6,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import arbiter.data.json.JsonStore;
 import arbiter.model.project.Item;
@@ -23,6 +25,7 @@ import arbiter.service.AuthService;
 import arbiter.service.CorpusService;
 import arbiter.service.ProjectService;
 import arbiter.service.QueueView;
+import arbiter.workspace.WorkspaceException;
 import arbiter.workspace.WorkspaceLock;
 import arbiter.workspace.WorkspacePaths;
 import arbiter.workspace.WorkspaceService;
@@ -74,10 +77,11 @@ public final class DemoWorkspace {
             "answers/answer-05.txt", List.of(4, 5),
             "answers/answer-06.txt", List.of(2, 3));
 
-    private static final Map<String, String> LABELS = Map.of(
-            "positive", "The reviewer is satisfied overall.",
-            "negative", "The reviewer is dissatisfied overall.",
-            "mixed", "Clear praise and clear complaints, neither winning.");
+    /** The single-label project's labels in taxonomy order, each with its description. */
+    private static final List<Map.Entry<String, String>> LABELS = List.of(
+            Map.entry("positive", "The reviewer is satisfied overall."),
+            Map.entry("negative", "The reviewer is dissatisfied overall."),
+            Map.entry("mixed", "Clear praise and clear complaints, neither winning."));
 
     private DemoWorkspace() {
     }
@@ -95,23 +99,64 @@ public final class DemoWorkspace {
     }
 
     /**
-     * Creates a workspace in {@code folder} and seeds the demo into it, holding the workspace lock throughout.
+     * Creates a workspace in {@code folder} and seeds the demo into it. If seeding fails, everything it created is
+     * deleted, so it never leaves a half-built workspace.
      *
+     * @param folder a folder that does not exist yet or is empty
      * @return the new workspace's paths
-     * @throws arbiter.workspace.WorkspaceException if the folder cannot be created or already holds a workspace,
-     *     so existing data is never changed
+     * @throws WorkspaceException if the folder exists and is not empty, so existing files are never changed
      */
     public static WorkspacePaths seed(Path folder) {
-        WorkspacePaths paths = new WorkspaceService().create(folder);
-        copyCorpus(paths);
-        try (WorkspaceLock lock = WorkspaceLock.acquire(paths)) {
-            JsonStore store = JsonStore.initializeNew(lock);
-            AuthService auth = new AuthService(store);
-            Map<String, Answer> answers = new HashMap<>();
-            Map<Long, String> files = setUp(store, auth, paths, answers);
-            annotate(store, auth, paths, files, answers);
+        boolean folderIsNew = requireNewOrEmpty(folder);
+        try {
+            WorkspacePaths paths = new WorkspaceService().create(folder);
+            copyCorpus(paths);
+            try (WorkspaceLock lock = WorkspaceLock.acquire(paths)) {
+                JsonStore store = JsonStore.initializeNew(lock);
+                AuthService auth = new AuthService(store);
+                Map<String, Answer> answers = new HashMap<>();
+                Map<Long, String> storedPaths = setUp(store, auth, paths, answers);
+                annotate(store, auth, paths, storedPaths, answers);
+            }
+            return paths;
+        } catch (RuntimeException e) {
+            discard(folder, folderIsNew, e);
+            throw e;
         }
-        return paths;
+    }
+
+    /** Refuses a folder that holds anything, and returns whether the folder does not exist yet. */
+    private static boolean requireNewOrEmpty(Path folder) {
+        if (Files.notExists(folder)) {
+            return true;
+        }
+        if (Files.isDirectory(folder)) {
+            try (Stream<Path> entries = Files.list(folder)) {
+                if (entries.findAny().isEmpty()) {
+                    return false;
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException("Could not read " + folder, e);
+            }
+        }
+        throw new WorkspaceException("The demo can only be seeded into a new or empty folder, and " + folder
+                + " is neither. Delete it or choose another folder.");
+    }
+
+    /** Deletes everything a failed seed put in {@code folder}, and the folder itself if the seed made it. */
+    private static void discard(Path folder, boolean folderIsNew, RuntimeException failure) {
+        if (Files.notExists(folder)) {
+            return;
+        }
+        try (Stream<Path> entries = Files.walk(folder)) {
+            for (Path entry : entries.sorted(Comparator.reverseOrder()).toList()) {
+                if (folderIsNew || !entry.equals(folder)) {
+                    Files.delete(entry);
+                }
+            }
+        } catch (IOException e) {
+            failure.addSuppressed(e);
+        }
     }
 
     private static void copyCorpus(WorkspacePaths paths) {
@@ -130,7 +175,7 @@ public final class DemoWorkspace {
     }
 
     /**
-     * Sets up the accounts and both projects as the owner, and returns each item's corpus file by its identifier.
+     * Sets up the accounts and both projects as the owner, and returns each item's stored path by its identifier.
      * Fills {@code answers} with each annotator's planned answer, keyed by {@link #key}.
      */
     private static Map<Long, String> setUp(JsonStore store, AuthService auth, WorkspacePaths paths,
@@ -144,18 +189,19 @@ public final class DemoWorkspace {
         ProjectService projects = new ProjectService(store, auth);
         CorpusService corpus = new CorpusService(store, auth, paths);
         AssignmentService assignments = new AssignmentService(store, auth);
-        Map<Long, String> files = new HashMap<>();
+        Map<Long, String> storedPaths = new HashMap<>();
 
         long reviews = projects.create(REVIEWS, "Is each product review positive, negative or mixed?",
                 TaxonomyKind.SINGLE, OutputFormat.CSV).getId();
         Map<String, Long> labelIds = new HashMap<>();
-        for (String key : List.of("positive", "negative", "mixed")) {
-            labelIds.put(key, corpus.addLabel(reviews, key, LABELS.get(key)).getId());
+        for (Map.Entry<String, String> label : LABELS) {
+            labelIds.put(label.getKey(), corpus.addLabel(reviews, label.getKey(), label.getValue()).getId());
         }
-        register(corpus, paths, reviews, REVIEW_LABELS.keySet(), files);
+        register(corpus, paths, reviews, REVIEW_LABELS.keySet(), storedPaths);
         REVIEW_LABELS.forEach((file, labels) -> {
             for (int index = 0; index < labels.size(); index++) {
-                answers.put(key(ANNOTATORS.get(index), file), new Answer.LabelChoice(labelIds.get(labels.get(index))));
+                answers.put(key(ANNOTATORS.get(index), storedPath(file)),
+                        new Answer.LabelChoice(labelIds.get(labels.get(index))));
             }
         });
         assignments.assign(onlySplit(corpus, reviews), "3", annotatorIds);
@@ -163,28 +209,33 @@ public final class DemoWorkspace {
         long helpfulness = projects.create(HELPFULNESS, "How helpful is each answer to a support question?",
                 TaxonomyKind.SCALE, OutputFormat.JSON).getId();
         corpus.saveRange(helpfulness, "1", "5");
-        register(corpus, paths, helpfulness, ANSWER_RATINGS.keySet(), files);
+        register(corpus, paths, helpfulness, ANSWER_RATINGS.keySet(), storedPaths);
         ANSWER_RATINGS.forEach((file, ratings) -> {
             for (int index = 0; index < ratings.size(); index++) {
-                answers.put(key(ANNOTATORS.get(index), file), new Answer.Rating(ratings.get(index)));
+                answers.put(key(ANNOTATORS.get(index), storedPath(file)), new Answer.Rating(ratings.get(index)));
             }
         });
         assignments.assign(onlySplit(corpus, helpfulness), "2", annotatorIds.subList(0, 2));
         auth.logout();
-        return files;
+        return storedPaths;
     }
 
     private static void register(CorpusService corpus, WorkspacePaths paths, long projectId,
-            Iterable<String> corpusFiles, Map<Long, String> files) {
+            Iterable<String> corpusFiles, Map<Long, String> storedPaths) {
         List<Path> chosen = new ArrayList<>();
         for (String file : corpusFiles) {
             chosen.add(paths.mediaDirectory().resolve(file));
         }
+        // Map.of's order changes from run to run, so sort to register the files in the same order every time.
         chosen.sort(null);
         for (Item item : corpus.register(projectId, chosen)) {
-            files.put(item.getId(), paths.mediaDirectory().relativize(paths.root().resolve(item.getPath()))
-                    .toString().replace('\\', '/'));
+            storedPaths.put(item.getId(), item.getPath());
         }
+    }
+
+    /** Returns the path a corpus file is stored with once it is registered from {@code media/} (#25). */
+    private static String storedPath(String file) {
+        return WorkspacePaths.MEDIA_DIRECTORY + "/" + file;
     }
 
     /** Generates one split holding every file of the project and returns its identifier. */
@@ -195,18 +246,18 @@ public final class DemoWorkspace {
     }
 
     /** Submits each annotator's planned answers in queue order, signed in as that annotator. */
-    private static void annotate(JsonStore store, AuthService auth, WorkspacePaths paths, Map<Long, String> files,
-            Map<String, Answer> answers) {
+    private static void annotate(JsonStore store, AuthService auth, WorkspacePaths paths,
+            Map<Long, String> storedPaths, Map<String, Answer> answers) {
         AnnotationService annotations = new AnnotationService(store, auth, paths);
         for (String username : ANNOTATORS) {
             auth.login(username, PASSWORD);
             for (AssignmentProgress assignment : annotations.forCurrentUser()) {
-                boolean scale = assignment.projectName().equals(HELPFULNESS);
-                int limit = scale && username.equals("bob") ? BOB_RATED : assignment.total();
                 QueueView queue = annotations.forCurrentUser(assignment.assignmentId());
+                boolean scale = queue.taxonomy().kind() == TaxonomyKind.SCALE;
+                int limit = scale && username.equals("bob") ? BOB_RATED : assignment.total();
                 for (int done = 0; done < limit; done++) {
                     long itemId = queue.current().itemId();
-                    Answer answer = answers.get(key(username, files.get(itemId)));
+                    Answer answer = answers.get(key(username, storedPaths.get(itemId)));
                     queue = annotations.submit(assignment.assignmentId(), itemId, answer);
                 }
             }
@@ -221,7 +272,6 @@ public final class DemoWorkspace {
     private static List<String> corpusFiles() {
         List<String> all = new ArrayList<>(REVIEW_LABELS.keySet());
         all.addAll(ANSWER_RATINGS.keySet());
-        all.sort(null);
         return all;
     }
 }

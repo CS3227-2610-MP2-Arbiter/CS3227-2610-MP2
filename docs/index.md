@@ -23,6 +23,7 @@ See the [Glossary](Glossary.md) for the terms used throughout, and [User Flows](
 - [Glossary](Glossary.md)
 - [User flows and product context](UserFlows.md)
 - [Developer guide](DeveloperGuide.md)
+- [Smoke checklist](SmokeChecklist.md)
 - [Agentic SE reflections](Reflections.md)
 - [Source code](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2)
 - [Issue backlog](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/milestone/7)
