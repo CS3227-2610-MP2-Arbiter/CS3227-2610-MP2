@@ -1,6 +1,6 @@
 # Packaging: shadowJar and run scripts
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 

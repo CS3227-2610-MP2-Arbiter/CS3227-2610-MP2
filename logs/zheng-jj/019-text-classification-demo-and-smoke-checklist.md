@@ -1,6 +1,6 @@
 # Text-classification demo and smoke checklist
 
-Status: Awaiting human verification.
+Status: Human verified.
 
 ## Original request
 
