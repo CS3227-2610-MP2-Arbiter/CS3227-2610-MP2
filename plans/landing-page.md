@@ -33,7 +33,7 @@ Non-goals, from [#45]: the detailed guides themselves.
 
 ## Open decisions
 
-None. [#45] lists [#38] and [#44] as blockers, but the owner decided on 28 September 2026 that they do not gate this page: its links go to files that always exist, whatever state their content is in.
+None. On 28 September 2026 the owner decided that [#38] and [#44] do not gate this page, since its links go to files that always exist, and [#45]'s dependencies were updated to match.
 
 ## Verification
 
