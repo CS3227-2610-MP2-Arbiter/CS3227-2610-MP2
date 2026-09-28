@@ -1,0 +1,41 @@
+@startuml
+!pragma layout smetana
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam componentStyle uml2
+skinparam ArrowColor #475569
+skinparam componentBackgroundColor #EFF6FF
+skinparam componentBorderColor #334155
+skinparam packageBackgroundColor #F8FAFC
+skinparam packageBorderColor #94A3B8
+skinparam artifactBackgroundColor #F0FDF4
+skinparam artifactBorderColor #334155
+top to bottom direction
+
+package "JavaFX UI" {
+  component "Annotator screens" as Annotator
+  component "Adjudicator screens" as Adjudicator
+  component "Shared UI" as Shared
+  Annotator ..> Shared
+  Adjudicator ..> Shared
+}
+component "Services" as Services
+component "JsonStore /\nrepositories" as Store
+component "SourceResolver" as Resolver
+package "Local workspace" {
+  artifact "arbiter.json" as Snapshot
+  artifact "media/\nsource files" as Media
+  artifact "exports/\ndataset files" as Exports
+}
+
+Annotator ..> Services
+Adjudicator ..> Services
+Shared ..> Services
+Services ..> Store : reads / writes
+Services ..> Resolver : checks / reads sources
+Services ..> Exports : ExportService writes
+Store ..> Snapshot : reads / publishes
+Resolver ..> Media : reads
+@enduml

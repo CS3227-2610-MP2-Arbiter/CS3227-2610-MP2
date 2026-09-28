@@ -1,0 +1,39 @@
+@startuml
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam padding 6
+skinparam nodesep 35
+skinparam ranksep 40
+skinparam ArrowColor #475569
+skinparam classBackgroundColor #EFF6FF
+skinparam classBorderColor #334155
+hide empty members
+hide circle
+left to right direction
+
+class Project
+class Split
+class Item
+class SplitItem
+class Assignment
+class User
+class Annotation
+class Resolution
+
+Project <-- Split
+Project <-- Item
+Split <-- SplitItem
+Item <-- SplitItem
+Split <-- Assignment
+Assignment --> User : annotator
+Assignment <-- Annotation
+Item <-- Annotation
+Annotation --> User : annotator
+Item <-- Resolution
+
+legend bottom
+  Arrows follow stored identifiers.
+endlegend
+@enduml
