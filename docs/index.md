@@ -25,7 +25,7 @@ The [Glossary](Glossary.md) defines the terms used throughout, and [User Flows](
 
 ## Documentation
 
-- [Running a release](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2#running-a-release)
+- [Download and run Arbiter](https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2#running-a-release)
 - [User guide](UserGuide.md)
 - [Glossary](Glossary.md)
 - [User flows and product context](UserFlows.md)
