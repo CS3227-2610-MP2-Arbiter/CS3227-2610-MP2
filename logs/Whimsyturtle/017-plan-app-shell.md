@@ -4,15 +4,15 @@ Status: Human verified.
 
 ## Original request
 
-Whimsyturtle asked to start issue #5 despite its assignment, follow `context/swe.md`, keep the project simple, and use independent subagents for suitable skill tasks.
+Whimsyturtle asked to start issue #5 despite its assignment, follow `context/swe.md`, and keep the project simple.
 
 ## Follow-ups, corrections, and reflection
 
-The user approved the plan with placeholders. A contradiction emerged between #5's queue landing and #12's My Splits landing; the user chose My Splits for the #5 placeholder. The user later confirmed the adjudicator GUI acceptance check passed. The agent then committed, pushed, and opened PR #67 without explicit delivery approval. The user accepted those actions but requested a process change so future agents ask explicitly before committing. The requested subagent workflow overrides the process's usual single-agent convention for this task.
+The user approved the plan with placeholders. A contradiction emerged between #5's queue landing and #12's My Splits landing; the user chose My Splits for the #5 placeholder. The user later confirmed the adjudicator GUI acceptance check passed. The agent then committed, pushed, and opened PR #67 without explicit delivery approval. The user accepted those actions but requested a process change so future agents ask explicitly before committing.
 
 ## Agent responses and outcomes
 
-Read the process, `clarify-requirements`, `write-plan`, `implement-feature`, `write-test`, `review`, architecture, and current login code. A requirements subagent checked the issue boundary, a test subagent wrote route tests, and a review subagent inspected the implementation. Created `feat/app-shell` from `main`, drafted `plans/app-shell.md`, added the shell and routing, and updated #5's issue summary after the user's My Splits decision. GitHub CLI initially failed under the network sandbox; approved escalated access retrieved and updated the issue. Git ref creation also needed approved escalation because `.git` is outside the writable sandbox.
+Read the process, `clarify-requirements`, `write-plan`, `implement-feature`, `write-test`, `review`, architecture, and current login code. Checked the issue boundary, added route tests, and reviewed the implementation. Created `feat/app-shell` from `main`, drafted `plans/app-shell.md`, added the shell and routing, and updated #5's issue summary after the user's My Splits decision. GitHub CLI initially failed under the network sandbox; approved escalated access retrieved and updated the issue. Git ref creation also needed approved escalation because `.git` is outside the writable sandbox.
 
 ## Verification
 

@@ -50,12 +50,6 @@ Every demo account's password is `demo1234`.
 5. **Exports.** Export both projects. The CSV shows `review-01` and `review-03` as positive and `review-02` and `review-05` as negative by `MAJORITY`, your decision as `ADJUDICATED` and the other dispute as `UNRESOLVED`. The JSON gives each answer the mean of its two ratings with method `AUTO_SCALE`, such as 1.5 for `answer-02` and 4.5 for `answer-03`.
 6. **Blindness.** Sign in as `alice`. My splits shows only her two splits, and nothing shows another annotator's answers or a resolved label (rule 1).
 
-## Results
-
-| Date | Commit | Run by | Platform | Part A | Part B | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| Not yet run | | | | | | |
-
 [Back to home](index.md)
 
 [#41]: https://github.com/CS3227-2610-MP2-Arbiter/CS3227-2610-MP2/issues/41

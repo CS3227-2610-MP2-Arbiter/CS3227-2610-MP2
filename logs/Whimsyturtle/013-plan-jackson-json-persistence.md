@@ -4,7 +4,7 @@ Status: Approved by the owner on 23 September 2026.
 
 ## Original request
 
-Start issue #6 under `context/swe.md`, replacing the planned SQLite store with Jackson JSON. The user wanted a simpler persistence design, with atomic writes as the main concern, and asked for independent subagents where useful.
+Start issue #6 under `context/swe.md`, replacing the planned SQLite store with Jackson JSON. The user wanted a simpler persistence design, with atomic writes as the main concern.
 
 ## Follow-ups, corrections, and reflection
 

@@ -14,7 +14,7 @@ Status: Human verified.
 - The IDE named this log, but it did not yet exist on disk. This task created it as the next Whimsyturtle log.
 - The user accepted cuts 1, 3, 5, 7, 8, 9 and 10 from the recommendation and authorized a branch and GitHub issue changes. Therefore SCALE classification, count-based splitting, configurable *k*, CSV and JSON, account administration and pre-assignment project deletion remain; they were not silently removed with the rejected cuts.
 - The accepted detection/import cuts were interpreted as TXT-only v1 after the agent stated that assumption and the user instructed it to continue. Simplified import retains path containment, readability, content hashing, change detection and duplicate rejection. With no COMPLETE state, project deletion is limited to before the first assignment.
-- The user reviewed `plans/focused-classification-v1.md` and explicitly approved implementation. The model, documentation and retained-issue rewrites then proceeded in parallel under that plan.
+- The user reviewed `plans/focused-classification-v1.md` and explicitly approved implementation. The model, documentation and retained-issue rewrites then proceeded under that plan.
 
 ## Agent responses and outcomes
 
